@@ -43,6 +43,11 @@ model User {
   groupsCreated       Group[]            @relation("GroupCreator")
   groupMemberships    GroupMember[]      @relation("GroupMemberships")
 
+  @@index([email])
+  @@index([googleId])
+  @@index([isActive, isDeleted])
+  @@index([createdAt])
+  @@index([lastLoginAt])
   @@map("users")
 }
 
@@ -67,6 +72,8 @@ model Category {
   @@index([userId, type])
   @@index([isSystem])
   @@index([type])
+  @@index([parentCategoryId])
+  @@index([userId, isSystem])
   @@map("categories")
 }
 
@@ -103,6 +110,12 @@ model Expense {
   @@index([userId, deletedAt])
   @@index([expenseDate])
   @@index([userId, categoryId, expenseDate])
+  @@index([userId, isRecurring])
+  @@index([recurringPatternId])
+  @@index([userId, currency])
+  @@index([paymentMethod])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([tags]) // GIN index for array search
   @@map("expenses")
 }
 
@@ -122,6 +135,10 @@ model RecurringPattern {
   expenses       Expense[]
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isActive])
+  @@index([nextOccurrence, isActive])
+  @@index([frequency])
+  @@index([userId, frequency, isActive])
   @@map("recurring_patterns")
 }
 
@@ -146,6 +163,10 @@ model SplitExpense {
   @@index([paidByUserId])
   @@index([isSettled])
   @@index([expenseId])
+  @@index([groupId])
+  @@index([paidByUserId, isSettled])
+  @@index([groupId, isSettled])
+  @@index([createdAt(sort: Desc)])
   @@map("split_expenses")
 }
 
@@ -165,6 +186,9 @@ model SplitParticipant {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([splitExpenseId, userId])
+  @@index([userId, isSettled])
+  @@index([splitExpenseId])
+  @@index([userId])
   @@map("split_participants")
 }
 
@@ -192,6 +216,9 @@ model Loan {
   @@index([borrowerUserId, status])
   @@index([dueDate])
   @@index([status])
+  @@index([lenderUserId, dueDate])
+  @@index([borrowerUserId, dueDate])
+  @@index([loanDate])
   @@map("loans")
 }
 
@@ -207,6 +234,9 @@ model LoanPayment {
   updatedAt     DateTime @updatedAt @map("updated_at")
   loan          Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
 
+  @@index([loanId])
+  @@index([paymentDate(sort: Desc)])
+  @@index([loanId, paymentDate(sort: Desc)])
   @@map("loan_payments")
 }
 
@@ -227,6 +257,11 @@ model Budget {
   category       Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isActive])
+  @@index([categoryId])
+  @@index([userId, periodType, isActive])
+  @@index([startDate, endDate])
+  @@index([userId, startDate, endDate])
   @@map("budgets")
 }
 
@@ -248,6 +283,9 @@ model MonthlySummary {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year, month, currency])
+  @@index([userId, year, month])
+  @@index([year, month])
+  @@index([userId, year])
   @@map("monthly_summaries")
 }
 
@@ -269,6 +307,8 @@ model YearlySummary {
   user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year, currency])
+  @@index([userId, year])
+  @@index([year])
   @@map("yearly_summaries")
 }
 
@@ -285,6 +325,10 @@ model Notification {
   createdAt         DateTime  @default(now()) @map("created_at")
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([type])
+  @@index([relatedEntityType, relatedEntityId])
   @@map("notifications")
 }
 
@@ -301,6 +345,10 @@ model AuditLog {
   createdAt  DateTime @default(now()) @map("created_at")
   user       User?    @relation(fields: [userId], references: [id])
 
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt(sort: Desc)])
   @@map("audit_logs")
 }
 
@@ -314,6 +362,8 @@ model ExchangeRate {
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@unique([baseCurrency, targetCurrency, rateDate])
+  @@index([baseCurrency, targetCurrency, rateDate(sort: Desc)])
+  @@index([rateDate(sort: Desc)])
   @@map("exchange_rates")
 }
 
@@ -329,6 +379,9 @@ model Attachment {
   createdAt  DateTime @default(now()) @map("created_at")
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt(sort: Desc)])
   @@map("attachments")
 }
 
@@ -346,6 +399,10 @@ model Group {
   members       GroupMember[]
   splitExpenses SplitExpense[] @relation("GroupSplits")
 
+  @@index([createdByUserId])
+  @@index([isActive])
+  @@index([createdAt(sort: Desc)])
+  @@index([createdByUserId, isActive])
   @@map("groups")
 }
 
@@ -366,5 +423,12 @@ model GroupMember {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+  @@index([inviteStatus])
+  @@index([groupId, inviteStatus])
+  @@index([groupId, role])
+  @@index([inviteToken])
+  @@index([memberEmail])
   @@map("group_members")
 }

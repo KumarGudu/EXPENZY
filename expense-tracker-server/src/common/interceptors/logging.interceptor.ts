@@ -7,14 +7,16 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LoggingInterceptor.name);
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context.switchToHttp().getRequest();
-    const { method, url, body, query } = request;
+    const request = context.switchToHttp().getRequest<Request>();
+    const method = request.method;
+    const url = request.url;
     const userAgent = request.get('user-agent') || '';
     const ip = request.ip;
 
@@ -24,22 +26,24 @@ export class LoggingInterceptor implements NestInterceptor {
       `Incoming Request: ${method} ${url} - User Agent: ${userAgent} - IP: ${ip}`,
     );
 
+    const query = request.query as Record<string, unknown>;
     if (Object.keys(query).length > 0) {
       this.logger.debug(`Query Parameters: ${JSON.stringify(query)}`);
     }
 
+    const body = request.body as Record<string, unknown> | undefined;
     if (method !== 'GET' && body && Object.keys(body).length > 0) {
       // Don't log sensitive data like passwords
       const sanitizedBody = { ...body };
-      if (sanitizedBody.password) sanitizedBody.password = '***';
-      if (sanitizedBody.passwordHash) sanitizedBody.passwordHash = '***';
+      if ('password' in sanitizedBody) sanitizedBody.password = '***';
+      if ('passwordHash' in sanitizedBody) sanitizedBody.passwordHash = '***';
       this.logger.debug(`Request Body: ${JSON.stringify(sanitizedBody)}`);
     }
 
     return next.handle().pipe(
       tap({
         next: () => {
-          const response = context.switchToHttp().getResponse();
+          const response = context.switchToHttp().getResponse<Response>();
           const { statusCode } = response;
           const delay = Date.now() - now;
 
@@ -47,7 +51,7 @@ export class LoggingInterceptor implements NestInterceptor {
             `Outgoing Response: ${method} ${url} ${statusCode} - ${delay}ms`,
           );
         },
-        error: (error) => {
+        error: (error: Error) => {
           const delay = Date.now() - now;
           this.logger.error(
             `Request Error: ${method} ${url} - ${error.message} - ${delay}ms`,

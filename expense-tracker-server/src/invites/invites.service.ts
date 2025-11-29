@@ -5,8 +5,6 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { LoansService } from '../loans/loans.service';
-import { SplitsService } from '../splits/splits.service';
 import { GroupsService } from '../groups/groups.service';
 import {
   InviteType,
@@ -20,98 +18,11 @@ export class InvitesService {
 
   constructor(
     private prisma: PrismaService,
-    private loansService: LoansService,
-    private splitsService: SplitsService,
     private groupsService: GroupsService,
   ) {}
 
   async getInviteDetails(token: string): Promise<InviteDetails> {
-    // Check loans
-    const loan = await this.prisma.loan.findUnique({
-      where: { inviteToken: token },
-      include: {
-        createdBy: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
-        },
-      },
-    });
-
-    if (loan) {
-      const isExpired = this.checkInviteExpiration(loan.invitedAt);
-      const role = !loan.lenderUserId ? 'lender' : 'borrower';
-
-      return {
-        type: InviteType.LOAN,
-        status: isExpired
-          ? InviteStatus.EXPIRED
-          : (loan.inviteStatus as InviteStatus),
-        invitedAt: loan.invitedAt || new Date(),
-        isExpired,
-        entityId: loan.id,
-        entityDetails: {
-          loanId: loan.id,
-          amount: Number(loan.amount),
-          currency: loan.currency,
-          description: loan.description,
-          role,
-          createdBy: {
-            id: loan.createdBy.id,
-            username: loan.createdBy.username,
-            email: loan.createdBy.email,
-          },
-        },
-      };
-    }
-
-    // Check split participants
-    const splitParticipant = await this.prisma.splitParticipant.findUnique({
-      where: { inviteToken: token },
-      include: {
-        splitExpense: {
-          include: {
-            createdBy: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (splitParticipant) {
-      const isExpired = this.checkInviteExpiration(splitParticipant.invitedAt);
-
-      return {
-        type: InviteType.SPLIT,
-        status: isExpired
-          ? InviteStatus.EXPIRED
-          : (splitParticipant.inviteStatus as InviteStatus),
-        invitedAt: splitParticipant.invitedAt || new Date(),
-        isExpired,
-        entityId: splitParticipant.splitExpenseId,
-        entityDetails: {
-          splitId: splitParticipant.splitExpenseId,
-          totalAmount: Number(splitParticipant.splitExpense.totalAmount),
-          currency: splitParticipant.splitExpense.currency,
-          description: splitParticipant.splitExpense.description,
-          amountOwed: Number(splitParticipant.amountOwed),
-          createdBy: {
-            id: splitParticipant.splitExpense.createdBy.id,
-            username: splitParticipant.splitExpense.createdBy.username,
-            email: splitParticipant.splitExpense.createdBy.email,
-          },
-        },
-      };
-    }
-
-    // Check group members
+    // Only check group members (loans and splits don't have invite functionality)
     const groupMember = await this.prisma.groupMember.findUnique({
       where: { inviteToken: token },
       include: {
@@ -135,8 +46,8 @@ export class InvitesService {
     });
 
     if (groupMember) {
-      // GroupMember doesn't have invitedAt, use joinedAt or createdAt as fallback
-      const inviteDate = groupMember.joinedAt || new Date();
+      // GroupMember doesn't have invitedAt, use createdAt as fallback
+      const inviteDate = groupMember.createdAt;
       const isExpired = false; // Groups don't expire for now
 
       return {
@@ -177,44 +88,13 @@ export class InvitesService {
       throw new BadRequestException('This invite has already been accepted');
     }
 
-    switch (inviteDetails.type) {
-      case InviteType.LOAN: {
-        const loan = await this.loansService.acceptInvite(token, userId);
-        return { type: InviteType.LOAN, entity: loan };
-      }
-
-      case InviteType.SPLIT: {
-        // For splits, we need to accept via the participant
-        const participant = await this.prisma.splitParticipant.findUnique({
-          where: { inviteToken: token },
-        });
-        if (!participant) {
-          throw new NotFoundException('Split participant not found');
-        }
-
-        const updatedParticipant = await this.prisma.splitParticipant.update({
-          where: { id: participant.id },
-          data: {
-            userId,
-            inviteStatus: 'accepted',
-            participantName: null,
-          },
-          include: {
-            splitExpense: true,
-            user: true,
-          },
-        });
-        return { type: InviteType.SPLIT, entity: updatedParticipant };
-      }
-
-      case InviteType.GROUP: {
-        const group = await this.groupsService.acceptInvite(token, userId);
-        return { type: InviteType.GROUP, entity: group };
-      }
-
-      default:
-        throw new BadRequestException('Unknown invite type');
+    // Only handle group invites
+    if (inviteDetails.type === InviteType.GROUP) {
+      const group = await this.groupsService.acceptInvite(token, userId);
+      return { type: InviteType.GROUP, entity: group };
     }
+
+    throw new BadRequestException('Unknown invite type');
   }
 
   async resendInvite(

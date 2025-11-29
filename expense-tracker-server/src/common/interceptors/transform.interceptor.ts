@@ -20,7 +20,7 @@ export class TransformInterceptor<T>
     next: CallHandler,
   ): Observable<Response<T>> {
     return next.handle().pipe(
-      map((data) => {
+      map((data: T) => {
         // If data is already in the correct format (e.g., PaginatedResponseDto), return as is
         if (
           data &&
@@ -28,7 +28,7 @@ export class TransformInterceptor<T>
           'data' in data &&
           'meta' in data
         ) {
-          return data;
+          return data as unknown as Response<T>;
         }
 
         // Otherwise, wrap in standard response format
