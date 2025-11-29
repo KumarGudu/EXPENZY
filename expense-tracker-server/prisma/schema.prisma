@@ -62,6 +62,9 @@ model Category {
   expenses         Expense[]
 
   @@unique([userId, name, type])
+  @@index([userId, type])
+  @@index([isSystem])
+  @@index([type])
   @@map("categories")
 }
 
@@ -93,6 +96,11 @@ model Expense {
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   splitExpense       SplitExpense[]
 
+  @@index([userId, expenseDate(sort: Desc)])
+  @@index([categoryId])
+  @@index([userId, deletedAt])
+  @@index([expenseDate])
+  @@index([userId, categoryId, expenseDate])
   @@map("expenses")
 }
 
@@ -131,6 +139,9 @@ model SplitExpense {
   paidByUser   User               @relation("PaidBy", fields: [paidByUserId], references: [id])
   participants SplitParticipant[]
 
+  @@index([paidByUserId])
+  @@index([isSettled])
+  @@index([expenseId])
   @@map("split_expenses")
 }
 
@@ -173,6 +184,10 @@ model Loan {
   borrower        User          @relation("Borrower", fields: [borrowerUserId], references: [id])
   lender          User          @relation("Lender", fields: [lenderUserId], references: [id])
 
+  @@index([lenderUserId, status])
+  @@index([borrowerUserId, status])
+  @@index([dueDate])
+  @@index([status])
   @@map("loans")
 }
 

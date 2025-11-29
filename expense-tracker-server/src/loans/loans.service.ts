@@ -10,11 +10,14 @@ import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { CreateLoanPaymentDto } from './dto/create-loan-payment.dto';
 import { InviteLoanDto } from './dto/invite-loan.dto';
+import { LoanQueryDto, LoanRole } from './dto/loan-query.dto';
+import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
+import { QueryBuilder } from '../common/utils/query-builder.util';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class LoansService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createLoanDto: CreateLoanDto, userId: string) {
     // Validation: At least one lender and one borrower identifier must be provided
@@ -73,24 +76,114 @@ export class LoansService {
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.loan.findMany({
-      where: {
-        OR: [
-          { lenderUserId: userId },
-          { borrowerUserId: userId },
-          { createdByUserId: userId },
-        ],
+  async findAll(userId: string, query: LoanQueryDto) {
+    // Build where clause based on role
+    const where: Prisma.LoanWhereInput = {};
+
+    if (query.role === LoanRole.LENDER) {
+      where.lenderUserId = userId;
+    } else if (query.role === LoanRole.BORROWER) {
+      where.borrowerUserId = userId;
+    } else {
+      // ALL - user is either lender or borrower
+      where.OR = [
+        { lenderUserId: userId },
+        { borrowerUserId: userId },
+      ];
+    }
+
+    // Add filters
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    if (query.minAmount !== undefined || query.maxAmount !== undefined) {
+      where.amount = QueryBuilder.buildNumberRangeFilter(
+        query.minAmount,
+        query.maxAmount,
+      );
+    }
+
+    if (query.startDate || query.endDate) {
+      where.loanDate = QueryBuilder.buildDateRangeFilter(
+        query.startDate,
+        query.endDate,
+      );
+    }
+
+    if (query.overdue) {
+      where.dueDate = {
+        lt: new Date(),
+      };
+      where.status = 'active'; // Only active loans can be overdue
+    }
+
+    if (query.search) {
+      const searchFilter = QueryBuilder.buildTextSearchFilter(query.search, [
+        'description',
+      ]);
+      if (searchFilter) {
+        Object.assign(where, searchFilter);
+      }
+    }
+
+    // Build orderBy clause
+    const allowedSortFields = ['dueDate', 'amount', 'loanDate', 'createdAt', 'status'];
+    const sortBy = query.sortBy && allowedSortFields.includes(query.sortBy)
+      ? query.sortBy
+      : 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
+
+    const orderBy: Prisma.LoanOrderByWithRelationInput = {
+      [sortBy]: sortOrder,
+    };
+
+    // Get total count
+    const total = await this.prisma.loan.count({ where });
+
+    // Get paginated data with optimized includes
+    const data = await this.prisma.loan.findMany({
+      where,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        interestRate: true,
+        description: true,
+        loanDate: true,
+        dueDate: true,
+        status: true,
+        amountPaid: true,
+        amountRemaining: true,
+        paymentTerms: true,
+        createdAt: true,
+        updatedAt: true,
+        lender: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            profilePictureUrl: true,
+          },
+        },
+        borrower: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            profilePictureUrl: true,
+          },
+        },
+        _count: {
+          select: { payments: true },
+        },
       },
-      include: {
-        lender: true,
-        borrower: true,
-        payments: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy,
+      skip: query.skip,
+      take: query.take,
     });
+
+    return new PaginatedResponseDto(data, query.page || 1, query.limit || 20, total);
   }
 
   async findOne(id: string, userId: string) {

@@ -4,96 +4,179 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
-import { SplitExpense } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSplitExpenseDto } from './dto/create-split-expense.dto';
 import { UpdateSplitExpenseDto } from './dto/update-split-expense.dto';
-import * as crypto from 'crypto';
+import { SplitQueryDto } from './dto/split-query.dto';
+import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
+import { QueryBuilder } from '../common/utils/query-builder.util';
 
 @Injectable()
 export class SplitsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createSplitExpenseDto: CreateSplitExpenseDto, userId: string) {
-    // Validation
-    if (!createSplitExpenseDto.expenseId && !createSplitExpenseDto.groupId) {
+    const { participants, ...splitData } = createSplitExpenseDto;
+
+    // Validate participants
+    if (!participants || participants.length === 0) {
+      throw new BadRequestException('At least one participant is required');
+    }
+
+    // Calculate total amount owed
+    const totalOwed = participants.reduce(
+      (sum, p) => sum + Number(p.amountOwed),
+      0,
+    );
+
+    if (Math.abs(totalOwed - Number(splitData.totalAmount)) > 0.01) {
       throw new BadRequestException(
-        'Either expenseId or groupId must be provided',
+        'Sum of participant amounts must equal total amount',
       );
     }
 
-    // Validate split totals
-    this.validateSplitTotals(createSplitExpenseDto);
-
-    // Calculate amounts for each participant based on split type
-    const participants = this.calculateParticipantAmounts(
-      createSplitExpenseDto,
-    );
-
     return this.prisma.splitExpense.create({
       data: {
-        expenseId: createSplitExpenseDto.expenseId,
-        groupId: createSplitExpenseDto.groupId,
-        totalAmount: createSplitExpenseDto.totalAmount,
-        currency: createSplitExpenseDto.currency || 'USD',
-        splitType: createSplitExpenseDto.splitType,
-        paidByUserId: createSplitExpenseDto.paidByUserId,
-        paidByName: createSplitExpenseDto.paidByName,
-        paidByEmail: createSplitExpenseDto.paidByEmail,
-        createdByUserId: userId,
-        description: createSplitExpenseDto.description,
+        ...splitData,
+        paidByUserId: userId,
         participants: {
           create: participants.map((p) => ({
             userId: p.userId,
-            participantName: p.participantName,
-            participantEmail: p.participantEmail,
-            participantPhone: p.participantPhone,
             amountOwed: p.amountOwed,
             percentage: p.percentage,
             shares: p.shares,
-            inviteToken:
-              p.participantEmail && !p.userId
-                ? crypto.randomBytes(32).toString('hex')
-                : null,
           })),
         },
       },
       include: {
-        expense: true,
-        group: true,
-        paidByUser: true,
-        participants: {
-          include: {
-            user: true,
+        paidByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
           },
         },
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+        expense: true,
       },
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.splitExpense.findMany({
-      where: {
-        OR: [
-          { paidByUserId: userId },
-          { createdByUserId: userId },
-          { participants: { some: { userId: userId } } },
-        ],
-      },
-      include: {
-        expense: true,
-        group: true,
-        paidByUser: true,
-        participants: {
-          include: {
-            user: true,
+  async findAll(userId: string, query: SplitQueryDto) {
+    // Build where clause - user is either payer or participant
+    const where: Prisma.SplitExpenseWhereInput = {
+      OR: [
+        { paidByUserId: userId },
+        {
+          participants: {
+            some: {
+              userId: userId,
+            },
           },
         },
+      ],
+    };
+
+    // Add filters
+    if (query.isSettled !== undefined) {
+      where.isSettled = query.isSettled;
+    }
+
+    if (query.splitType) {
+      where.splitType = query.splitType;
+    }
+
+    if (query.minAmount !== undefined || query.maxAmount !== undefined) {
+      where.totalAmount = QueryBuilder.buildNumberRangeFilter(
+        query.minAmount,
+        query.maxAmount,
+      );
+    }
+
+    if (query.search) {
+      const searchFilter = QueryBuilder.buildTextSearchFilter(query.search, [
+        'description',
+      ]);
+      if (searchFilter) {
+        Object.assign(where, searchFilter);
+      }
+    }
+
+    // Build orderBy clause
+    const allowedSortFields = ['createdAt', 'totalAmount', 'isSettled', 'updatedAt'];
+    const sortBy = query.sortBy && allowedSortFields.includes(query.sortBy)
+      ? query.sortBy
+      : 'createdAt';
+    const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
+
+    const orderBy: Prisma.SplitExpenseOrderByWithRelationInput = {
+      [sortBy]: sortOrder,
+    };
+
+    // Get total count
+    const total = await this.prisma.splitExpense.count({ where });
+
+    // Get paginated data with optimized includes
+    const data = await this.prisma.splitExpense.findMany({
+      where,
+      select: {
+        id: true,
+        expenseId: true,
+        totalAmount: true,
+        currency: true,
+        splitType: true,
+        description: true,
+        isSettled: true,
+        settledAt: true,
+        createdAt: true,
+        updatedAt: true,
+        paidByUser: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            profilePictureUrl: true,
+          },
+        },
+        participants: {
+          select: {
+            id: true,
+            amountOwed: true,
+            amountPaid: true,
+            percentage: true,
+            shares: true,
+            isSettled: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                profilePictureUrl: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { participants: true },
+        },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy,
+      skip: query.skip,
+      take: query.take,
     });
+
+    return new PaginatedResponseDto(data, query.page || 1, query.limit || 20, total);
   }
 
   async findOne(id: string, userId: string) {

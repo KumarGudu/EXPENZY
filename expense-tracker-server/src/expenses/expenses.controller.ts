@@ -22,7 +22,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('expenses')
 @UseGuards(JwtAuthGuard)
 export class ExpensesController {
-  constructor(private readonly expensesService: ExpensesService) { }
+  constructor(private readonly expensesService: ExpensesService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new expense' })
@@ -34,11 +34,10 @@ export class ExpensesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all expenses with pagination, sorting, and filtering' })
-  findAll(
-    @CurrentUser() user: JwtPayload,
-    @Query() query: ExpenseQueryDto,
-  ) {
+  @ApiOperation({
+    summary: 'Get all expenses with pagination, sorting, and filtering',
+  })
+  findAll(@CurrentUser() user: JwtPayload, @Query() query: ExpenseQueryDto) {
     return this.expensesService.findAll(user.userId, query);
   }
 

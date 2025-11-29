@@ -7,20 +7,25 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SplitsService } from './splits.service';
 import { CreateSplitExpenseDto } from './dto/create-split-expense.dto';
 import { UpdateSplitExpenseDto } from './dto/update-split-expense.dto';
+import { SplitQueryDto } from './dto/split-query.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 
-@Controller('split-expenses')
+@ApiTags('splits')
+@Controller('splits')
 @UseGuards(JwtAuthGuard)
 export class SplitsController {
-  constructor(private readonly splitsService: SplitsService) {}
+  constructor(private readonly splitsService: SplitsService) { }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new split expense' })
   create(
     @Body() createSplitExpenseDto: CreateSplitExpenseDto,
     @CurrentUser() user: JwtPayload,
@@ -29,8 +34,9 @@ export class SplitsController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
-    return this.splitsService.findAll(user.userId);
+  @ApiOperation({ summary: 'Get all split expenses with pagination, sorting, and filtering' })
+  findAll(@CurrentUser() user: JwtPayload, @Query() query: SplitQueryDto) {
+    return this.splitsService.findAll(user.userId, query);
   }
 
   @Get(':id')

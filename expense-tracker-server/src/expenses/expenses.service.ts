@@ -13,7 +13,7 @@ import { QueryBuilder } from '../common/utils/query-builder.util';
 
 @Injectable()
 export class ExpensesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createExpenseDto: CreateExpenseDto, userId: string) {
     return this.prisma.expense.create({
@@ -89,10 +89,16 @@ export class ExpensesService {
     }
 
     // Build orderBy clause
-    const allowedSortFields = ['expenseDate', 'amount', 'createdAt', 'updatedAt'];
-    const sortBy = query.sortBy && allowedSortFields.includes(query.sortBy)
-      ? query.sortBy
-      : 'expenseDate';
+    const allowedSortFields = [
+      'expenseDate',
+      'amount',
+      'createdAt',
+      'updatedAt',
+    ];
+    const sortBy =
+      query.sortBy && allowedSortFields.includes(query.sortBy)
+        ? query.sortBy
+        : 'expenseDate';
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
     const orderBy: Prisma.ExpenseOrderByWithRelationInput = {
@@ -113,7 +119,12 @@ export class ExpensesService {
       take: query.take,
     });
 
-    return new PaginatedResponseDto(data, query.page || 1, query.limit || 20, total);
+    return new PaginatedResponseDto(
+      data,
+      query.page || 1,
+      query.limit || 20,
+      total,
+    );
   }
 
   async findOne(id: string, userId: string) {

@@ -36,7 +36,9 @@ async function bootstrap() {
   // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('Expense Tracker API')
-    .setDescription('Advanced multi-user expense tracking system with comprehensive features')
+    .setDescription(
+      'Advanced multi-user expense tracking system with comprehensive features',
+    )
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management')

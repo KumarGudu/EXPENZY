@@ -7,22 +7,27 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { LoansService } from './loans.service';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { CreateLoanPaymentDto } from './dto/create-loan-payment.dto';
 import { InviteLoanDto } from './dto/invite-loan.dto';
+import { LoanQueryDto } from './dto/loan-query.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
 
+@ApiTags('loans')
 @Controller('loans')
 @UseGuards(JwtAuthGuard)
 export class LoansController {
-  constructor(private readonly loansService: LoansService) {}
+  constructor(private readonly loansService: LoansService) { }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new loan' })
   create(
     @Body() createLoanDto: CreateLoanDto,
     @CurrentUser() user: JwtPayload,
@@ -31,8 +36,9 @@ export class LoansController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
-    return this.loansService.findAll(user.userId);
+  @ApiOperation({ summary: 'Get all loans with pagination, sorting, and filtering' })
+  findAll(@CurrentUser() user: JwtPayload, @Query() query: LoanQueryDto) {
+    return this.loansService.findAll(user.userId, query);
   }
 
   @Get(':id')
