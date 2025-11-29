@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -20,12 +22,29 @@ import { TagsModule } from './tags/tags.module';
 import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { UserSettingsModule } from './user-settings/user-settings.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { configuration } from './config/configuration';
+import { validationSchema } from './config/env.validation';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [configuration],
+      validationSchema: validationSchema,
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: false,
+      },
     }),
+    // Rate Limiting - 100 requests per minute per IP
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 60 seconds
+        limit: 100, // 100 requests
+      },
+    ]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -44,8 +63,17 @@ import { UserSettingsModule } from './user-settings/user-settings.module';
     PaymentMethodsModule,
     AccountsModule,
     UserSettingsModule,
+    AnalyticsModule,
+    SchedulerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Apply rate limiting globally
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

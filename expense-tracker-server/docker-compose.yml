@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: expense-tracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-expense_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-expense_password}
+      POSTGRES_DB: ${POSTGRES_DB:-expense_tracker}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-expense_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: expense-tracker-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: expense-tracker-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-expense_user}:${POSTGRES_PASSWORD:-expense_password}@postgres:5432/${POSTGRES_DB:-expense_tracker}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 5000
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm run start:prod"
+
+volumes:
+  postgres_data:
+  redis_data:

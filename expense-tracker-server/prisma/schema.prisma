@@ -487,6 +487,8 @@ model Income {
   @@index([userId, source])
   @@index([userId, isRecurring])
   @@index([recurringPatternId])
+  @@index([userId, categoryId])
+  @@index([incomeDate])
   @@map("incomes")
 }
 
@@ -536,6 +538,8 @@ model SavingsGoal {
   @@index([userId, isCompleted, isArchived])
   @@index([userId, targetDate])
   @@index([userId, priority])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([isCompleted, isArchived])
   @@map("savings_goals")
 }
 
@@ -587,6 +591,8 @@ model Subscription {
   @@index([userId, nextBillingDate])
   @@index([nextBillingDate, isActive])
   @@index([billingCycle])
+  @@index([userId, billingCycle])
+  @@index([categoryId])
   @@map("subscriptions")
 }
 
@@ -607,6 +613,7 @@ model Tag {
 
   @@unique([userId, name])
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("tags")
 }
 
@@ -646,6 +653,7 @@ model PaymentMethod {
 
   @@index([userId, isActive])
   @@index([userId, isDefault])
+  @@index([userId, type])
   @@map("payment_methods")
 }
 
@@ -674,6 +682,8 @@ model Account {
 
   @@index([userId, isActive])
   @@index([userId, includeInTotal])
+  @@index([userId, type])
+  @@index([type])
   @@map("accounts")
 }
 
@@ -692,6 +702,7 @@ model AccountTransaction {
 
   @@index([accountId, date(sort: Desc)])
   @@index([relatedType, relatedId])
+  @@index([accountId, type, date(sort: Desc)])
   @@map("account_transactions")
 }
 
