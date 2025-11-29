@@ -8,40 +8,53 @@ datasource db {
 }
 
 model User {
-  id                  String             @id @default(uuid())
-  email               String             @unique
-  username            String             @unique
-  passwordHash        String?            @map("password_hash")
-  phone               String?
-  defaultCurrency     String             @default("USD") @map("default_currency")
-  timezone            String             @default("UTC")
-  profilePictureUrl   String?            @map("profile_picture_url")
-  isActive            Boolean            @default(true) @map("is_active")
-  isVerified          Boolean            @default(false) @map("is_verified")
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
-  lastLoginAt         DateTime?          @map("last_login_at")
-  isDeleted           Boolean            @default(false) @map("is_deleted")
-  deletedAt           DateTime?          @map("deleted_at")
-  avatar              String?
-  firstName           String?            @map("first_name")
-  googleId            String?            @unique
-  lastName            String?            @map("last_name")
-  attachments         Attachment[]
-  auditLogs           AuditLog[]
-  budgets             Budget[]
-  categories          Category[]
-  expenses            Expense[]
-  loansBorrowed       Loan[]             @relation("Borrower")
-  loansLent           Loan[]             @relation("Lender")
-  monthlySummaries    MonthlySummary[]
-  notifications       Notification[]
-  recurringPatterns   RecurringPattern[]
-  splitExpensesPaid   SplitExpense[]     @relation("PaidBy")
-  splitParticipations SplitParticipant[]
-  yearlySummaries     YearlySummary[]
-  groupsCreated       Group[]            @relation("GroupCreator")
-  groupMemberships    GroupMember[]      @relation("GroupMemberships")
+  id                   String             @id @default(uuid())
+  email                String             @unique
+  username             String             @unique
+  passwordHash         String?            @map("password_hash")
+  phone                String?
+  defaultCurrency      String             @default("USD") @map("default_currency")
+  timezone             String             @default("UTC")
+  profilePictureUrl    String?            @map("profile_picture_url")
+  isActive             Boolean            @default(true) @map("is_active")
+  isVerified           Boolean            @default(false) @map("is_verified")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+  lastLoginAt          DateTime?          @map("last_login_at")
+  isDeleted            Boolean            @default(false) @map("is_deleted")
+  deletedAt            DateTime?          @map("deleted_at")
+  avatar               String?
+  firstName            String?            @map("first_name")
+  googleId             String?            @unique
+  lastName             String?            @map("last_name")
+  monthlyIncomeTarget  Decimal?           @map("monthly_income_target") @db.Decimal(15, 2)
+  monthlyExpenseTarget Decimal?           @map("monthly_expense_target") @db.Decimal(15, 2)
+  onboardingCompleted  Boolean            @default(false) @map("onboarding_completed")
+  twoFactorEnabled     Boolean            @default(false) @map("two_factor_enabled")
+  lastPasswordChange   DateTime?          @map("last_password_change")
+  attachments          Attachment[]
+  auditLogs            AuditLog[]
+  budgets              Budget[]
+  categories           Category[]
+  expenses             Expense[]
+  loansBorrowed        Loan[]             @relation("Borrower")
+  loansLent            Loan[]             @relation("Lender")
+  monthlySummaries     MonthlySummary[]
+  notifications        Notification[]
+  recurringPatterns    RecurringPattern[]
+  splitExpensesPaid    SplitExpense[]     @relation("PaidBy")
+  splitParticipations  SplitParticipant[]
+  yearlySummaries      YearlySummary[]
+  groupsCreated        Group[]            @relation("GroupCreator")
+  groupMemberships     GroupMember[]      @relation("GroupMemberships")
+  incomes              Income[]
+  incomeCategories     IncomeCategory[]
+  savingsGoals         SavingsGoal[]
+  subscriptions        Subscription[]
+  tags                 Tag[]
+  paymentMethods       PaymentMethod[]
+  accounts             Account[]
+  settings             UserSettings?
 
   @@index([email])
   @@index([googleId])
@@ -52,21 +65,22 @@ model User {
 }
 
 model Category {
-  id               String     @id @default(uuid())
-  userId           String?    @map("user_id")
+  id               String         @id @default(uuid())
+  userId           String?        @map("user_id")
   name             String
   icon             String?
   color            String?
   type             String
-  isSystem         Boolean    @default(false) @map("is_system")
-  parentCategoryId String?    @map("parent_category_id")
-  createdAt        DateTime   @default(now()) @map("created_at")
-  updatedAt        DateTime   @updatedAt @map("updated_at")
+  isSystem         Boolean        @default(false) @map("is_system")
+  parentCategoryId String?        @map("parent_category_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
   budgets          Budget[]
-  parentCategory   Category?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
-  subCategories    Category[] @relation("CategoryHierarchy")
-  user             User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentCategory   Category?      @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id])
+  subCategories    Category[]     @relation("CategoryHierarchy")
+  user             User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses         Expense[]
+  subscriptions    Subscription[]
 
   @@unique([userId, name, type])
   @@index([userId, type])
@@ -93,7 +107,6 @@ model Expense {
   recurringPatternId String?           @map("recurring_pattern_id")
   receiptUrl         String?           @map("receipt_url")
   notes              String?
-  tags               String[]
   locationLat        Decimal?          @map("location_lat") @db.Decimal(10, 8)
   locationLng        Decimal?          @map("location_lng") @db.Decimal(11, 8)
   locationName       String?           @map("location_name")
@@ -104,6 +117,7 @@ model Expense {
   recurringPattern   RecurringPattern? @relation(fields: [recurringPatternId], references: [id])
   user               User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   splitExpense       SplitExpense[]
+  expenseTags        ExpenseTag[]
 
   @@index([userId, expenseDate(sort: Desc)])
   @@index([categoryId])
@@ -115,7 +129,6 @@ model Expense {
   @@index([userId, currency])
   @@index([paymentMethod])
   @@index([userId, createdAt(sort: Desc)])
-  @@index([tags]) // GIN index for array search
   @@map("expenses")
 }
 
@@ -133,6 +146,7 @@ model RecurringPattern {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   expenses       Expense[]
+  incomes        Income[]
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isActive])
@@ -241,21 +255,23 @@ model LoanPayment {
 }
 
 model Budget {
-  id             String    @id @default(uuid())
-  userId         String    @map("user_id")
-  categoryId     String?   @map("category_id")
-  amount         Decimal   @db.Decimal(15, 2)
-  currency       String    @default("USD")
-  periodType     String    @map("period_type")
-  startDate      DateTime  @map("start_date") @db.Date
-  endDate        DateTime  @map("end_date") @db.Date
-  spentAmount    Decimal   @default(0) @map("spent_amount") @db.Decimal(15, 2)
-  alertThreshold Decimal?  @map("alert_threshold") @db.Decimal(5, 2)
-  isActive       Boolean   @default(true) @map("is_active")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  category       Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  categoryId       String?   @map("category_id")
+  amount           Decimal   @db.Decimal(15, 2)
+  currency         String    @default("USD")
+  periodType       String    @map("period_type")
+  startDate        DateTime  @map("start_date") @db.Date
+  endDate          DateTime  @map("end_date") @db.Date
+  spentAmount      Decimal   @default(0) @map("spent_amount") @db.Decimal(15, 2)
+  alertThreshold   Decimal?  @map("alert_threshold") @db.Decimal(5, 2)
+  allowRollover    Boolean   @default(false) @map("allow_rollover")
+  rolledOverAmount Decimal   @default(0) @map("rolled_over_amount") @db.Decimal(15, 2)
+  isActive         Boolean   @default(true) @map("is_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  category         Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isActive])
   @@index([categoryId])
@@ -320,6 +336,12 @@ model Notification {
   message           String
   relatedEntityType String?   @map("related_entity_type")
   relatedEntityId   String?   @map("related_entity_id")
+  priority          String    @default("normal")
+  actionUrl         String?   @map("action_url")
+  actionLabel       String?   @map("action_label")
+  imageUrl          String?   @map("image_url")
+  expiresAt         DateTime? @map("expires_at")
+  category          String?
   isRead            Boolean   @default(false) @map("is_read")
   readAt            DateTime? @map("read_at")
   createdAt         DateTime  @default(now()) @map("created_at")
@@ -329,6 +351,7 @@ model Notification {
   @@index([userId, createdAt(sort: Desc)])
   @@index([type])
   @@index([relatedEntityType, relatedEntityId])
+  @@index([userId, priority, isRead])
   @@map("notifications")
 }
 
@@ -431,4 +454,273 @@ model GroupMember {
   @@index([inviteToken])
   @@index([memberEmail])
   @@map("group_members")
+}
+
+// ============================================
+// INCOME TRACKING MODELS
+// ============================================
+
+model Income {
+  id                 String    @id @default(uuid())
+  userId             String    @map("user_id")
+  categoryId         String?   @map("category_id")
+  amount             Decimal   @db.Decimal(15, 2)
+  currency           String    @default("USD")
+  source             String
+  description        String?
+  incomeDate         DateTime  @map("income_date") @db.Date
+  isRecurring        Boolean   @default(false) @map("is_recurring")
+  recurringPatternId String?   @map("recurring_pattern_id")
+  paymentMethod      String?   @map("payment_method")
+  notes              String?
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category         IncomeCategory?   @relation(fields: [categoryId], references: [id])
+  recurringPattern RecurringPattern? @relation(fields: [recurringPatternId], references: [id])
+
+  @@index([userId, incomeDate(sort: Desc)])
+  @@index([categoryId])
+  @@index([userId, deletedAt])
+  @@index([userId, source])
+  @@index([userId, isRecurring])
+  @@index([recurringPatternId])
+  @@map("incomes")
+}
+
+model IncomeCategory {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  name      String
+  icon      String?
+  color     String?
+  isSystem  Boolean  @default(false) @map("is_system")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incomes Income[]
+
+  @@unique([userId, name])
+  @@index([userId, isSystem])
+  @@map("income_categories")
+}
+
+// ============================================
+// SAVINGS GOALS MODELS
+// ============================================
+
+model SavingsGoal {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  name          String
+  description   String?
+  targetAmount  Decimal   @map("target_amount") @db.Decimal(15, 2)
+  currentAmount Decimal   @default(0) @map("current_amount") @db.Decimal(15, 2)
+  currency      String    @default("USD")
+  targetDate    DateTime? @map("target_date") @db.Date
+  priority      String    @default("medium")
+  icon          String?
+  color         String?
+  isCompleted   Boolean   @default(false) @map("is_completed")
+  completedAt   DateTime? @map("completed_at")
+  isArchived    Boolean   @default(false) @map("is_archived")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user          User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions SavingsContribution[]
+
+  @@index([userId, isCompleted, isArchived])
+  @@index([userId, targetDate])
+  @@index([userId, priority])
+  @@map("savings_goals")
+}
+
+model SavingsContribution {
+  id               String   @id @default(uuid())
+  savingsGoalId    String   @map("savings_goal_id")
+  amount           Decimal  @db.Decimal(15, 2)
+  currency         String   @default("USD")
+  contributionDate DateTime @map("contribution_date") @db.Date
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  savingsGoal SavingsGoal @relation(fields: [savingsGoalId], references: [id], onDelete: Cascade)
+
+  @@index([savingsGoalId, contributionDate(sort: Desc)])
+  @@map("savings_contributions")
+}
+
+// ============================================
+// SUBSCRIPTION TRACKING MODEL
+// ============================================
+
+model Subscription {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  name            String
+  description     String?
+  amount          Decimal   @db.Decimal(15, 2)
+  currency        String    @default("USD")
+  billingCycle    String    @map("billing_cycle")
+  categoryId      String?   @map("category_id")
+  startDate       DateTime  @map("start_date") @db.Date
+  nextBillingDate DateTime  @map("next_billing_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  paymentMethod   String?   @map("payment_method")
+  website         String?
+  reminderDays    Int       @default(3) @map("reminder_days")
+  isActive        Boolean   @default(true) @map("is_active")
+  icon            String?
+  color           String?
+  notes           String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@index([userId, isActive])
+  @@index([userId, nextBillingDate])
+  @@index([nextBillingDate, isActive])
+  @@index([billingCycle])
+  @@map("subscriptions")
+}
+
+// ============================================
+// NORMALIZED TAGS MODELS
+// ============================================
+
+model Tag {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses ExpenseTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("tags")
+}
+
+model ExpenseTag {
+  expenseId String   @map("expense_id")
+  tagId     String   @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([expenseId, tagId])
+  @@index([tagId])
+  @@index([expenseId])
+  @@map("expense_tags")
+}
+
+// ============================================
+// PAYMENT METHODS MODEL
+// ============================================
+
+model PaymentMethod {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  name           String
+  type           String
+  lastFourDigits String?  @map("last_four_digits")
+  bankName       String?  @map("bank_name")
+  icon           String?
+  color          String?
+  isDefault      Boolean  @default(false) @map("is_default")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@index([userId, isDefault])
+  @@map("payment_methods")
+}
+
+// ============================================
+// FINANCIAL ACCOUNTS MODELS
+// ============================================
+
+model Account {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  name           String
+  type           String
+  balance        Decimal  @default(0) @db.Decimal(15, 2)
+  currency       String   @default("USD")
+  bankName       String?  @map("bank_name")
+  accountNumber  String?  @map("account_number")
+  icon           String?
+  color          String?
+  isActive       Boolean  @default(true) @map("is_active")
+  includeInTotal Boolean  @default(true) @map("include_in_total")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions AccountTransaction[]
+
+  @@index([userId, isActive])
+  @@index([userId, includeInTotal])
+  @@map("accounts")
+}
+
+model AccountTransaction {
+  id          String   @id @default(uuid())
+  accountId   String   @map("account_id")
+  type        String
+  amount      Decimal  @db.Decimal(15, 2)
+  description String?
+  date        DateTime @db.Date
+  relatedType String?  @map("related_type")
+  relatedId   String?  @map("related_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, date(sort: Desc)])
+  @@index([relatedType, relatedId])
+  @@map("account_transactions")
+}
+
+// ============================================
+// USER SETTINGS MODEL
+// ============================================
+
+model UserSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique @map("user_id")
+  theme                 String   @default("light")
+  language              String   @default("en")
+  dateFormat            String   @default("YYYY-MM-DD") @map("date_format")
+  timeFormat            String   @default("24h") @map("time_format")
+  weekStartDay          String   @default("monday") @map("week_start_day")
+  defaultView           String   @default("dashboard") @map("default_view")
+  notificationEnabled   Boolean  @default(true) @map("notification_enabled")
+  emailNotifications    Boolean  @default(true) @map("email_notifications")
+  pushNotifications     Boolean  @default(true) @map("push_notifications")
+  budgetAlerts          Boolean  @default(true) @map("budget_alerts")
+  subscriptionReminders Boolean  @default(true) @map("subscription_reminders")
+  loanReminders         Boolean  @default(true) @map("loan_reminders")
+  exportFormat          String   @default("pdf") @map("export_format")
+  biometricEnabled      Boolean  @default(false) @map("biometric_enabled")
+  autoBackup            Boolean  @default(false) @map("auto_backup")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }

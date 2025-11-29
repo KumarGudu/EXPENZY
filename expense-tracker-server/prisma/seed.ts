@@ -8,6 +8,17 @@ async function main() {
 
     // Clear existing data (in reverse order of dependencies)
     console.log('🧹 Cleaning existing data...');
+    await prisma.accountTransaction.deleteMany();
+    await prisma.account.deleteMany();
+    await prisma.savingsContribution.deleteMany();
+    await prisma.savingsGoal.deleteMany();
+    await prisma.subscription.deleteMany();
+    await prisma.expenseTag.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.income.deleteMany();
+    await prisma.incomeCategory.deleteMany();
+    await prisma.paymentMethod.deleteMany();
+    await prisma.userSettings.deleteMany();
     await prisma.loanPayment.deleteMany();
     await prisma.loan.deleteMany();
     await prisma.splitParticipant.deleteMany();
@@ -182,7 +193,6 @@ async function main() {
                 description: 'Lunch at Italian Restaurant',
                 expenseDate: new Date('2024-11-25'),
                 paymentMethod: 'credit_card',
-                tags: ['restaurant', 'italian'],
                 notes: 'Team lunch',
             },
         }),
@@ -195,7 +205,6 @@ async function main() {
                 description: 'Uber to office',
                 expenseDate: new Date('2024-11-26'),
                 paymentMethod: 'debit_card',
-                tags: ['uber', 'commute'],
             },
         }),
         prisma.expense.create({
@@ -209,7 +218,6 @@ async function main() {
                 paymentMethod: 'bank_transfer',
                 isRecurring: true,
                 recurringPatternId: recurringPattern1.id,
-                tags: ['utility', 'electricity'],
             },
         }),
         prisma.expense.create({
@@ -223,7 +231,6 @@ async function main() {
                 paymentMethod: 'credit_card',
                 isRecurring: true,
                 recurringPatternId: recurringPattern1.id,
-                tags: ['fitness', 'health'],
             },
         }),
         // User 2 expenses
@@ -236,7 +243,6 @@ async function main() {
                 description: 'New running shoes',
                 expenseDate: new Date('2024-11-20'),
                 paymentMethod: 'credit_card',
-                tags: ['shopping', 'sports'],
             },
         }),
         prisma.expense.create({
@@ -248,7 +254,6 @@ async function main() {
                 description: 'Netflix subscription',
                 expenseDate: new Date('2024-11-01'),
                 paymentMethod: 'credit_card',
-                tags: ['streaming', 'entertainment'],
             },
         }),
         // User 3 expenses
@@ -261,7 +266,6 @@ async function main() {
                 description: 'Flight to Paris',
                 expenseDate: new Date('2024-11-15'),
                 paymentMethod: 'credit_card',
-                tags: ['travel', 'flight'],
             },
         }),
     ]);
@@ -672,6 +676,419 @@ async function main() {
 
     console.log(`✅ Created ${2} attachments`);
 
+    // Create Income Categories
+    console.log('💰 Creating income categories...');
+    const incomeCategories = await Promise.all([
+        prisma.incomeCategory.create({
+            data: {
+                userId: user1.id,
+                name: 'Salary',
+                icon: '💼',
+                color: '#4CAF50',
+            },
+        }),
+        prisma.incomeCategory.create({
+            data: {
+                userId: user1.id,
+                name: 'Freelance',
+                icon: '💻',
+                color: '#2196F3',
+            },
+        }),
+        prisma.incomeCategory.create({
+            data: {
+                userId: user2.id,
+                name: 'Investment',
+                icon: '📈',
+                color: '#9C27B0',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${incomeCategories.length} income categories`);
+
+    // Create Income
+    console.log('💵 Creating income entries...');
+    const incomes = await Promise.all([
+        prisma.income.create({
+            data: {
+                userId: user1.id,
+                categoryId: incomeCategories[0].id,
+                source: 'Monthly Salary',
+                amount: 5000.0,
+                currency: 'USD',
+                incomeDate: new Date('2024-11-01'),
+                isRecurring: true,
+                recurringPatternId: recurringPattern1.id,
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user1.id,
+                categoryId: incomeCategories[1].id,
+                source: 'Web Development Project',
+                amount: 1500.0,
+                currency: 'USD',
+                incomeDate: new Date('2024-11-15'),
+                notes: 'Client project completion',
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user2.id,
+                categoryId: incomeCategories[2].id,
+                source: 'Stock Dividends',
+                amount: 250.0,
+                currency: 'USD',
+                incomeDate: new Date('2024-11-20'),
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${incomes.length} income entries`);
+
+    // Create Savings Goals
+    console.log('🎯 Creating savings goals...');
+    const savingsGoals = await Promise.all([
+        prisma.savingsGoal.create({
+            data: {
+                userId: user1.id,
+                name: 'Emergency Fund',
+                description: 'Build 6 months emergency fund',
+                targetAmount: 15000.0,
+                currentAmount: 5000.0,
+                currency: 'USD',
+                targetDate: new Date('2025-12-31'),
+                priority: 'high',
+                icon: '🚨',
+                color: '#F44336',
+            },
+        }),
+        prisma.savingsGoal.create({
+            data: {
+                userId: user1.id,
+                name: 'Vacation to Europe',
+                description: 'Summer vacation 2025',
+                targetAmount: 5000.0,
+                currentAmount: 1200.0,
+                currency: 'USD',
+                targetDate: new Date('2025-06-01'),
+                priority: 'medium',
+                icon: '✈️',
+                color: '#2196F3',
+            },
+        }),
+        prisma.savingsGoal.create({
+            data: {
+                userId: user2.id,
+                name: 'New Laptop',
+                description: 'MacBook Pro M3',
+                targetAmount: 2500.0,
+                currentAmount: 800.0,
+                currency: 'USD',
+                priority: 'low',
+                icon: '💻',
+                color: '#9E9E9E',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${savingsGoals.length} savings goals`);
+
+    // Create Savings Contributions
+    console.log('💰 Creating savings contributions...');
+    await Promise.all([
+        prisma.savingsContribution.create({
+            data: {
+                savingsGoalId: savingsGoals[0].id,
+                amount: 2000.0,
+                currency: 'USD',
+                contributionDate: new Date('2024-10-01'),
+            },
+        }),
+        prisma.savingsContribution.create({
+            data: {
+                savingsGoalId: savingsGoals[0].id,
+                amount: 1500.0,
+                currency: 'USD',
+                contributionDate: new Date('2024-11-01'),
+            },
+        }),
+        prisma.savingsContribution.create({
+            data: {
+                savingsGoalId: savingsGoals[1].id,
+                amount: 600.0,
+                currency: 'USD',
+                contributionDate: new Date('2024-11-10'),
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${3} savings contributions`);
+
+    // Create Subscriptions
+    console.log('📱 Creating subscriptions...');
+    const subscriptions = await Promise.all([
+        prisma.subscription.create({
+            data: {
+                userId: user1.id,
+                name: 'Netflix',
+                amount: 15.99,
+                currency: 'USD',
+                billingCycle: 'monthly',
+                categoryId: createdSystemCategories[3].id,
+                startDate: new Date('2024-01-01'),
+                nextBillingDate: new Date('2024-12-01'),
+                reminderDays: 3,
+                icon: '🎬',
+                color: '#E50914',
+            },
+        }),
+        prisma.subscription.create({
+            data: {
+                userId: user1.id,
+                name: 'Spotify Premium',
+                amount: 9.99,
+                currency: 'USD',
+                billingCycle: 'monthly',
+                categoryId: createdSystemCategories[3].id,
+                startDate: new Date('2024-01-01'),
+                nextBillingDate: new Date('2024-12-01'),
+                icon: '🎵',
+                color: '#1DB954',
+            },
+        }),
+        prisma.subscription.create({
+            data: {
+                userId: user2.id,
+                name: 'Adobe Creative Cloud',
+                amount: 54.99,
+                currency: 'USD',
+                billingCycle: 'monthly',
+                startDate: new Date('2024-01-01'),
+                nextBillingDate: new Date('2024-12-01'),
+                icon: '🎨',
+                color: '#FF0000',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${subscriptions.length} subscriptions`);
+
+    // Create Tags
+    console.log('🏷️ Creating tags...');
+    const tags = await Promise.all([
+        prisma.tag.create({
+            data: {
+                userId: user1.id,
+                name: 'work',
+                color: '#2196F3',
+            },
+        }),
+        prisma.tag.create({
+            data: {
+                userId: user1.id,
+                name: 'personal',
+                color: '#4CAF50',
+            },
+        }),
+        prisma.tag.create({
+            data: {
+                userId: user1.id,
+                name: 'urgent',
+                color: '#F44336',
+            },
+        }),
+        prisma.tag.create({
+            data: {
+                userId: user2.id,
+                name: 'business',
+                color: '#FF9800',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${tags.length} tags`);
+
+    // Attach tags to expenses
+    console.log('🔗 Attaching tags to expenses...');
+    await Promise.all([
+        prisma.expenseTag.create({
+            data: {
+                expenseId: expenses[0].id,
+                tagId: tags[0].id,
+            },
+        }),
+        prisma.expenseTag.create({
+            data: {
+                expenseId: expenses[1].id,
+                tagId: tags[0].id,
+            },
+        }),
+        prisma.expenseTag.create({
+            data: {
+                expenseId: expenses[2].id,
+                tagId: tags[1].id,
+            },
+        }),
+    ]);
+
+    console.log(`✅ Attached tags to expenses`);
+
+    // Create Payment Methods
+    console.log('💳 Creating payment methods...');
+    const paymentMethods = await Promise.all([
+        prisma.paymentMethod.create({
+            data: {
+                userId: user1.id,
+                name: 'Chase Visa',
+                type: 'credit_card',
+                lastFourDigits: '4532',
+                bankName: 'Chase Bank',
+                isDefault: true,
+                icon: '💳',
+                color: '#1E88E5',
+            },
+        }),
+        prisma.paymentMethod.create({
+            data: {
+                userId: user1.id,
+                name: 'Debit Card',
+                type: 'debit_card',
+                lastFourDigits: '8765',
+                bankName: 'Bank of America',
+                icon: '💳',
+                color: '#43A047',
+            },
+        }),
+        prisma.paymentMethod.create({
+            data: {
+                userId: user2.id,
+                name: 'Cash',
+                type: 'cash',
+                isDefault: true,
+                icon: '💵',
+                color: '#4CAF50',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${paymentMethods.length} payment methods`);
+
+    // Create Accounts
+    console.log('🏦 Creating accounts...');
+    const accounts = await Promise.all([
+        prisma.account.create({
+            data: {
+                userId: user1.id,
+                name: 'Checking Account',
+                type: 'checking',
+                balance: 5000.0,
+                currency: 'USD',
+                bankName: 'Chase Bank',
+                accountNumber: '****1234',
+                includeInTotal: true,
+                icon: '🏦',
+                color: '#1E88E5',
+            },
+        }),
+        prisma.account.create({
+            data: {
+                userId: user1.id,
+                name: 'Savings Account',
+                type: 'savings',
+                balance: 15000.0,
+                currency: 'USD',
+                bankName: 'Chase Bank',
+                accountNumber: '****5678',
+                includeInTotal: true,
+                icon: '💰',
+                color: '#43A047',
+            },
+        }),
+        prisma.account.create({
+            data: {
+                userId: user2.id,
+                name: 'Cash Wallet',
+                type: 'cash',
+                balance: 500.0,
+                currency: 'USD',
+                includeInTotal: true,
+                icon: '💵',
+                color: '#4CAF50',
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${accounts.length} accounts`);
+
+    // Create Account Transactions
+    console.log('💸 Creating account transactions...');
+    await Promise.all([
+        prisma.accountTransaction.create({
+            data: {
+                accountId: accounts[0].id,
+                type: 'credit',
+                amount: 5000.0,
+                description: 'Salary deposit',
+                date: new Date('2024-11-01'),
+            },
+        }),
+        prisma.accountTransaction.create({
+            data: {
+                accountId: accounts[0].id,
+                type: 'debit',
+                amount: 500.0,
+                description: 'Rent payment',
+                date: new Date('2024-11-05'),
+            },
+        }),
+        prisma.accountTransaction.create({
+            data: {
+                accountId: accounts[1].id,
+                type: 'credit',
+                amount: 2000.0,
+                description: 'Monthly savings',
+                date: new Date('2024-11-01'),
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${3} account transactions`);
+
+    // Create User Settings
+    console.log('⚙️ Creating user settings...');
+    await Promise.all([
+        prisma.userSettings.create({
+            data: {
+                userId: user1.id,
+                theme: 'dark',
+                language: 'en',
+                dateFormat: 'MM/DD/YYYY',
+                timeFormat: '12h',
+                weekStartDay: 'monday',
+                notificationEnabled: true,
+                emailNotifications: true,
+                budgetAlerts: true,
+                subscriptionReminders: true,
+            },
+        }),
+        prisma.userSettings.create({
+            data: {
+                userId: user2.id,
+                theme: 'light',
+                language: 'en',
+                dateFormat: 'DD/MM/YYYY',
+                timeFormat: '24h',
+                weekStartDay: 'sunday',
+                notificationEnabled: true,
+                pushNotifications: true,
+            },
+        }),
+    ]);
+
+    console.log(`✅ Created ${2} user settings`);
+
     console.log('\n✨ Database seeding completed successfully!');
     console.log('\n📊 Summary:');
     console.log(`   - Users: 3`);
@@ -688,6 +1105,16 @@ async function main() {
     console.log(`   - Audit Logs: 2`);
     console.log(`   - Exchange Rates: 4`);
     console.log(`   - Attachments: 2`);
+    console.log(`   - Income Categories: ${incomeCategories.length}`);
+    console.log(`   - Income Entries: ${incomes.length}`);
+    console.log(`   - Savings Goals: ${savingsGoals.length}`);
+    console.log(`   - Savings Contributions: 3`);
+    console.log(`   - Subscriptions: ${subscriptions.length}`);
+    console.log(`   - Tags: ${tags.length}`);
+    console.log(`   - Payment Methods: ${paymentMethods.length}`);
+    console.log(`   - Accounts: ${accounts.length}`);
+    console.log(`   - Account Transactions: 3`);
+    console.log(`   - User Settings: 2`);
     console.log('\n🔐 Test User Credentials:');
     console.log('   Email: john.doe@example.com');
     console.log('   Password: password123');

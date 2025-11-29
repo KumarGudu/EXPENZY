@@ -29,7 +29,6 @@ export class ExpensesService {
         paymentMethod: createExpenseDto.paymentMethod,
         receiptUrl: createExpenseDto.receiptUrl,
         notes: createExpenseDto.notes,
-        tags: createExpenseDto.tags,
         locationLat: createExpenseDto.locationLat,
         locationLng: createExpenseDto.locationLng,
         locationName: createExpenseDto.locationName,
@@ -69,13 +68,6 @@ export class ExpensesService {
 
     if (query.currency) {
       where.currency = query.currency;
-    }
-
-    if (query.tags) {
-      const tagsArray = query.getTagsArray();
-      if (tagsArray) {
-        where.tags = QueryBuilder.buildArrayContainsFilter(tagsArray);
-      }
     }
 
     if (query.search) {
@@ -168,7 +160,6 @@ export class ExpensesService {
         paymentMethod: updateExpenseDto.paymentMethod,
         receiptUrl: updateExpenseDto.receiptUrl,
         notes: updateExpenseDto.notes,
-        tags: updateExpenseDto.tags,
         locationLat: updateExpenseDto.locationLat,
         locationLng: updateExpenseDto.locationLng,
         locationName: updateExpenseDto.locationName,
