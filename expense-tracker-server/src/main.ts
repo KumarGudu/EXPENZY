@@ -4,9 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import * as compression from 'compression';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Enable compression for responses
+  app.use(
+    compression({
+      level: 6, // Balance between speed and compression ratio
+      threshold: 1024, // Only compress responses larger than 1KB
+    }),
+  );
 
   // Global Validation Pipe
   app.useGlobalPipes(

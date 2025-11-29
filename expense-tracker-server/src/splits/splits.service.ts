@@ -14,7 +14,7 @@ import { QueryBuilder } from '../common/utils/query-builder.util';
 
 @Injectable()
 export class SplitsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createSplitExpenseDto: CreateSplitExpenseDto, userId: string) {
     const { participants, ...splitData } = createSplitExpenseDto;
@@ -114,10 +114,16 @@ export class SplitsService {
     }
 
     // Build orderBy clause
-    const allowedSortFields = ['createdAt', 'totalAmount', 'isSettled', 'updatedAt'];
-    const sortBy = query.sortBy && allowedSortFields.includes(query.sortBy)
-      ? query.sortBy
-      : 'createdAt';
+    const allowedSortFields = [
+      'createdAt',
+      'totalAmount',
+      'isSettled',
+      'updatedAt',
+    ];
+    const sortBy =
+      query.sortBy && allowedSortFields.includes(query.sortBy)
+        ? query.sortBy
+        : 'createdAt';
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
     const orderBy: Prisma.SplitExpenseOrderByWithRelationInput = {
@@ -176,7 +182,12 @@ export class SplitsService {
       take: query.take,
     });
 
-    return new PaginatedResponseDto(data, query.page || 1, query.limit || 20, total);
+    return new PaginatedResponseDto(
+      data,
+      query.page || 1,
+      query.limit || 20,
+      total,
+    );
   }
 
   async findOne(id: string, userId: string) {

@@ -24,7 +24,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('loans')
 @UseGuards(JwtAuthGuard)
 export class LoansController {
-  constructor(private readonly loansService: LoansService) { }
+  constructor(private readonly loansService: LoansService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new loan' })
@@ -36,7 +36,9 @@ export class LoansController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all loans with pagination, sorting, and filtering' })
+  @ApiOperation({
+    summary: 'Get all loans with pagination, sorting, and filtering',
+  })
   findAll(@CurrentUser() user: JwtPayload, @Query() query: LoanQueryDto) {
     return this.loansService.findAll(user.userId, query);
   }

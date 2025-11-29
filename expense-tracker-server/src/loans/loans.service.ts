@@ -17,7 +17,7 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class LoansService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createLoanDto: CreateLoanDto, userId: string) {
     // Validation: At least one lender and one borrower identifier must be provided
@@ -86,10 +86,7 @@ export class LoansService {
       where.borrowerUserId = userId;
     } else {
       // ALL - user is either lender or borrower
-      where.OR = [
-        { lenderUserId: userId },
-        { borrowerUserId: userId },
-      ];
+      where.OR = [{ lenderUserId: userId }, { borrowerUserId: userId }];
     }
 
     // Add filters
@@ -128,10 +125,17 @@ export class LoansService {
     }
 
     // Build orderBy clause
-    const allowedSortFields = ['dueDate', 'amount', 'loanDate', 'createdAt', 'status'];
-    const sortBy = query.sortBy && allowedSortFields.includes(query.sortBy)
-      ? query.sortBy
-      : 'createdAt';
+    const allowedSortFields = [
+      'dueDate',
+      'amount',
+      'loanDate',
+      'createdAt',
+      'status',
+    ];
+    const sortBy =
+      query.sortBy && allowedSortFields.includes(query.sortBy)
+        ? query.sortBy
+        : 'createdAt';
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
 
     const orderBy: Prisma.LoanOrderByWithRelationInput = {
@@ -183,7 +187,12 @@ export class LoansService {
       take: query.take,
     });
 
-    return new PaginatedResponseDto(data, query.page || 1, query.limit || 20, total);
+    return new PaginatedResponseDto(
+      data,
+      query.page || 1,
+      query.limit || 20,
+      total,
+    );
   }
 
   async findOne(id: string, userId: string) {

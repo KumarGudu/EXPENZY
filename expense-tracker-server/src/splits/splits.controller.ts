@@ -22,7 +22,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('splits')
 @UseGuards(JwtAuthGuard)
 export class SplitsController {
-  constructor(private readonly splitsService: SplitsService) { }
+  constructor(private readonly splitsService: SplitsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new split expense' })
@@ -34,7 +34,9 @@ export class SplitsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all split expenses with pagination, sorting, and filtering' })
+  @ApiOperation({
+    summary: 'Get all split expenses with pagination, sorting, and filtering',
+  })
   findAll(@CurrentUser() user: JwtPayload, @Query() query: SplitQueryDto) {
     return this.splitsService.findAll(user.userId, query);
   }
