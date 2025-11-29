@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
+import { ROUTES } from '@/lib/routes';
 import type { User, AuthState, LoginCredentials, SignupCredentials, AuthResponse } from '@/types';
 
 interface AuthContextType extends AuthState {
@@ -117,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isLoading: false,
         });
 
-        router.push('/login');
+        router.push(ROUTES.LOGIN);
     };
 
     const refreshUser = async () => {

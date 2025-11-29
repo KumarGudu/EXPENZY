@@ -1,32 +1,33 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, List, BarChart3, Wallet, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
+import { LayoutDashboard, Receipt, BarChart3, Wallet, User } from 'lucide-react';
+import { ROUTES } from '@/lib/routes';
 
 const tabs = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Transactions', href: '/transactions', icon: List },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Budget', href: '/budget', icon: Wallet },
-    { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Home', route: ROUTES.DASHBOARD, icon: LayoutDashboard },
+    { name: 'Transactions', route: ROUTES.TRANSACTIONS, icon: Receipt },
+    { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 },
+    { name: 'Budget', route: ROUTES.BUDGET, icon: Wallet },
+    { name: 'Profile', route: ROUTES.PROFILE, icon: User },
 ];
 
 export function BottomNav() {
     const pathname = usePathname();
+    const router = useRouter();
 
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom md:hidden">
             <div className="flex items-center justify-around h-16">
                 {tabs.map((tab) => {
-                    const isActive = pathname === tab.href;
+                    const isActive = pathname === tab.route;
                     const Icon = tab.icon;
 
                     return (
-                        <Link
-                            key={tab.href}
-                            href={tab.href}
+                        <button
+                            key={tab.route}
+                            onClick={() => router.push(tab.route)}
                             className={cn(
                                 'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors',
                                 isActive
@@ -36,7 +37,7 @@ export function BottomNav() {
                         >
                             <Icon className="w-5 h-5" />
                             <span className="text-xs font-medium">{tab.name}</span>
-                        </Link>
+                        </button>
                     );
                 })}
             </div>

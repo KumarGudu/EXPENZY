@@ -1,8 +1,12 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { ArrowRight, BarChart3, PiggyBank, Users, Wallet, TrendingUp, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ROUTES } from '@/lib/routes';
 
 export default function LandingPage() {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Header */}
@@ -15,18 +19,14 @@ export default function LandingPage() {
             <span className="text-2xl font-bold">Expenzy</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Get Started</Button>
-            </Link>
+            <Button variant="ghost" onClick={() => router.push(ROUTES.LOGIN)}>Login</Button>
+            <Button onClick={() => router.push(ROUTES.SIGNUP)}>Get Started</Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 md:py-32">
+      < section className="container mx-auto px-4 py-20 md:py-32" >
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Take Control of Your Finances
@@ -35,23 +35,19 @@ export default function LandingPage() {
             Track expenses, manage budgets, achieve savings goals, and split bills with friends - all in one beautiful app.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="w-full sm:w-auto">
-                Start Free Trial
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Sign In
-              </Button>
-            </Link>
+            <Button size="lg" className="w-full sm:w-auto" onClick={() => router.push(ROUTES.SIGNUP)}>
+              Start Free Trial
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto" onClick={() => router.push(ROUTES.LOGIN)}>
+              Sign In
+            </Button>
           </div>
         </div>
-      </section>
+      </section >
 
       {/* Features Grid */}
-      <section className="container mx-auto px-4 py-20">
+      < section className="container mx-auto px-4 py-20" >
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
           Everything You Need to Manage Money
         </h2>
@@ -87,10 +83,10 @@ export default function LandingPage() {
             description="Bank-level security keeps your financial data safe. Your privacy is our priority."
           />
         </div>
-      </section>
+      </section >
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20">
+      < section className="container mx-auto px-4 py-20" >
         <div className="max-w-3xl mx-auto bg-primary text-primary-foreground rounded-2xl p-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Transform Your Finances?
@@ -98,22 +94,20 @@ export default function LandingPage() {
           <p className="text-xl mb-8 opacity-90">
             Join thousands of users who are already in control of their money.
           </p>
-          <Link href="/signup">
-            <Button size="lg" variant="secondary">
-              Get Started for Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          <Button size="lg" variant="secondary" onClick={() => router.push(ROUTES.SIGNUP)}>
+            Get Started for Free
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
-      </section>
+      </section >
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
+      < footer className="border-t border-border py-8" >
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; 2024 Expenzy. All rights reserved.</p>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 }
 

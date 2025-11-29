@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 import { Mail, Lock, User as UserIcon, Eye, EyeOff } from 'lucide-react';
+import { ROUTES } from '@/lib/routes';
 
 export default function SignupPage() {
     const router = useRouter();
@@ -16,8 +16,13 @@ export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push(ROUTES.DASHBOARD);
+        }
+    }, [isAuthenticated, router]);
+
     if (isAuthenticated) {
-        router.push('/');
         return null;
     }
 
@@ -129,9 +134,13 @@ export default function SignupPage() {
 
             <div className="text-center text-sm">
                 <span className="text-muted-foreground">Already have an account? </span>
-                <Link href="/login" className="text-primary hover:underline font-medium">
+                <button
+                    type="button"
+                    onClick={() => router.push(ROUTES.LOGIN)}
+                    className="text-primary hover:underline font-medium"
+                >
                     Sign in
-                </Link>
+                </button>
             </div>
         </div>
     );

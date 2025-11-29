@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useSavingsGoals, useCreateSavingsGoal, useDeleteSavingsGoal } from '@/lib/hooks/use-savings';
+import { useSavingsGoals, useDeleteSavingsGoal } from '@/lib/hooks/use-savings';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { EmptyState } from '@/components/shared/empty-state';
@@ -13,7 +12,6 @@ import { toast } from 'sonner';
 export default function SavingsGoalsPage() {
     const { data: goals = [], isLoading } = useSavingsGoals();
     const deleteGoal = useDeleteSavingsGoal();
-    const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
         try {

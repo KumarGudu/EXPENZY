@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { ROUTES } from '@/lib/routes';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -22,8 +22,13 @@ export default function LoginPage() {
         password: '',
     });
 
+    useEffect(() => {
+        if (isAuthenticated) {
+            router.push(ROUTES.DASHBOARD);
+        }
+    }, [isAuthenticated, router]);
+
     if (isAuthenticated) {
-        router.push('/');
         return null;
     }
 
@@ -32,8 +37,8 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            await login(formData.email, formData.password);
-            router.push('/');
+            await login(formData);
+            router.push(ROUTES.DASHBOARD);
         } catch {
             toast.error('Invalid email or password');
         } finally {
@@ -143,9 +148,13 @@ export default function LoginPage() {
 
                     <p className="text-center text-sm text-muted-foreground">
                         Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="text-primary hover:underline font-medium">
+                        <button
+                            type="button"
+                            onClick={() => router.push(ROUTES.SIGNUP)}
+                            className="text-primary hover:underline font-medium"
+                        >
                             Sign up
-                        </Link>
+                        </button>
                     </p>
                 </div>
             </div>

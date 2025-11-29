@@ -1,21 +1,22 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Home, List, BarChart3, Wallet, User, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { cn } from '@/lib/utils/cn';
+import { LogOut, LayoutDashboard, Receipt, BarChart3, Wallet, User } from 'lucide-react';
+import { ROUTES } from '@/lib/routes';
 
 const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home },
-    { name: 'Transactions', href: '/transactions', icon: List },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Budget', href: '/budget', icon: Wallet },
-    { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Dashboard', route: ROUTES.DASHBOARD, icon: LayoutDashboard },
+    { name: 'Transactions', route: ROUTES.TRANSACTIONS, icon: Receipt },
+    { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 },
+    { name: 'Budget', route: ROUTES.BUDGET, icon: Wallet },
+    { name: 'Profile', route: ROUTES.PROFILE, icon: User },
 ];
 
 export function DesktopSidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const { user, logout } = useAuth();
 
     return (
@@ -31,15 +32,15 @@ export function DesktopSidebar() {
             {/* Navigation */}
             <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                 {navigation.map((item) => {
-                    const isActive = pathname === item.href;
+                    const isActive = pathname === item.route;
                     const Icon = item.icon;
 
                     return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
+                        <button
+                            key={item.route}
+                            onClick={() => router.push(item.route)}
                             className={cn(
-                                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                                'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors w-full',
                                 isActive
                                     ? 'bg-primary text-primary-foreground'
                                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -47,7 +48,7 @@ export function DesktopSidebar() {
                         >
                             <Icon className="w-5 h-5" />
                             {item.name}
-                        </Link>
+                        </button>
                     );
                 })}
             </nav>

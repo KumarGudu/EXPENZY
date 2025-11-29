@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useDashboardSummary } from '@/lib/hooks/use-analytics';
 import { useSavingsGoals } from '@/lib/hooks/use-savings';
 import { useUpcomingSubscriptions } from '@/lib/hooks/use-subscriptions';
@@ -20,9 +21,10 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import Link from 'next/link';
+import { ROUTES } from '@/lib/routes';
 
 export default function DashboardPage() {
+    const router = useRouter();
     const { data: dashboard, isLoading: dashboardLoading } = useDashboardSummary({ period: 'month' });
     const { data: savingsGoals = [], isLoading: savingsLoading } = useSavingsGoals();
     const { data: upcomingSubscriptions = [], isLoading: subscriptionsLoading } = useUpcomingSubscriptions();
@@ -90,9 +92,9 @@ export default function DashboardPage() {
                             <Target className="w-5 h-5 text-primary" />
                             Savings Goals
                         </h2>
-                        <Link href="/savings">
-                            <Button variant="ghost" size="sm">View All</Button>
-                        </Link>
+                        <Button variant="ghost" size="sm" onClick={() => router.push(ROUTES.SAVINGS)}>
+                            View All
+                        </Button>
                     </div>
 
                     {savingsLoading ? (
@@ -137,9 +139,7 @@ export default function DashboardPage() {
                             <Calendar className="w-5 h-5 text-primary" />
                             Upcoming Subscriptions
                         </h2>
-                        <Link href="/subscriptions">
-                            <Button variant="ghost" size="sm">View All</Button>
-                        </Link>
+                        <Button variant="ghost" size="sm" onClick={() => router.push(ROUTES.SUBSCRIPTIONS)}>View All</Button>
                     </div>
 
                     {subscriptionsLoading ? (
@@ -188,8 +188,8 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-3">
                                     <div
                                         className={`w-10 h-10 rounded-full flex items-center justify-center ${transaction.type === 'income'
-                                                ? 'bg-success/10 text-success'
-                                                : 'bg-destructive/10 text-destructive'
+                                            ? 'bg-success/10 text-success'
+                                            : 'bg-destructive/10 text-destructive'
                                             }`}
                                     >
                                         {transaction.type === 'income' ? (
