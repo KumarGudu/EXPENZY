@@ -10,23 +10,23 @@ export const ROUTES = {
 
     // Dashboard routes
     DASHBOARD: '/dashboard',
-    TRANSACTIONS: '/transactions',
-    ANALYTICS: '/analytics',
-    BUDGET: '/budget',
-    PROFILE: '/profile',
+    TRANSACTIONS: '/dashboard/transactions',
+    ANALYTICS: '/dashboard/analytics',
+    BUDGET: '/dashboard/budget',
+    PROFILE: '/dashboard/profile',
 
     // Feature routes
-    SAVINGS: '/savings',
-    SUBSCRIPTIONS: '/subscriptions',
-    GROUPS: '/groups',
-    LOANS: '/loans',
-    TAGS: '/tags',
-    PAYMENT_METHODS: '/payment-methods',
-    ACCOUNTS: '/accounts',
-    NOTIFICATIONS: '/notifications',
+    SAVINGS: '/dashboard/savings',
+    SUBSCRIPTIONS: '/dashboard/subscriptions',
+    GROUPS: '/dashboard/groups',
+    LOANS: '/dashboard/loans',
+    TAGS: '/dashboard/tags',
+    PAYMENT_METHODS: '/dashboard/payment-methods',
+    ACCOUNTS: '/dashboard/accounts',
+    NOTIFICATIONS: '/dashboard/notifications',
 
     // Settings
-    SETTINGS: '/settings',
+    SETTINGS: '/dashboard/settings',
 } as const;
 
 export type Route = typeof ROUTES[keyof typeof ROUTES];
