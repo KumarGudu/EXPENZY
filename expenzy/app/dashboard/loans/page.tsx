@@ -15,13 +15,13 @@ import { AddLoanModal } from '@/components/modals/add-loan-modal';
 
 interface LoanCardProps {
     id: string;
-    borrower?: { name: string };
-    lender?: { name: string };
+    borrower?: { username: string };
+    lender?: { username: string };
     description?: string;
     amount: number;
-    status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID';
-    totalPaid: number;
-    remainingAmount: number;
+    status: string;
+    amountPaid: number;
+    amountRemaining: number;
     dueDate?: string;
 }
 
@@ -39,11 +39,11 @@ export default function LoansPage() {
     };
 
     const renderLoanCard = (loan: LoanCardProps) => {
-        const progress = (loan.totalPaid / loan.amount) * 100;
+        const progress = (Number(loan.amountPaid) / Number(loan.amount)) * 100;
         const statusColor: Record<string, string> = {
-            PENDING: 'bg-yellow-500',
-            PARTIALLY_PAID: 'bg-blue-500',
-            PAID: 'bg-green-500',
+            active: 'bg-yellow-500',
+            paid: 'bg-green-500',
+            cancelled: 'bg-gray-500',
         };
 
         return (
@@ -51,7 +51,7 @@ export default function LoansPage() {
                 <div className="flex items-start justify-between mb-4">
                     <div>
                         <h3 className="font-semibold text-lg">
-                            {activeTab === 'lent' ? loan.borrower?.name : loan.lender?.name}
+                            {activeTab === 'lent' ? loan.borrower?.username : loan.lender?.username}
                         </h3>
                         <p className="text-sm text-muted-foreground">
                             {loan.description || 'No description'}
@@ -69,20 +69,20 @@ export default function LoansPage() {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <span className="text-2xl font-bold">
-                            {formatCurrency(loan.amount)}
+                            {formatCurrency(Number(loan.amount))}
                         </span>
-                        <Badge className={statusColor[loan.status]}>
-                            {loan.status.replace('_', ' ')}
+                        <Badge className={statusColor[loan.status] || 'bg-gray-500'}>
+                            {loan.status}
                         </Badge>
                     </div>
 
-                    {loan.status !== 'PAID' && (
+                    {loan.status !== 'paid' && (
                         <>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Paid</span>
                                     <span className="font-medium">
-                                        {formatCurrency(loan.totalPaid)} / {formatCurrency(loan.amount)}
+                                        {formatCurrency(Number(loan.amountPaid))} / {formatCurrency(Number(loan.amount))}
                                     </span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
@@ -91,7 +91,7 @@ export default function LoansPage() {
                             <div className="flex justify-between text-sm">
                                 <span className="text-muted-foreground">Remaining</span>
                                 <span className="font-semibold text-destructive">
-                                    {formatCurrency(loan.remainingAmount)}
+                                    {formatCurrency(Number(loan.amountRemaining))}
                                 </span>
                             </div>
                         </>
@@ -101,7 +101,7 @@ export default function LoansPage() {
                         <span className="text-sm text-muted-foreground">
                             {loan.dueDate ? `Due ${formatDate(loan.dueDate)}` : 'No due date'}
                         </span>
-                        {loan.status !== 'PAID' && (
+                        {loan.status !== 'paid' && (
                             <Button size="sm">
                                 <DollarSign className="w-4 h-4 mr-1" />
                                 Record Payment

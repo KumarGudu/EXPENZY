@@ -34,13 +34,12 @@ export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 
 // ============= LOAN VALIDATIONS =============
 export const createLoanSchema = z.object({
-    type: z.enum(['LENT', 'BORROWED']),
     amount: z.number().positive('Amount must be positive'),
-    borrowerEmail: z.string().email('Invalid email').optional(),
-    lenderEmail: z.string().email('Invalid email').optional(),
-    description: z.string().min(1, 'Description is required').max(200),
+    borrowerName: z.string().min(1, 'Borrower name is required').max(100).optional(),
+    lenderName: z.string().min(1, 'Lender name is required').max(100).optional(),
+    description: z.string().min(1, 'Description is required').max(200).optional(),
+    loanDate: z.date(),
     dueDate: z.date().optional(),
-    notes: z.string().optional(),
 });
 
 export type CreateLoanInput = z.infer<typeof createLoanSchema>;

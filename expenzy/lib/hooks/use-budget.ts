@@ -1,29 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/client';
-import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { QUERY_KEYS } from '@/lib/config/query-client';
-import type { Budget, CreateBudgetDto, UpdateBudgetDto, BudgetPerformance } from '@/types';
+import type { CreateBudgetDto, UpdateBudgetDto } from '@/types';
 import { toast } from 'sonner';
+
+// NOTE: Budget API endpoints are not yet implemented on the backend
+// These hooks return empty data to prevent 404 errors
 
 export function useBudgets() {
     return useQuery({
         queryKey: QUERY_KEYS.BUDGETS.LIST,
-        queryFn: () => apiClient.get<Budget[]>(API_ENDPOINTS.BUDGETS.BASE),
+        queryFn: () => Promise.resolve([]),
+        enabled: false, // Disabled until backend is ready
     });
 }
 
 export function useBudget(id: string) {
     return useQuery({
         queryKey: QUERY_KEYS.BUDGETS.DETAIL(id),
-        queryFn: () => apiClient.get<Budget>(API_ENDPOINTS.BUDGETS.BY_ID(id)),
-        enabled: !!id,
+        queryFn: () => Promise.resolve(null),
+        enabled: false, // Disabled until backend is ready
     });
 }
 
 export function useBudgetPerformance() {
     return useQuery({
         queryKey: QUERY_KEYS.BUDGETS.PERFORMANCE,
-        queryFn: () => apiClient.get<{ budgets: BudgetPerformance[] }>(API_ENDPOINTS.BUDGETS.PERFORMANCE),
+        queryFn: () => Promise.resolve({ budgets: [] }),
+        enabled: false, // Disabled until backend is ready
     });
 }
 
@@ -31,8 +34,10 @@ export function useCreateBudget() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: CreateBudgetDto) =>
-            apiClient.post<Budget>(API_ENDPOINTS.BUDGETS.BASE, data),
+        mutationFn: async (_data: CreateBudgetDto) => {
+            toast.error('Budget feature is not yet available');
+            throw new Error('Budget API not implemented');
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BUDGETS.ALL });
             toast.success('Budget created successfully');
@@ -47,8 +52,10 @@ export function useUpdateBudget() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: UpdateBudgetDto }) =>
-            apiClient.patch<Budget>(API_ENDPOINTS.BUDGETS.BY_ID(id), data),
+        mutationFn: async (_params: { id: string; data: UpdateBudgetDto }) => {
+            toast.error('Budget feature is not yet available');
+            throw new Error('Budget API not implemented');
+        },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BUDGETS.ALL });
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BUDGETS.DETAIL(variables.id) });
@@ -64,8 +71,10 @@ export function useDeleteBudget() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) =>
-            apiClient.delete(API_ENDPOINTS.BUDGETS.BY_ID(id)),
+        mutationFn: async (_id: string) => {
+            toast.error('Budget feature is not yet available');
+            throw new Error('Budget API not implemented');
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEYS.BUDGETS.ALL });
             toast.success('Budget deleted successfully');

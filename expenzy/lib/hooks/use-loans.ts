@@ -5,25 +5,25 @@ import { toast } from 'sonner';
 
 export interface Loan {
     id: string;
-    lenderId: string;
-    borrowerId: string;
+    lenderUserId: string;
+    borrowerUserId: string;
     amount: number;
     currency: string;
     description?: string;
     dueDate?: string;
-    status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID';
-    totalPaid: number;
-    remainingAmount: number;
+    status: string;
+    amountPaid: number;
+    amountRemaining: number;
     createdAt: string;
     updatedAt: string;
     lender?: {
         id: string;
-        name: string;
+        username: string;
         email: string;
     };
     borrower?: {
         id: string;
-        name: string;
+        username: string;
         email: string;
     };
     payments?: LoanPayment[];
@@ -67,7 +67,7 @@ export function useLentLoans() {
     return useQuery({
         queryKey: ['loans', 'lent'],
         queryFn: async () => {
-            return await apiClient.get<Loan[]>(`${API_ENDPOINTS.LOANS.LIST}?type=lent`);
+            return await apiClient.get<Loan[]>(`${API_ENDPOINTS.LOANS.LIST}?role=lender`);
         },
     });
 }
@@ -77,7 +77,7 @@ export function useBorrowedLoans() {
     return useQuery({
         queryKey: ['loans', 'borrowed'],
         queryFn: async () => {
-            return await apiClient.get<Loan[]>(`${API_ENDPOINTS.LOANS.LIST}?type=borrowed`);
+            return await apiClient.get<Loan[]>(`${API_ENDPOINTS.LOANS.LIST}?role=borrower`);
         },
     });
 }

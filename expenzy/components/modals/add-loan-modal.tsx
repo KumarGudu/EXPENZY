@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -36,7 +35,7 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
     } = useForm<CreateLoanInput>({
         resolver: zodResolver(createLoanSchema),
         defaultValues: {
-            type: 'LENT',
+            loanDate: new Date(),
         },
     });
 
@@ -44,11 +43,24 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
 
     const onSubmit = async (data: CreateLoanInput) => {
         try {
-            await createLoan.mutateAsync({
-                ...data,
-                type: loanType,
+            // Prepare data based on loan type
+            const loanData: any = {
+                amount: data.amount,
+                description: data.description,
+                loanDate: data.loanDate?.toISOString() || new Date().toISOString(),
                 dueDate: data.dueDate?.toISOString(),
-            });
+            };
+
+            // For LENT loans, we provide borrower info
+            if (loanType === 'LENT') {
+                loanData.borrowerName = data.borrowerName;
+            }
+            // For BORROWED loans, we provide lender info
+            else {
+                loanData.lenderName = data.lenderName;
+            }
+
+            await createLoan.mutateAsync(loanData);
             reset();
             onClose();
         } catch (error) {
@@ -56,8 +68,13 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
         }
     };
 
+    const handleClose = () => {
+        reset();
+        onClose();
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onClose}>
+        <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Add Loan</DialogTitle>
@@ -71,35 +88,35 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
 
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
                         <TabsContent value="LENT" className="space-y-4 mt-0">
-                            {/* Borrower Email */}
+                            {/* Borrower Name */}
                             <div className="space-y-2">
-                                <Label htmlFor="borrowerEmail">Borrower Email *</Label>
+                                <Label htmlFor="borrowerName">Borrower Name *</Label>
                                 <Input
-                                    id="borrowerEmail"
-                                    type="email"
-                                    placeholder="borrower@example.com"
-                                    {...register('borrowerEmail')}
-                                    className={errors.borrowerEmail ? 'border-destructive' : ''}
+                                    id="borrowerName"
+                                    type="text"
+                                    placeholder="e.g., John Doe"
+                                    {...register('borrowerName')}
+                                    className={errors.borrowerName ? 'border-destructive' : ''}
                                 />
-                                {errors.borrowerEmail && (
-                                    <p className="text-sm text-destructive">{errors.borrowerEmail.message}</p>
+                                {errors.borrowerName && (
+                                    <p className="text-sm text-destructive">{errors.borrowerName.message}</p>
                                 )}
                             </div>
                         </TabsContent>
 
                         <TabsContent value="BORROWED" className="space-y-4 mt-0">
-                            {/* Lender Email */}
+                            {/* Lender Name */}
                             <div className="space-y-2">
-                                <Label htmlFor="lenderEmail">Lender Email *</Label>
+                                <Label htmlFor="lenderName">Lender Name *</Label>
                                 <Input
-                                    id="lenderEmail"
-                                    type="email"
-                                    placeholder="lender@example.com"
-                                    {...register('lenderEmail')}
-                                    className={errors.lenderEmail ? 'border-destructive' : ''}
+                                    id="lenderName"
+                                    type="text"
+                                    placeholder="e.g., Jane Smith"
+                                    {...register('lenderName')}
+                                    className={errors.lenderName ? 'border-destructive' : ''}
                                 />
-                                {errors.lenderEmail && (
-                                    <p className="text-sm text-destructive">{errors.lenderEmail.message}</p>
+                                {errors.lenderName && (
+                                    <p className="text-sm text-destructive">{errors.lenderName.message}</p>
                                 )}
                             </div>
                         </TabsContent>
@@ -122,7 +139,7 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
 
                         {/* Description */}
                         <div className="space-y-2">
-                            <Label htmlFor="description">Description *</Label>
+                            <Label htmlFor="description">Description (Optional)</Label>
                             <Input
                                 id="description"
                                 placeholder="e.g., Rent payment, Emergency loan"
@@ -160,20 +177,9 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
                             </Popover>
                         </div>
 
-                        {/* Notes */}
-                        <div className="space-y-2">
-                            <Label htmlFor="notes">Notes (Optional)</Label>
-                            <Textarea
-                                id="notes"
-                                placeholder="Add any additional notes..."
-                                rows={3}
-                                {...register('notes')}
-                            />
-                        </div>
-
                         {/* Actions */}
                         <div className="flex gap-3 justify-end pt-4">
-                            <Button type="button" variant="outline" onClick={onClose}>
+                            <Button type="button" variant="outline" onClick={handleClose}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={createLoan.isPending}>
@@ -186,3 +192,4 @@ export function AddLoanModal({ open, onClose }: AddLoanModalProps) {
         </Dialog>
     );
 }
+

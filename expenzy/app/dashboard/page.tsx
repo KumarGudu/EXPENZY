@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboardSummary } from '@/lib/hooks/use-analytics';
 import { useSavingsGoals } from '@/lib/hooks/use-savings';
@@ -22,9 +23,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/lib/routes';
+import { AddTransactionModal } from '@/components/modals/add-transaction-modal';
 
 export default function DashboardPage() {
     const router = useRouter();
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const { data: dashboard, isLoading: dashboardLoading } = useDashboardSummary({ period: 'month' });
     const { data: savingsGoals = [], isLoading: savingsLoading } = useSavingsGoals();
     const { data: upcomingSubscriptions = [], isLoading: subscriptionsLoading } = useUpcomingSubscriptions();
@@ -51,11 +54,16 @@ export default function DashboardPage() {
                     <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
                     <p className="text-muted-foreground">Overview of your finances</p>
                 </div>
-                <Button>
+                <Button onClick={() => setIsTransactionModalOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Transaction
                 </Button>
             </div>
+
+            <AddTransactionModal
+                open={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+            />
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

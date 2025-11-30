@@ -55,17 +55,17 @@ export const API_ENDPOINTS = {
 
     // Savings Goals
     SAVINGS: {
-        BASE: '/savings',
-        BY_ID: (id: string) => `/savings/${id}`,
-        CONTRIBUTE: (id: string) => `/savings/${id}/contribute`,
+        BASE: '/savings/goals',
+        BY_ID: (id: string) => `/savings/goals/${id}`,
+        CONTRIBUTE: (id: string) => `/savings/goals/${id}/contributions`,
     },
 
     // Alias for backwards compatibility
     SAVINGS_GOALS: {
-        BASE: '/savings',
-        BY_ID: (id: string) => `/savings/${id}`,
-        CONTRIBUTE: (id: string) => `/savings/${id}/contribute`,
-        PROGRESS: '/savings/progress',
+        BASE: '/savings/goals',
+        BY_ID: (id: string) => `/savings/goals/${id}`,
+        CONTRIBUTE: (id: string) => `/savings/goals/${id}/contributions`,
+        PROGRESS: '/savings/goals/progress',
     },
 
     // Subscriptions
