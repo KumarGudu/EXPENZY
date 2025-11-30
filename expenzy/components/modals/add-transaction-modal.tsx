@@ -59,7 +59,7 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
     const onSubmit = async (data: ExpenseFormData) => {
         try {
             await createExpense.mutateAsync({
-                amount: Number(data.amount),
+                amount: Number(data.amount), // Backend now uses @IsNumber() with @Type transformer
                 description: data.description,
                 categoryId: data.categoryId,
                 expenseDate: data.expenseDate.toISOString(),

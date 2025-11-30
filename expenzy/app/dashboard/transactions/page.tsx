@@ -140,9 +140,6 @@ export default function TransactionsPage() {
                                             {isIncome ? '+' : '-'}
                                             {formatCurrency(transaction.amount)}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {transaction.currency}
-                                        </p>
                                     </div>
                                 </div>
                             </div>

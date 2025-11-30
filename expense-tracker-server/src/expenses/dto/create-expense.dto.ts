@@ -1,19 +1,21 @@
 import {
   IsArray,
   IsDateString,
-  IsDecimal,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateExpenseDto {
   @IsUUID()
   @IsOptional()
   categoryId?: string;
 
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   @IsNotEmpty()
   amount: number;
 
@@ -45,11 +47,13 @@ export class CreateExpenseDto {
   @IsOptional()
   tags?: string[];
 
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   @IsOptional()
   locationLat?: number;
 
-  @IsDecimal()
+  @Type(() => Number)
+  @IsNumber()
   @IsOptional()
   locationLng?: number;
 
