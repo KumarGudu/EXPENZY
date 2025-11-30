@@ -88,19 +88,25 @@ async function main() {
 
     console.log(`✅ Created ${3} users`);
 
-    // Create System Categories
-    console.log('📁 Creating categories...');
+    // Create System Categories (Available to all users)
+    console.log('📁 Creating system categories...');
     const systemCategories = [
-        { name: 'Food & Dining', icon: '🍔', color: '#FF6B6B', type: 'expense' },
-        { name: 'Transportation', icon: '🚗', color: '#4ECDC4', type: 'expense' },
-        { name: 'Shopping', icon: '🛍️', color: '#95E1D3', type: 'expense' },
-        { name: 'Entertainment', icon: '🎬', color: '#F38181', type: 'expense' },
-        { name: 'Bills & Utilities', icon: '💡', color: '#AA96DA', type: 'expense' },
-        { name: 'Healthcare', icon: '🏥', color: '#FCBAD3', type: 'expense' },
+        // Expense Categories
+        { name: 'Food', icon: '🍔', color: '#ef4444', type: 'expense' },
+        { name: 'Fuel', icon: '⛽', color: '#f59e0b', type: 'expense' },
+        { name: 'Transport', icon: '🚗', color: '#3b82f6', type: 'expense' },
+        { name: 'Shopping', icon: '🛍️', color: '#ec4899', type: 'expense' },
+        { name: 'Entertainment', icon: '🎬', color: '#8b5cf6', type: 'expense' },
+        { name: 'Health', icon: '❤️', color: '#10b981', type: 'expense' },
+        { name: 'Bills', icon: '📄', color: '#06b6d4', type: 'expense' },
         { name: 'Education', icon: '📚', color: '#A8D8EA', type: 'expense' },
         { name: 'Travel', icon: '✈️', color: '#FFD93D', type: 'expense' },
+        { name: 'Other', icon: '📌', color: '#6b7280', type: 'expense' },
+        // Income Categories
         { name: 'Salary', icon: '💰', color: '#6BCF7F', type: 'income' },
         { name: 'Freelance', icon: '💼', color: '#4D96FF', type: 'income' },
+        { name: 'Business', icon: '🏢', color: '#22c55e', type: 'income' },
+        { name: 'Investment', icon: '📈', color: '#14b8a6', type: 'income' },
     ];
 
     const createdSystemCategories = await Promise.all(
