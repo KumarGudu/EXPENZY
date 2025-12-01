@@ -13,6 +13,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 
 @Controller('users')
 export class UsersController {
@@ -42,5 +44,29 @@ export class UsersController {
   @Delete('profile')
   removeProfile(@CurrentUser() user: JwtPayload) {
     return this.usersService.remove(user.userId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('change-password')
+  changePassword(
+    @CurrentUser() user: JwtPayload,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(user.userId, changePasswordDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('delete-account')
+  deleteAccount(
+    @CurrentUser() user: JwtPayload,
+    @Body() deleteAccountDto: DeleteAccountDto,
+  ) {
+    return this.usersService.deleteAccount(user.userId, deleteAccountDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('tags')
+  getUserTags(@CurrentUser() user: JwtPayload) {
+    return this.usersService.getUserTags(user.userId);
   }
 }

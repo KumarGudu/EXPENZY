@@ -7,6 +7,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 
 interface GoogleProfile {
   id: string;
@@ -56,20 +58,15 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
 
-    const updateData: Record<string, string | undefined> = {
-      firstName: updateUserDto.firstName,
-      lastName: updateUserDto.lastName,
-      phone: updateUserDto.phone,
-    };
-
-    if (updateUserDto.password) {
-      const hashedPassword = await bcrypt.hash(updateUserDto.password, 10);
-      updateData.passwordHash = hashedPassword;
-    }
-
     return this.prisma.user.update({
       where: { id },
-      data: updateData,
+      data: {
+        firstName: updateUserDto.firstName,
+        lastName: updateUserDto.lastName,
+        phone: updateUserDto.phone,
+        avatar: updateUserDto.avatar,
+        timezone: updateUserDto.timezone,
+      },
     });
   }
 
@@ -141,5 +138,94 @@ export class UsersService {
         lastLoginAt: new Date(),
       },
     });
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const user = await this.findOne(userId);
+
+    if (!user.passwordHash) {
+      throw new BadRequestException(
+        'Cannot change password for OAuth-only accounts',
+      );
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+
+    // Update password
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash: hashedPassword,
+        lastPasswordChange: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
+  }
+
+  async deleteAccount(userId: string, deleteAccountDto: DeleteAccountDto) {
+    const user = await this.findOne(userId);
+
+    // Verify password if user has one (OAuth users might not)
+    if (user.passwordHash) {
+      const isPasswordValid = await bcrypt.compare(
+        deleteAccountDto.password,
+        user.passwordHash,
+      );
+
+      if (!isPasswordValid) {
+        throw new BadRequestException('Password is incorrect');
+      }
+    }
+
+    // Soft delete the account
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        isActive: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        isDeleted: true,
+      },
+    });
+  }
+
+  async getUserTags(userId: string) {
+    const tags = await this.prisma.tag.findMany({
+      where: { userId },
+      include: {
+        _count: {
+          select: { expenses: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return tags.map((tag) => ({
+      id: tag.id,
+      name: tag.name,
+      color: tag.color,
+      createdAt: tag.createdAt,
+      expenseCount: tag._count.expenses,
+    }));
   }
 }
