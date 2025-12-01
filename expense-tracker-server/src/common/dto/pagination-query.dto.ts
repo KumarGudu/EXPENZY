@@ -13,7 +13,7 @@ export class PaginationQueryDto {
   @IsInt()
   @Min(1)
   @IsOptional()
-  page?: number = 1;
+  page?: number;
 
   @ApiPropertyOptional({
     description: 'Number of items per page',
@@ -27,7 +27,7 @@ export class PaginationQueryDto {
   @Min(1)
   @Max(100)
   @IsOptional()
-  limit?: number = 20;
+  limit?: number;
 
   get skip(): number {
     return ((this.page ?? 1) - 1) * (this.limit ?? 20);
