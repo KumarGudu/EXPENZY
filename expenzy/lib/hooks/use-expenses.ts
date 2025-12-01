@@ -24,24 +24,30 @@ export function useExpenses(filters?: ExpenseFilters & { page?: number; limit?: 
     return useQuery({
         queryKey: ['expenses', filters],
         queryFn: async ({ pageParam }) => {
-            const params = new URLSearchParams({
-                page: pageParam?.toString() || '1',
-                limit: '10',
-            });
+            const params = new URLSearchParams();
 
-            if (filters?.categoryId) params.append('categoryId', filters.categoryId);
-            if (filters?.startDate) params.append('startDate', filters.startDate);
-            if (filters?.endDate) params.append('endDate', filters.endDate);
-            if (filters?.search) params.append('search', filters.search);
-            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
-            if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+            // Handle pagination
+            const page = filters?.page || pageParam || 1;
+            const limit = filters?.limit || 10;
 
-            const url = `${API_ENDPOINTS.EXPENSES.BASE}?${params.toString()} `;
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
 
-            // Use axios directly to get the full response
-            const { data: responseData } = await apiClient.get<PaginatedResponse<Expense>>(url);
+            if (filters) {
+                Object.entries(filters).forEach(([key, value]) => {
+                    if (value !== undefined && value !== null && key !== 'page' && key !== 'limit') {
+                        params.append(key, value.toString());
+                    }
+                });
+            }
 
-            return responseData;
+            const url = `${API_ENDPOINTS.EXPENSES.BASE}?${params.toString()}`;
+
+            // Use getRaw to get the full PaginatedResponse structure directly
+            // The backend returns { data: [...], meta: {...} } which matches PaginatedResponse
+            const response = await apiClient.getRaw<PaginatedResponse<Expense>>(url);
+
+            return response;
         },
     });
 }
