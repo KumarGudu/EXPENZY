@@ -1,0 +1,446 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================
+   THEME 1: Ocean Breeze (Modern & Fresh)
+   Primary: Teal/Cyan | Accent: Coral/Orange
+   Perfect for: Finance apps, fresh modern look
+   ============================================ */
+@theme {
+    --color-background: #fafbfc;
+    --color-foreground: #0f172a;
+    --color-surface: #ffffff;
+    --color-primary: #06b6d4;
+    --color-secondary: #f43f5e;
+    --color-accent: #fb923c;
+    --color-muted: #f1f5f9;
+    --color-border: #e2e8f0;
+    --color-card: #ffffff;
+    --color-destructive: #ef4444;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-info: #3b82f6;
+    --color-input: #e2e8f0;
+    --color-ring: #06b6d4;
+}
+
+@media (prefers-color-scheme: dark) {
+    @theme {
+        --color-background: #020617;
+        --color-foreground: #f8fafc;
+        --color-surface: #0f172a;
+        --color-primary: #22d3ee;
+        --color-secondary: #fb7185;
+        --color-accent: #fdba74;
+        --color-muted: #1e293b;
+        --color-border: #334155;
+        --color-card: rgba(15, 23, 42, 0.8);
+        --color-destructive: #f87171;
+        --color-success: #34d399;
+        --color-warning: #fbbf24;
+        --color-info: #60a5fa;
+        --color-input: #334155;
+        --color-ring: #22d3ee;
+    }
+}
+
+/* ============================================
+   THEME 2: Sunset Vibes (Warm & Energetic)
+   Primary: Vibrant Orange | Accent: Pink/Purple
+   Perfect for: Creative, energetic feel
+   ============================================ */
+/*
+@theme {
+  --color-background: #fffbf5;
+  --color-foreground: #1a1a1a;
+  --color-surface: #ffffff;
+  --color-primary: #f97316;
+  --color-secondary: #dc2626;
+  --color-accent: #ec4899;
+  --color-muted: #fef3e2;
+  --color-border: #fed7aa;
+  --color-card: #ffffff;
+  --color-destructive: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #a855f7;
+  --color-input: #fed7aa;
+  --color-ring: #f97316;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0a0a;
+    --color-foreground: #fafafa;
+    --color-surface: #1a1512;
+    --color-primary: #fb923c;
+    --color-secondary: #f87171;
+    --color-accent: #f472b6;
+    --color-muted: #292524;
+    --color-border: #44403c;
+    --color-card: rgba(26, 21, 18, 0.8);
+    --color-destructive: #f87171;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-info: #c084fc;
+    --color-input: #44403c;
+    --color-ring: #fb923c;
+  }
+}
+*/
+
+/* ============================================
+   THEME 3: Forest Green (Nature & Trust)
+   Primary: Emerald | Accent: Lime/Yellow
+   Perfect for: Trust, growth, stability
+   ============================================ */
+/*
+@theme {
+  --color-background: #fafff7;
+  --color-foreground: #0a1f0f;
+  --color-surface: #ffffff;
+  --color-primary: #10b981;
+  --color-secondary: #dc2626;
+  --color-accent: #84cc16;
+  --color-muted: #f0fdf4;
+  --color-border: #d1fae5;
+  --color-card: #ffffff;
+  --color-destructive: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #14b8a6;
+  --color-input: #d1fae5;
+  --color-ring: #10b981;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0f0a;
+    --color-foreground: #f0fdf4;
+    --color-surface: #0f1a12;
+    --color-primary: #34d399;
+    --color-secondary: #f87171;
+    --color-accent: #a3e635;
+    --color-muted: #1e2920;
+    --color-border: #2d4035;
+    --color-card: rgba(15, 26, 18, 0.8);
+    --color-destructive: #f87171;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-info: #2dd4bf;
+    --color-input: #2d4035;
+    --color-ring: #34d399;
+  }
+}
+*/
+
+/* ============================================
+   THEME 4: Midnight Blue (Professional & Modern)
+   Primary: Blue | Accent: Indigo/Purple
+   Perfect for: Professional, corporate feel
+   ============================================ */
+/*
+@theme {
+  --color-background: #f8f9fd;
+  --color-foreground: #0f1729;
+  --color-surface: #ffffff;
+  --color-primary: #3b82f6;
+  --color-secondary: #dc2626;
+  --color-accent: #8b5cf6;
+  --color-muted: #eff6ff;
+  --color-border: #dbeafe;
+  --color-card: #ffffff;
+  --color-destructive: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #06b6d4;
+  --color-input: #dbeafe;
+  --color-ring: #3b82f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0e1a;
+    --color-foreground: #f0f4ff;
+    --color-surface: #131827;
+    --color-primary: #60a5fa;
+    --color-secondary: #f87171;
+    --color-accent: #a78bfa;
+    --color-muted: #1e293b;
+    --color-border: #334155;
+    --color-card: rgba(19, 24, 39, 0.8);
+    --color-destructive: #f87171;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-info: #22d3ee;
+    --color-input: #334155;
+    --color-ring: #60a5fa;
+  }
+}
+*/
+
+/* ============================================
+   THEME 5: Rose Gold (Elegant & Luxurious)
+   Primary: Rose/Pink | Accent: Gold
+   Perfect for: Premium, elegant feel
+   ============================================ */
+/*
+@theme {
+  --color-background: #fffbfa;
+  --color-foreground: #1a0f14;
+  --color-surface: #ffffff;
+  --color-primary: #f43f5e;
+  --color-secondary: #dc2626;
+  --color-accent: #f59e0b;
+  --color-muted: #fef2f2;
+  --color-border: #fecdd3;
+  --color-card: #ffffff;
+  --color-destructive: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #ec4899;
+  --color-input: #fecdd3;
+  --color-ring: #f43f5e;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0f0a0d;
+    --color-foreground: #fef2f2;
+    --color-surface: #1a0f14;
+    --color-primary: #fb7185;
+    --color-secondary: #f87171;
+    --color-accent: #fbbf24;
+    --color-muted: #291a20;
+    --color-border: #3d2933;
+    --color-card: rgba(26, 15, 20, 0.8);
+    --color-destructive: #f87171;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-info: #f472b6;
+    --color-input: #3d2933;
+    --color-ring: #fb7185;
+  }
+}
+*/
+
+/* ============================================
+   THEME 6: Neon Cyberpunk (Bold & Modern)
+   Primary: Electric Blue | Accent: Neon Pink
+   Perfect for: Modern, tech-forward apps
+   ============================================ */
+/*
+@theme {
+  --color-background: #fafaff;
+  --color-foreground: #0a0a1a;
+  --color-surface: #ffffff;
+  --color-primary: #0ea5e9;
+  --color-secondary: #dc2626;
+  --color-accent: #ff006e;
+  --color-muted: #f0f4ff;
+  --color-border: #dbeafe;
+  --color-card: #ffffff;
+  --color-destructive: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-info: #8b5cf6;
+  --color-input: #dbeafe;
+  --color-ring: #0ea5e9;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0a0a0f;
+    --color-foreground: #f0f4ff;
+    --color-surface: #131318;
+    --color-primary: #38bdf8;
+    --color-secondary: #f87171;
+    --color-accent: #ff1a8d;
+    --color-muted: #1a1a24;
+    --color-border: #2d2d3d;
+    --color-card: rgba(19, 19, 24, 0.9);
+    --color-destructive: #f87171;
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-info: #a78bfa;
+    --color-input: #2d2d3d;
+    --color-ring: #38bdf8;
+  }
+}
+*/
+
+/* Mobile-first responsive utilities */
+.safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-top {
+    padding-top: env(safe-area-inset-top);
+}
+
+@theme inline {
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+    --radius: 0.75rem;
+    --background: oklch(0.99 0.002 240);
+    --foreground: oklch(0.15 0.01 240);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.15 0.01 240);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.15 0.01 240);
+    --primary: oklch(0.62 0.18 210);
+    --primary-foreground: oklch(0.99 0.002 240);
+    --secondary: oklch(0.54 0.23 25);
+    --secondary-foreground: oklch(0.99 0.002 240);
+    --muted: oklch(0.96 0.004 240);
+    --muted-foreground: oklch(0.45 0.01 240);
+    --accent: oklch(0.65 0.15 45);
+    --accent-foreground: oklch(0.99 0.002 240);
+    --destructive: oklch(0.54 0.23 25);
+    --border: oklch(0.88 0.005 240);
+    --input: oklch(0.91 0.005 240);
+    --ring: oklch(0.62 0.18 210);
+    --chart-1: oklch(0.62 0.18 210);
+    --chart-2: oklch(0.54 0.23 25);
+    --chart-3: oklch(0.62 0.19 145);
+    --chart-4: oklch(0.60 0.15 60);
+    --chart-5: oklch(0.62 0.15 210);
+    --sidebar: oklch(0.99 0.002 240);
+    --sidebar-foreground: oklch(0.15 0.01 240);
+    --sidebar-primary: oklch(0.62 0.18 210);
+    --sidebar-primary-foreground: oklch(0.99 0.002 240);
+    --sidebar-accent: oklch(0.96 0.004 240);
+    --sidebar-accent-foreground: oklch(0.15 0.01 240);
+    --sidebar-border: oklch(0.88 0.005 240);
+    --sidebar-ring: oklch(0.62 0.18 210);
+}
+
+.dark {
+    --background: oklch(0.10 0.01 240);
+    --foreground: oklch(0.96 0.004 240);
+    --card: oklch(0.14 0.01 240);
+    --card-foreground: oklch(0.96 0.004 240);
+    --popover: oklch(0.14 0.01 240);
+    --popover-foreground: oklch(0.96 0.004 240);
+    --primary: oklch(0.68 0.18 210);
+    --primary-foreground: oklch(0.10 0.01 240);
+    --secondary: oklch(0.62 0.22 25);
+    --secondary-foreground: oklch(0.99 0.002 240);
+    --muted: oklch(0.22 0.01 240);
+    --muted-foreground: oklch(0.60 0.01 240);
+    --accent: oklch(0.70 0.15 45);
+    --accent-foreground: oklch(0.10 0.01 240);
+    --destructive: oklch(0.62 0.22 25);
+    --border: oklch(0.28 0.01 240);
+    --input: oklch(0.30 0.01 240);
+    --ring: oklch(0.68 0.18 210);
+    --chart-1: oklch(0.68 0.18 210);
+    --chart-2: oklch(0.62 0.22 25);
+    --chart-3: oklch(0.68 0.19 145);
+    --chart-4: oklch(0.65 0.15 60);
+    --chart-5: oklch(0.68 0.15 210);
+    --sidebar: oklch(0.14 0.01 240);
+    --sidebar-foreground: oklch(0.96 0.004 240);
+    --sidebar-primary: oklch(0.68 0.18 210);
+    --sidebar-primary-foreground: oklch(0.99 0.002 240);
+    --sidebar-accent: oklch(0.22 0.01 240);
+    --sidebar-accent-foreground: oklch(0.96 0.004 240);
+    --sidebar-border: oklch(0.28 0.01 240);
+    --sidebar-ring: oklch(0.68 0.18 210);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+    }
+
+    /* Hide scrollbar for all browsers */
+    * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    *::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* Theme Transition Effect */
+::view-transition-group(root) {
+    animation-duration: 0.5s;
+}
+
+::view-transition-new(root) {
+    mix-blend-mode: normal;
+    animation: none;
+}
+
+::view-transition-old(root) {
+    z-index: 1;
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+.dark::view-transition-old(root) {
+    z-index: 1;
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+    z-index: 2147483646;
+    clip-path: circle(0px at var(--x) var(--y));
+    animation: reveal 0.5s ease-in-out forwards;
+}
+
+@keyframes reveal {
+    from {
+        clip-path: circle(0px at var(--x) var(--y));
+    }
+
+    to {
+        clip-path: circle(150% at var(--x) var(--y));
+    }
+}

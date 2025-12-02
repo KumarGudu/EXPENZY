@@ -309,3 +309,49 @@
     clip-path: circle(150% at var(--x) var(--y));
   }
 }
+
+/* Glass UI Utilities */
+.glass-card {
+  background: rgba(var(--color-card), 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--color-border), 0.5);
+}
+
+.glass-separator {
+  background: rgba(var(--color-background), 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(var(--color-border), 0.5);
+}
+
+/* Pull-to-Refresh Animation */
+@keyframes pull-refresh-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-refresh-spinner {
+  animation: pull-refresh-rotate 1s linear infinite;
+}
+
+@keyframes pull-refresh-bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.pull-refresh-indicator {
+  animation: pull-refresh-bounce 1.5s ease-in-out infinite;
+}

@@ -7,6 +7,7 @@ import { useSavingsGoals } from '@/lib/hooks/use-savings';
 import { useUpcomingSubscriptions } from '@/lib/hooks/use-subscriptions';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
+import { GlassCard } from '@/components/shared/glass-card';
 import { formatCurrency, formatPercentage, formatDate } from '@/lib/utils/format';
 import {
     Wallet,
@@ -25,25 +26,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/lib/routes';
 import { AddTransactionModal } from '@/components/modals/add-transaction-modal';
-
-// Reusable Glass Card Component
-interface GlassCardProps {
-    children: React.ReactNode;
-    className?: string;
-    hover?: boolean;
-}
-
-const GlassCard = ({ children, className = '', hover = true }: GlassCardProps) => (
-    <div className={`
-        relative overflow-hidden rounded-xl lg:rounded-2xl 
-        bg-card/80 backdrop-blur-sm border border-border 
-        transition-all duration-300
-        ${hover ? 'hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5' : ''}
-        ${className}
-    `}>
-        {children}
-    </div>
-);
 
 // Reusable Stat Card Component
 interface StatCardProps {
@@ -127,7 +109,7 @@ export default function DashboardPage() {
     return (
         <div className="space-y-4 lg:space-y-6 p-4 lg:p-6 pb-20 lg:pb-8 max-w-7xl mx-auto">
             {/* Hero Section with Glassmorphism */}
-            <GlassCard className="p-5 lg:p-8 border-primary/20" hover={false}>
+            <GlassCard className="border-primary/20" hover={false} padding="lg">
                 <div className="absolute top-0 right-0 w-32 lg:w-64 h-32 lg:h-64 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-32 lg:w-64 h-32 lg:h-64 bg-accent/10 rounded-full blur-3xl" />
 
@@ -192,7 +174,7 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 {/* Savings Goals Widget */}
-                <GlassCard className="p-4 lg:p-6">
+                <GlassCard padding="md">
                     <SectionHeader
                         icon={Target}
                         title="Savings Goals"
@@ -217,7 +199,7 @@ export default function DashboardPage() {
                             {savingsGoals.slice(0, 3).map((goal) => {
                                 const progress = (Number(goal.currentAmount) / Number(goal.targetAmount)) * 100;
                                 return (
-                                    <div key={goal.id} className="p-3 lg:p-4 rounded-lg lg:rounded-xl bg-muted/50 backdrop-blur-sm space-y-2 lg:space-y-3 transition-all hover:bg-muted/70">
+                                    <div key={goal.id} className="space-y-2 lg:space-y-3 transition-all">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm lg:text-base font-semibold truncate pr-2">{goal.name}</span>
                                             <span className="text-xs lg:text-sm font-medium text-primary">{formatPercentage(progress)}</span>
@@ -235,7 +217,7 @@ export default function DashboardPage() {
                 </GlassCard>
 
                 {/* Upcoming Subscriptions Widget */}
-                <GlassCard className="p-4 lg:p-6">
+                <GlassCard padding="md">
                     <SectionHeader
                         icon={Calendar}
                         title="Upcoming Subscriptions"
@@ -282,7 +264,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Recent Transactions */}
-            <GlassCard className="p-4 lg:p-6">
+            <GlassCard padding="md">
                 <SectionHeader
                     icon={TrendingUp}
                     title="Recent Transactions"
@@ -342,7 +324,7 @@ export default function DashboardPage() {
             </GlassCard>
 
             {/* Top Categories */}
-            <GlassCard className="p-4 lg:p-6">
+            <GlassCard padding="md">
                 <h2 className="text-base lg:text-xl font-semibold mb-4 lg:mb-6">Top Spending Categories</h2>
                 {dashboard?.topCategories && dashboard.topCategories.length > 0 ? (
                     <div className="space-y-3 lg:space-y-4">
