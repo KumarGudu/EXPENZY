@@ -20,7 +20,7 @@ import {
 import { PageHeader } from '@/components/layout/page-header';
 
 export default function TransactionsPage() {
-    const [type, setType] = useState<TransactionType>('all');
+    const [type, setType] = useState<TransactionType>('expense');
     const [search, setSearch] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -30,17 +30,21 @@ export default function TransactionsPage() {
     const startDate = `${currentYear}-01-01`;
     const endDate = `${currentYear}-12-31`;
 
-    // Fetch expenses with server-side pagination ONLY for expense-only view
-    // For 'all' and 'income', fetch ALL expenses without limit
+    // Fetch expenses ONLY when type is 'expense'
     const { data: expensesResponse, isLoading: expensesLoading } = useExpenses({
-        page: type === 'expense' ? currentPage : undefined,
-        limit: type === 'expense' ? ITEMS_PER_PAGE : undefined,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
         startDate,
         endDate,
         search: search || undefined,
-    });
+    }, { enabled: type === 'expense' });
 
-    const { data: income, isLoading: incomeLoading } = useIncome();
+    // Fetch income ONLY when type is 'income'
+    const { data: income, isLoading: incomeLoading } = useIncome({
+        startDate,
+        endDate,
+        search: search || undefined,
+    }, { enabled: type === 'income' });
 
     const isLoading = expensesLoading || incomeLoading;
 
@@ -70,17 +74,6 @@ export default function TransactionsPage() {
 
     // Calculate display indices
     const { startIndex, endIndex } = getDisplayIndices(currentPage, totalCount);
-
-    // Debug logging
-    console.log('=== Pagination Debug ===');
-    console.log('Type:', type);
-    console.log('Current Page:', currentPage);
-    console.log('Total Count:', totalCount);
-    console.log('Total Pages:', totalPages);
-    console.log('All Transactions Length:', allTransactions.length);
-    console.log('Display Transactions Length:', displayTransactions.length);
-    console.log('Expenses Meta:', expensesMeta);
-    console.log('========================');
 
     // Event handlers
     const handleFilterChange = (newType: TransactionType) => {
@@ -135,8 +128,8 @@ export default function TransactionsPage() {
                 </div>
 
                 {/* Type Filter */}
-                <div className="flex gap-2 bg-muted p-1 rounded-lg">
-                    {(['all', 'expense', 'income'] as TransactionType[]).map((t) => (
+                <div className="grid grid-cols-2 gap-2 bg-muted p-1 rounded-lg w-full sm:w-auto">
+                    {(['expense', 'income'] as TransactionType[]).map((t) => (
                         <button
                             key={t}
                             onClick={() => handleFilterChange(t)}

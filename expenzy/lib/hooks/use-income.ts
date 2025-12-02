@@ -5,9 +5,9 @@ import { QUERY_KEYS } from '@/lib/config/query-client';
 import type { Income, CreateIncomeDto, UpdateIncomeDto, IncomeFilters } from '@/types';
 import { toast } from 'sonner';
 
-export function useIncome(filters?: IncomeFilters) {
+export function useIncome(filters?: IncomeFilters, options?: { enabled?: boolean }) {
     return useQuery({
-        queryKey: QUERY_KEYS.INCOME.LIST(filters),
+        queryKey: QUERY_KEYS.INCOME.LIST(filters as Record<string, unknown> | undefined),
         queryFn: async () => {
             const params = new URLSearchParams();
             if (filters?.startDate) params.append('startDate', filters.startDate);
@@ -18,6 +18,7 @@ export function useIncome(filters?: IncomeFilters) {
             const url = `${API_ENDPOINTS.INCOME.BASE}?${params.toString()}`;
             return apiClient.get<Income[]>(url);
         },
+        enabled: options?.enabled,
     });
 }
 

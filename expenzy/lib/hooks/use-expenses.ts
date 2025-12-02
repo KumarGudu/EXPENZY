@@ -20,7 +20,10 @@ interface PaginatedResponse<T> {
 
 
 
-export function useExpenses(filters?: ExpenseFilters & { page?: number; limit?: number }) {
+export function useExpenses(
+    filters?: ExpenseFilters & { page?: number; limit?: number },
+    options?: { enabled?: boolean }
+) {
     return useQuery({
         queryKey: ['expenses', filters],
         queryFn: async ({ pageParam }) => {
@@ -49,6 +52,7 @@ export function useExpenses(filters?: ExpenseFilters & { page?: number; limit?: 
 
             return response;
         },
+        enabled: options?.enabled,
     });
 }
 
