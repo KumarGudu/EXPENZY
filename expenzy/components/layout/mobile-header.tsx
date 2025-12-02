@@ -1,11 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
-import { Bell, Moon, Sun, LogOut } from 'lucide-react';
+import { Bell, Moon, Sun, User } from 'lucide-react';
+import { ROUTES } from '@/lib/routes';
 
 export function MobileHeader() {
-    const { user, logout } = useAuth();
+    const router = useRouter();
+    const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
     return (
@@ -54,11 +57,11 @@ export function MobileHeader() {
 
                     {user && (
                         <button
-                            onClick={logout}
+                            onClick={() => router.push(ROUTES.PROFILE)}
                             className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            aria-label="Logout"
+                            aria-label="Profile"
                         >
-                            <LogOut className="w-5 h-5" />
+                            <User className="w-5 h-5" />
                         </button>
                     )}
                 </div>

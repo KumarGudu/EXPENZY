@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings, DollarSign } from 'lucide-react';
+import { Settings, IndianRupee } from 'lucide-react';
 import {
     Select,
     SelectContent,
@@ -33,11 +33,8 @@ export function PreferencesSettings({ user, onCurrencyChange }: PreferencesSetti
             <div className="p-6">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                            <p className="font-medium text-sm">Default Currency</p>
-                            <p className="text-xs text-muted-foreground">Primary currency</p>
-                        </div>
+                        <IndianRupee className="w-4 h-4 text-muted-foreground" />
+                        <p className="font-medium text-sm">Currency</p>
                     </div>
                     <Select
                         value={user?.defaultCurrency || 'USD'}

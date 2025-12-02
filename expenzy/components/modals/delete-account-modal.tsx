@@ -1,19 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useDeleteAccount } from '@/lib/hooks/use-profile';
 import { useAuth } from '@/contexts/auth-context';
-import {
-    deleteAccountSchema,
-    type DeleteAccountFormData,
-} from '@/lib/validations/profile.schema';
+import { z } from 'zod';
 import { AlertTriangle, Eye, EyeOff } from 'lucide-react';
+
+const deleteAccountSchema = z.object({
+    password: z.string().min(1, 'Password is required'),
+});
+
+type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>;
 
 interface DeleteAccountModalProps {
     open: boolean;
@@ -29,15 +32,10 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
         register,
         handleSubmit,
         formState: { errors },
-        control,
         reset,
     } = useForm<DeleteAccountFormData>({
         resolver: zodResolver(deleteAccountSchema),
     });
-
-    const confirmation = useWatch({ control, name: 'confirmation' });
-    const isConfirmationValid =
-        confirmation?.toLowerCase() === 'delete my account';
 
     const onSubmit = async (data: DeleteAccountFormData) => {
         await deleteAccount.mutateAsync(data);
@@ -56,68 +54,44 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-destructive">
-                        <AlertTriangle className="w-5 h-5" />
-                        Delete Account
-                    </DialogTitle>
+            <DialogContent className="sm:max-w-[440px]">
+                <DialogHeader className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                            <AlertTriangle className="h-6 w-6 text-destructive" />
+                        </div>
+                        <div className="flex-1">
+                            <DialogTitle className="text-xl">Delete Account</DialogTitle>
+                            <DialogDescription className="text-sm mt-1">
+                                This action cannot be undone
+                            </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                    <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4">
-                        <h4 className="font-semibold text-destructive mb-2">
-                            Warning: This action cannot be undone
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                            Deleting your account will permanently remove:
-                        </p>
-                        <ul className="text-sm text-muted-foreground list-disc list-inside mt-2 space-y-1">
-                            <li>All your transactions and expenses</li>
-                            <li>All budgets and savings goals</li>
-                            <li>All subscriptions and recurring payments</li>
-                            <li>All tags and categories</li>
-                            <li>Your profile and settings</li>
-                        </ul>
-                    </div>
+                <div className="space-y-6 pt-2">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                        Your account and all associated data will be permanently deleted. This includes all transactions, budgets, and settings.
+                    </p>
 
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                        <div>
-                            <Label htmlFor="confirmation">
-                                Type <span className="font-mono font-semibold">delete my account</span> to confirm
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="text-sm font-medium">
+                                Enter your password to confirm
                             </Label>
-                            <Input
-                                id="confirmation"
-                                {...register('confirmation')}
-                                placeholder="delete my account"
-                                className={
-                                    errors.confirmation
-                                        ? 'border-destructive'
-                                        : isConfirmationValid
-                                            ? 'border-success'
-                                            : ''
-                                }
-                            />
-                            {errors.confirmation && (
-                                <p className="text-sm text-destructive mt-1">
-                                    {errors.confirmation.message}
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <Label htmlFor="password">Confirm your password</Label>
                             <div className="relative">
                                 <Input
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     {...register('password')}
                                     placeholder="Enter your password"
+                                    className="pr-10"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    tabIndex={-1}
                                 >
                                     {showPassword ? (
                                         <EyeOff className="w-4 h-4" />
@@ -127,20 +101,26 @@ export function DeleteAccountModal({ open, onClose }: DeleteAccountModalProps) {
                                 </button>
                             </div>
                             {errors.password && (
-                                <p className="text-sm text-destructive mt-1">
+                                <p className="text-sm text-destructive">
                                     {errors.password.message}
                                 </p>
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-4">
-                            <Button type="button" variant="outline" onClick={handleClose}>
+                        <div className="flex gap-3 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleClose}
+                                className="flex-1"
+                            >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 variant="destructive"
-                                disabled={deleteAccount.isPending || !isConfirmationValid}
+                                disabled={deleteAccount.isPending}
+                                className="flex-1"
                             >
                                 {deleteAccount.isPending ? 'Deleting...' : 'Delete Account'}
                             </Button>

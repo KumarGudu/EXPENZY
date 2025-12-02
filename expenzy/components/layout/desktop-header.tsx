@@ -1,11 +1,9 @@
 'use client';
 
-import { useAuth } from '@/contexts/auth-context';
 import { useTheme } from '@/contexts/theme-context';
-import { Bell, Moon, Sun, LogOut } from 'lucide-react';
+import { Bell, Moon, Sun } from 'lucide-react';
 
 export function DesktopHeader() {
-    const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
     return (
@@ -53,16 +51,6 @@ export function DesktopHeader() {
                         <Bell className="w-5 h-5" />
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
                     </button>
-
-                    {user && (
-                        <button
-                            onClick={logout}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                            aria-label="Logout"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
-                    )}
                 </div>
             </div>
         </header>

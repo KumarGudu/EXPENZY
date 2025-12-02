@@ -9,7 +9,6 @@ import {
     Receipt,
     BarChart3,
     Wallet,
-    User,
     ChevronLeft,
     ChevronRight,
     PiggyBank,
@@ -29,7 +28,6 @@ const navigation = [
     { name: 'Subscriptions', route: ROUTES.SUBSCRIPTIONS, icon: Calendar },
     { name: 'Groups', route: ROUTES.GROUPS, icon: Users },
     { name: 'Loans', route: ROUTES.LOANS, icon: HandCoins },
-    { name: 'Profile', route: ROUTES.PROFILE, icon: User },
 ];
 
 export function DesktopSidebar() {
@@ -102,8 +100,11 @@ export function DesktopSidebar() {
             {/* User Info - Always visible when not collapsed */}
             {!isCollapsed && user && (
                 <div className="px-4 pb-4">
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-accent/50 hover:bg-accent transition-colors">
-                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0">
+                    <button
+                        onClick={() => router.push(ROUTES.PROFILE)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-accent/50 hover:bg-accent transition-colors cursor-pointer group"
+                    >
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
                             {user.firstName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -113,16 +114,20 @@ export function DesktopSidebar() {
                                     : user.firstName || user.username || 'User'}
                             </p>
                         </div>
-                    </div>
+                    </button>
                 </div>
             )}
 
             {/* Collapsed User Avatar */}
             {isCollapsed && user && (
                 <div className="px-4 pb-4 flex justify-center">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold shadow-md">
+                    <button
+                        onClick={() => router.push(ROUTES.PROFILE)}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold shadow-md hover:scale-110 transition-transform cursor-pointer"
+                        title="Go to Profile"
+                    >
                         {user.firstName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
+                    </button>
                 </div>
             )}
         </aside>

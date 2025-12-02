@@ -6,6 +6,7 @@ import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
 import { useAuth } from '@/contexts/auth-context';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
 import { DeleteAccountModal } from '@/components/modals/delete-account-modal';
+import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import {
     ProfileHeader,
     AppearanceSettings,
@@ -27,6 +28,7 @@ export default function ProfilePage() {
 
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
     const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
     const handleSettingChange = async (key: string, value: string) => {
         await updateSettings.mutateAsync({ [key]: value });
@@ -87,7 +89,7 @@ export default function ProfilePage() {
 
             {/* Danger Zone */}
             <DangerZone
-                onLogout={logout}
+                onLogout={() => setIsLogoutConfirmOpen(true)}
                 onDeleteAccount={() => setIsDeleteAccountOpen(true)}
             />
 
@@ -99,6 +101,16 @@ export default function ProfilePage() {
             <DeleteAccountModal
                 open={isDeleteAccountOpen}
                 onClose={() => setIsDeleteAccountOpen(false)}
+            />
+            <ConfirmationModal
+                open={isLogoutConfirmOpen}
+                onClose={() => setIsLogoutConfirmOpen(false)}
+                onConfirm={logout}
+                title="Logout Confirmation"
+                description="Are you sure you want to logout? You'll need to sign in again to access your account."
+                confirmText="Logout"
+                cancelText="Cancel"
+                variant="destructive"
             />
         </div>
     );

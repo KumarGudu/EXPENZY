@@ -2,15 +2,18 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils/cn';
-import { LayoutDashboard, Receipt, BarChart3, Wallet, User } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart3, HandCoins, Users } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 
 const tabs = [
     { name: 'Home', route: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { name: 'Transactions', route: ROUTES.TRANSACTIONS, icon: Receipt },
+    { name: 'Groups', route: ROUTES.GROUPS, icon: Users },
+    { name: 'Loans', route: ROUTES.LOANS, icon: HandCoins },
+    // { name: 'Budget', route: ROUTES.BUDGET, icon: Wallet },
+    // { name: 'Subscriptions', route: ROUTES.SUBSCRIPTIONS, icon: Calendar },
+
     { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 },
-    { name: 'Budget', route: ROUTES.BUDGET, icon: Wallet },
-    { name: 'Profile', route: ROUTES.PROFILE, icon: User },
 ];
 
 export function BottomNav() {
