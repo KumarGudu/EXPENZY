@@ -6,6 +6,13 @@ import { formatCurrency } from '@/lib/utils/format';
 import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import type { AnalyticsPeriod } from '@/types';
 import { PageHeader } from '@/components/layout/page-header';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export default function AnalyticsPage() {
     const [period, setPeriod] = useState<AnalyticsPeriod>('month');
@@ -23,16 +30,20 @@ export default function AnalyticsPage() {
                 title="Analytics"
                 description="Insights into your spending"
                 action={
-                    <select
+                    <Select
                         value={period}
-                        onChange={(e) => setPeriod(e.target.value as AnalyticsPeriod)}
-                        className="px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        onValueChange={(value) => setPeriod(value as AnalyticsPeriod)}
                     >
-                        <option value="week">This Week</option>
-                        <option value="month">This Month</option>
-                        <option value="quarter">This Quarter</option>
-                        <option value="year">This Year</option>
-                    </select>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select period" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="week">This Week</SelectItem>
+                            <SelectItem value="month">This Month</SelectItem>
+                            <SelectItem value="quarter">This Quarter</SelectItem>
+                            <SelectItem value="year">This Year</SelectItem>
+                        </SelectContent>
+                    </Select>
                 }
             />
 
