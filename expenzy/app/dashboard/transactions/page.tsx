@@ -31,18 +31,11 @@ export default function TransactionsPage() {
     const deleteExpense = useDeleteExpense();
     const deleteIncome = useDeleteIncome();
 
-    // Get current year date range
-    const currentYear = new Date().getFullYear();
-    const startDate = `${currentYear}-01-01`;
-    const endDate = `${currentYear}-12-31`;
-
     // Fetch function for VirtualList
     const fetchTransactions = async (page: number) => {
         const params = new URLSearchParams();
         params.append('page', page.toString());
         params.append('limit', ITEMS_PER_PAGE.toString());
-        params.append('startDate', startDate);
-        params.append('endDate', endDate);
         if (search) params.append('search', search);
 
         if (type === 'expense') {
@@ -133,10 +126,10 @@ export default function TransactionsPage() {
             <div className="bg-card border border-border rounded-lg p-4 hover:bg-accent/5 transition-colors">
                 <div className="flex items-start gap-3">
                     {/* Category Icon */}
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-secondary/30">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                         <CategoryIcon
-                            category={categoryName as any}
-                            className="w-5 h-5"
+                            category={categoryName}
+                            className="w-6 h-6"
                         />
                     </div>
 
@@ -146,7 +139,7 @@ export default function TransactionsPage() {
                             {description}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{getCategoryLabel(categoryName as any)}</span>
+                            <span>{getCategoryLabel(categoryName)}</span>
                             <span>•</span>
                             <span>{formatDate(date)}</span>
                         </div>
@@ -187,7 +180,7 @@ export default function TransactionsPage() {
                 {/* Header */}
                 <PageHeader
                     title="Transactions"
-                    description={`Track your ${currentYear} income and expenses`}
+                    description="Track all your income and expenses"
                     action={
                         <button
                             onClick={() => setIsModalOpen(true)}

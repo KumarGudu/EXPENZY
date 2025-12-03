@@ -11,12 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils/cn';
 
@@ -25,10 +22,9 @@ const transactionSchema = z.object({
     amount: z.string().min(1, 'Amount is required').refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
         message: 'Amount must be a positive number',
     }),
-    description: z.string().min(1, 'Description is required').max(200, 'Description too long'),
+    description: z.string().min(3, 'Description must be at least 3 characters').max(200, 'Description too long'),
     categoryId: z.string().min(1, 'Category is required'),
     date: z.date(),
-    notes: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -41,7 +37,7 @@ interface AddTransactionModalProps {
 export function AddTransactionModal({ open, onClose }: AddTransactionModalProps) {
     const [transactionType, setTransactionType] = useState<'income' | 'expense'>('expense');
 
-    const { data: categories = [], isLoading: categoriesLoading } = useCategories(transactionType);
+    const { data: categories = [] } = useCategories(transactionType);
     const createExpense = useCreateExpense();
     const createIncome = useCreateIncome();
 
@@ -61,18 +57,17 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
     });
 
     const selectedDate = useWatch({ control, name: 'date' });
-    const selectedCategory = useWatch({ control, name: 'categoryId' });
     const description = useWatch({ control, name: 'description' });
 
     // Keyword Matcher Integration
     const { match, isReady } = useKeywordMatcher();
-    const [suggestedCategoryKey, setSuggestedCategoryKey] = useState<string | null>(null);
+    const [detectedCategory, setDetectedCategory] = useState<string | null>(null);
 
-    // Auto-detect category based on description
+    // Auto-detect category based on description (min 3 chars)
     useEffect(() => {
-        if (isReady && description && transactionType === 'expense') {
+        if (isReady && description && description.length >= 3 && transactionType === 'expense') {
             const matchedKey = match(description);
-            setSuggestedCategoryKey(matchedKey);
+            setDetectedCategory(matchedKey);
 
             if (matchedKey) {
                 // Find matching category ID from backend categories
@@ -86,9 +81,10 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                 }
             }
         } else {
-            setSuggestedCategoryKey(null);
+            setDetectedCategory(null);
         }
-    }, [description, isReady, match, transactionType, categories, setValue]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [description, isReady, match, transactionType, categories]);
 
     const handleTypeChange = (type: 'income' | 'expense') => {
         setTransactionType(type);
@@ -104,7 +100,6 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                     description: data.description,
                     categoryId: data.categoryId,
                     expenseDate: data.date.toISOString(),
-                    notes: data.notes,
                 });
             } else {
                 await createIncome.mutateAsync({
@@ -112,7 +107,6 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                     source: data.description,
                     categoryId: data.categoryId,
                     incomeDate: data.date.toISOString(),
-                    notes: data.notes,
                 });
             }
             reset();
@@ -188,95 +182,43 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                         )}
                     </div>
 
-                    {/* Description */}
+                    {/* Description with Auto-detected Category Icon */}
                     <div className="space-y-2">
                         <Label htmlFor="description">
                             {transactionType === 'expense' ? 'Description' : 'Source'} *
                         </Label>
-                        <Input
-                            id="description"
-                            placeholder={
-                                transactionType === 'expense'
-                                    ? 'e.g., Lunch at restaurant'
-                                    : 'e.g., Salary, Freelance work'
-                            }
-                            {...register('description')}
-                            className={errors.description ? 'border-destructive' : ''}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="description"
+                                placeholder={
+                                    transactionType === 'expense'
+                                        ? 'e.g., Lunch at restaurant, Uber ride'
+                                        : 'e.g., Salary, Freelance work'
+                                }
+                                {...register('description')}
+                                className={cn(
+                                    errors.description ? 'border-destructive' : '',
+                                    detectedCategory && transactionType === 'expense' ? 'pr-12' : ''
+                                )}
+                            />
+                            {/* Auto-detected Category Icon */}
+                            {detectedCategory && transactionType === 'expense' && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                    <CategoryIcon
+                                        category={detectedCategory}
+                                        className="w-5 h-5"
+                                    />
+                                </div>
+                            )}
+                        </div>
                         {errors.description && (
                             <p className="text-sm text-destructive">{errors.description.message}</p>
                         )}
-
-                        {/* Instant Suggestion Badge */}
-                        {suggestedCategoryKey && transactionType === 'expense' && (
-                            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-secondary/30 border border-secondary/50 animate-in fade-in slide-in-from-top-1">
-                                <Sparkles className="h-4 w-4 text-yellow-500" />
-                                <span className="text-sm text-muted-foreground">
-                                    Suggested:
-                                </span>
-                                <Badge
-                                    variant="secondary"
-                                    className="flex items-center gap-1"
-                                >
-                                    <CategoryIcon
-                                        category={suggestedCategoryKey}
-                                        className="h-3 w-3"
-                                    />
-                                    {getCategoryLabel(suggestedCategoryKey)}
-                                </Badge>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Category */}
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Category *</Label>
-                        <Select
-                            key={transactionType} // Force re-render when type changes
-                            value={selectedCategory || ''}
-                            onValueChange={(value) => setValue('categoryId', value)}
-                        >
-                            <SelectTrigger className={errors.categoryId ? 'border-destructive' : ''}>
-                                <SelectValue placeholder="Select category">
-                                    {selectedCategory && categories.find(c => c.id === selectedCategory) && (
-                                        <div className="flex items-center gap-2">
-                                            <CategoryIcon
-                                                category={categories.find(c => c.id === selectedCategory)?.name.toLowerCase() || ''}
-                                                className="h-4 w-4"
-                                            />
-                                            <span>
-                                                {getCategoryLabel(categories.find(c => c.id === selectedCategory)?.name.toLowerCase() || '')}
-                                            </span>
-                                        </div>
-                                    )}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categoriesLoading ? (
-                                    <SelectItem value="loading" disabled>
-                                        Loading...
-                                    </SelectItem>
-                                ) : categories.length === 0 ? (
-                                    <SelectItem value="empty" disabled>
-                                        No categories available
-                                    </SelectItem>
-                                ) : (
-                                    categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
-                                            <div className="flex items-center gap-2">
-                                                <CategoryIcon
-                                                    category={category.name.toLowerCase()}
-                                                    className="h-4 w-4"
-                                                />
-                                                <span>{getCategoryLabel(category.name.toLowerCase())}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
-                        {errors.categoryId && (
-                            <p className="text-sm text-destructive">{errors.categoryId.message}</p>
+                        {detectedCategory && transactionType === 'expense' && description && description.length >= 3 && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <span>Category:</span>
+                                <span className="font-medium">{getCategoryLabel(detectedCategory)}</span>
+                            </p>
                         )}
                     </div>
 
@@ -305,17 +247,6 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                                 />
                             </PopoverContent>
                         </Popover>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="space-y-2">
-                        <Label htmlFor="notes">Notes (Optional)</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Add any additional notes..."
-                            rows={3}
-                            {...register('notes')}
-                        />
                     </div>
 
                     {/* Actions */}

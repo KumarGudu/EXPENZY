@@ -11,12 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils/cn';
 import type { Expense } from '@/types/expense';
@@ -27,10 +24,9 @@ const transactionSchema = z.object({
     amount: z.string().min(1, 'Amount is required').refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
         message: 'Amount must be a positive number',
     }),
-    description: z.string().min(1, 'Description is required').max(200, 'Description too long'),
+    description: z.string().min(3, 'Description must be at least 3 characters').max(200, 'Description too long'),
     categoryId: z.string().min(1, 'Category is required'),
     date: z.date(),
-    notes: z.string().optional(),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -59,11 +55,10 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
     });
 
     const selectedDate = useWatch({ control, name: 'date' });
-    const selectedCategory = useWatch({ control, name: 'categoryId' });
     const selectedType = useWatch({ control, name: 'type' }) || 'expense';
     const description = useWatch({ control, name: 'description' });
 
-    const { data: categories = [], isLoading: categoriesLoading } = useCategories(selectedType);
+    const { data: categories = [] } = useCategories(selectedType);
     const createExpense = useCreateExpense();
     const createIncome = useCreateIncome();
     const updateExpense = useUpdateExpense();
@@ -71,13 +66,13 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
 
     // Keyword Matcher Integration
     const { match, isReady } = useKeywordMatcher();
-    const [suggestedCategoryKey, setSuggestedCategoryKey] = useState<string | null>(null);
+    const [detectedCategory, setDetectedCategory] = useState<string | null>(null);
 
-    // Auto-detect category based on description
+    // Auto-detect category based on description (min 3 chars)
     useEffect(() => {
-        if (mode === 'add' && isReady && description && selectedType === 'expense') {
+        if (mode === 'add' && isReady && description && description.length >= 3 && selectedType === 'expense') {
             const matchedKey = match(description);
-            setSuggestedCategoryKey(matchedKey);
+            setDetectedCategory(matchedKey);
 
             if (matchedKey) {
                 // Find matching category ID from backend categories
@@ -90,10 +85,11 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                     setValue('categoryId', matchingCategory.id);
                 }
             }
-        } else {
-            setSuggestedCategoryKey(null);
+        } else if (mode === 'add') {
+            setDetectedCategory(null);
         }
-    }, [description, isReady, match, mode, selectedType, categories, setValue]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [description, isReady, match, mode, selectedType, categories]);
 
     // Pre-populate form in edit mode
     useEffect(() => {
@@ -112,7 +108,12 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
             setValue('description', description);
             setValue('categoryId', transaction.categoryId);
             setValue('date', new Date(date));
-            setValue('notes', transaction.notes || '');
+
+            // For edit mode, we can show the existing category icon if we want, 
+            // but for now let's just rely on the stored categoryId
+            if (transaction.type === 'expense' && transaction.category) {
+                setDetectedCategory(transaction.category.name.toLowerCase());
+            }
         }
     }, [mode, transaction, open, setValue]);
 
@@ -130,7 +131,6 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                         description: data.description,
                         categoryId: data.categoryId,
                         expenseDate: data.date.toISOString(),
-                        notes: data.notes,
                     });
                 } else {
                     await createIncome.mutateAsync({
@@ -138,7 +138,6 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                         source: data.description,
                         categoryId: data.categoryId,
                         incomeDate: data.date.toISOString(),
-                        notes: data.notes,
                     });
                 }
             } else {
@@ -153,7 +152,6 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                             description: data.description,
                             categoryId: data.categoryId,
                             expenseDate: data.date.toISOString(),
-                            notes: data.notes,
                         },
                     });
                 } else {
@@ -164,7 +162,6 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                             source: data.description,
                             categoryId: data.categoryId,
                             incomeDate: data.date.toISOString(),
-                            notes: data.notes,
                         },
                     });
                 }
@@ -245,95 +242,43 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                         )}
                     </div>
 
-                    {/* Description */}
+                    {/* Description with Auto-detected Category Icon */}
                     <div className="space-y-2">
                         <Label htmlFor="description">
                             {selectedType === 'expense' ? 'Description' : 'Source'} *
                         </Label>
-                        <Input
-                            id="description"
-                            placeholder={
-                                selectedType === 'expense'
-                                    ? 'e.g., Lunch at restaurant'
-                                    : 'e.g., Salary, Freelance work'
-                            }
-                            {...register('description')}
-                            className={errors.description ? 'border-destructive' : ''}
-                        />
+                        <div className="relative">
+                            <Input
+                                id="description"
+                                placeholder={
+                                    selectedType === 'expense'
+                                        ? 'e.g., Lunch at restaurant'
+                                        : 'e.g., Salary, Freelance work'
+                                }
+                                {...register('description')}
+                                className={cn(
+                                    errors.description ? 'border-destructive' : '',
+                                    detectedCategory && selectedType === 'expense' ? 'pr-12' : ''
+                                )}
+                            />
+                            {/* Auto-detected Category Icon */}
+                            {detectedCategory && selectedType === 'expense' && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                    <CategoryIcon
+                                        category={detectedCategory}
+                                        className="w-5 h-5"
+                                    />
+                                </div>
+                            )}
+                        </div>
                         {errors.description && (
                             <p className="text-sm text-destructive">{errors.description.message}</p>
                         )}
-
-                        {/* Instant Suggestion Badge */}
-                        {suggestedCategoryKey && selectedType === 'expense' && (
-                            <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-secondary/30 border border-secondary/50 animate-in fade-in slide-in-from-top-1">
-                                <Sparkles className="h-4 w-4 text-yellow-500" />
-                                <span className="text-sm text-muted-foreground">
-                                    Suggested:
-                                </span>
-                                <Badge
-                                    variant="secondary"
-                                    className="flex items-center gap-1"
-                                >
-                                    <CategoryIcon
-                                        category={suggestedCategoryKey}
-                                        className="h-3 w-3"
-                                    />
-                                    {getCategoryLabel(suggestedCategoryKey)}
-                                </Badge>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Category */}
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Category *</Label>
-                        <Select
-                            key={selectedType} // Force re-render when type changes
-                            value={selectedCategory || ''}
-                            onValueChange={(value) => setValue('categoryId', value)}
-                        >
-                            <SelectTrigger className={errors.categoryId ? 'border-destructive' : ''}>
-                                <SelectValue placeholder="Select category">
-                                    {selectedCategory && categories.find(c => c.id === selectedCategory) && (
-                                        <div className="flex items-center gap-2">
-                                            <CategoryIcon
-                                                category={categories.find(c => c.id === selectedCategory)?.name.toLowerCase() || ''}
-                                                className="h-4 w-4"
-                                            />
-                                            <span>
-                                                {getCategoryLabel(categories.find(c => c.id === selectedCategory)?.name.toLowerCase() || '')}
-                                            </span>
-                                        </div>
-                                    )}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categoriesLoading ? (
-                                    <SelectItem value="loading" disabled>
-                                        Loading...
-                                    </SelectItem>
-                                ) : categories.length === 0 ? (
-                                    <SelectItem value="empty" disabled>
-                                        No categories available
-                                    </SelectItem>
-                                ) : (
-                                    categories.map((category) => (
-                                        <SelectItem key={category.id} value={category.id}>
-                                            <div className="flex items-center gap-2">
-                                                <CategoryIcon
-                                                    category={category.name.toLowerCase()}
-                                                    className="h-4 w-4"
-                                                />
-                                                <span>{getCategoryLabel(category.name.toLowerCase())}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))
-                                )}
-                            </SelectContent>
-                        </Select>
-                        {errors.categoryId && (
-                            <p className="text-sm text-destructive">{errors.categoryId.message}</p>
+                        {detectedCategory && selectedType === 'expense' && description && description.length >= 3 && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <span>Category:</span>
+                                <span className="font-medium">{getCategoryLabel(detectedCategory)}</span>
+                            </p>
                         )}
                     </div>
 
@@ -362,17 +307,6 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                                 />
                             </PopoverContent>
                         </Popover>
-                    </div>
-
-                    {/* Notes */}
-                    <div className="space-y-2">
-                        <Label htmlFor="notes">Notes (Optional)</Label>
-                        <Textarea
-                            id="notes"
-                            placeholder="Add any additional notes..."
-                            rows={3}
-                            {...register('notes')}
-                        />
                     </div>
 
                     {/* Actions */}

@@ -123,7 +123,7 @@ export default function DashboardPage() {
                         </div>
                         <h1 className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">Welcome back!</h1>
                         <p className="text-sm lg:text-base text-muted-foreground mb-4 lg:mb-6">
-                            Here's what's happening with your money
+                            Here&apos;s what&apos;s happening with your money
                         </p>
 
                         <Button
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                     {dashboard?.recentTransactions && dashboard.recentTransactions.length > 0 ? (
                         <div className="space-y-2">
                             {dashboard.recentTransactions.slice(0, 5).map((transaction) => {
-                                const categoryName = (transaction.category?.name.toLowerCase() || 'other') as CategoryType;
+                                const categoryName = transaction.category?.name.toLowerCase() || 'other';
 
                                 return (
                                     <div
