@@ -26,6 +26,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { configuration } from './config/configuration';
 import { validationSchema } from './config/env.validation';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { CategorizationModule } from './categorization/categorization.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     UserSettingsModule,
     AnalyticsModule,
     SchedulerModule,
+    CategorizationModule,
   ],
   controllers: [AppController],
   providers: [
@@ -76,4 +78,4 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
