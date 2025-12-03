@@ -19,7 +19,6 @@ import {
     Home,
     Fuel,
     Sparkles,
-    PawPrint,
     Baby,
     ShieldCheck,
     Landmark,
@@ -40,12 +39,14 @@ import {
     MoreHorizontal,
     Banknote,
     Building,
+    Coffee,
     type LucideIcon,
 } from 'lucide-react';
 import { createElement } from 'react';
 
 export type CategoryType =
     | 'food'
+    | 'beverages'
     | 'groceries'
     | 'travel'
     | 'bills'
@@ -58,7 +59,6 @@ export type CategoryType =
     | 'home'
     | 'fuel'
     | 'personal_care'
-    | 'pets'
     | 'kids_family'
     | 'insurance'
     | 'taxes'
@@ -95,6 +95,12 @@ export const CATEGORY_ICONS: Record<CategoryType, CategoryConfig> = {
         color: 'text-orange-500',
         label: 'Food',
         description: 'Food and meals',
+    },
+    beverages: {
+        icon: Coffee,
+        color: 'text-amber-600',
+        label: 'Beverages',
+        description: 'Tea, coffee, juice, soft drinks, alcohol',
     },
     groceries: {
         icon: ShoppingBasket,
@@ -167,12 +173,6 @@ export const CATEGORY_ICONS: Record<CategoryType, CategoryConfig> = {
         color: 'text-pink-400',
         label: 'Personal Care',
         description: 'Salon, spa, grooming',
-    },
-    pets: {
-        icon: PawPrint,
-        color: 'text-amber-500',
-        label: 'Pets',
-        description: 'Pet food, vet, grooming',
     },
     kids_family: {
         icon: Baby,

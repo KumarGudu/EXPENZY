@@ -95,6 +95,7 @@ async function main() {
     const systemCategories = [
         // Expense Categories
         { name: 'food', icon: 'Utensils', color: 'text-orange-500', type: 'expense' },
+        { name: 'beverages', icon: 'Coffee', color: 'text-amber-600', type: 'expense' },
         { name: 'groceries', icon: 'ShoppingBasket', color: 'text-green-500', type: 'expense' },
         { name: 'travel', icon: 'Plane', color: 'text-blue-500', type: 'expense' },
         { name: 'bills', icon: 'Receipt', color: 'text-yellow-500', type: 'expense' },
@@ -107,7 +108,6 @@ async function main() {
         { name: 'home', icon: 'Home', color: 'text-indigo-500', type: 'expense' },
         { name: 'fuel', icon: 'Fuel', color: 'text-slate-600', type: 'expense' },
         { name: 'personal_care', icon: 'Sparkles', color: 'text-pink-400', type: 'expense' },
-        { name: 'pets', icon: 'PawPrint', color: 'text-amber-500', type: 'expense' },
         { name: 'kids_family', icon: 'Baby', color: 'text-rose-400', type: 'expense' },
         { name: 'insurance', icon: 'ShieldCheck', color: 'text-blue-600', type: 'expense' },
         { name: 'taxes', icon: 'Landmark', color: 'text-slate-700', type: 'expense' },
