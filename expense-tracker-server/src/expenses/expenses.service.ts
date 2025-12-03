@@ -3,7 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Currency } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -13,7 +13,7 @@ import { QueryBuilder } from '../common/utils/query-builder.util';
 
 @Injectable()
 export class ExpensesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createExpenseDto: CreateExpenseDto, userId: string) {
     return this.prisma.expense.create({
@@ -23,7 +23,7 @@ export class ExpensesService {
           ? { connect: { id: createExpenseDto.categoryId } }
           : undefined,
         amount: createExpenseDto.amount,
-        currency: createExpenseDto.currency || 'USD',
+        currency: (createExpenseDto.currency as Currency) || Currency.USD,
         description: createExpenseDto.description,
         expenseDate: new Date(createExpenseDto.expenseDate),
         paymentMethod: createExpenseDto.paymentMethod,
@@ -73,7 +73,7 @@ export class ExpensesService {
     }
 
     if (query.currency) {
-      where.currency = query.currency;
+      where.currency = query.currency as Currency;
     }
 
     if (query.search) {
@@ -89,8 +89,8 @@ export class ExpensesService {
     // Build sorting
     const sortBy =
       query.sortBy === 'amount' ||
-      query.sortBy === 'createdAt' ||
-      query.sortBy === 'updatedAt'
+        query.sortBy === 'createdAt' ||
+        query.sortBy === 'updatedAt'
         ? query.sortBy
         : 'expenseDate';
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
@@ -167,7 +167,7 @@ export class ExpensesService {
       where: { id },
       data: {
         amount: updateExpenseDto.amount,
-        currency: updateExpenseDto.currency,
+        currency: updateExpenseDto.currency as Currency,
         description: updateExpenseDto.description,
         expenseDate: updateExpenseDto.expenseDate
           ? new Date(updateExpenseDto.expenseDate)

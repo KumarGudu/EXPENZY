@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Currency } from '@prisma/client';
 
 @Injectable()
 export class SummariesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async getMonthlySummary(
     userId: string,
@@ -18,7 +19,7 @@ export class SummariesService {
           userId,
           year,
           month,
-          currency,
+          currency: currency as Currency,
         },
       },
     });
@@ -39,7 +40,7 @@ export class SummariesService {
           gte: startDate,
           lte: endDate,
         },
-        currency,
+        currency: currency as Currency,
         deletedAt: null,
       },
     });
@@ -71,7 +72,7 @@ export class SummariesService {
         userId_year_currency: {
           userId,
           year,
-          currency,
+          currency: currency as Currency,
         },
       },
     });
@@ -91,7 +92,7 @@ export class SummariesService {
           gte: startDate,
           lte: endDate,
         },
-        currency,
+        currency: currency as Currency,
         deletedAt: null,
       },
     });

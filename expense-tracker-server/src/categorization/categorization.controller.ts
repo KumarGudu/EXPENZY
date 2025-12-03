@@ -2,7 +2,7 @@ import { Controller, Post, Body, Get, Delete, Param, UseGuards, Request } from '
 import { CategorizationService } from './categorization.service';
 import { CategorizeDto } from './dto/categorize.dto';
 import { CategorizationResultDto } from './dto/categorization-result.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('categorization')
 export class CategorizationController {

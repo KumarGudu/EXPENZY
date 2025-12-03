@@ -97,7 +97,12 @@ export class KeywordDbService implements OnModuleInit {
 
             this.logger.log('Seeding system keywords...');
 
-            const keywordsToInsert = [];
+            const keywordsToInsert: Array<{
+                category: string;
+                keyword: string;
+                isSystem: boolean;
+                priority: number;
+            }> = [];
 
             for (const [category, keywords] of Object.entries(KEYWORDS)) {
                 for (const keyword of keywords) {
