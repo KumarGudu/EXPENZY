@@ -45,7 +45,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
             setEmail('');
             setRole('MEMBER');
             onOpenChange(false);
-        } catch (error) {
+        } catch (_error) {
             // Error handled by the hook
         }
     };

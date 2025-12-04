@@ -3,6 +3,7 @@ import { UserPlus, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MemberListItem } from './member-list-item';
 import { AddMemberModal } from './add-member-modal';
+import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import { useRemoveGroupMember } from '@/lib/hooks/use-groups';
 import type { GroupMember } from '@/types/group';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,11 +28,17 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
     currency = 'INR',
 }) => {
     const [showAddMember, setShowAddMember] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
     const removeMember = useRemoveGroupMember();
 
-    const handleRemoveMember = async (memberId: string) => {
-        if (confirm('Are you sure you want to remove this member?')) {
-            await removeMember.mutateAsync({ groupId, memberId });
+    const handleRemoveMember = async (memberId: string, memberName: string) => {
+        setMemberToRemove({ id: memberId, name: memberName });
+    };
+
+    const confirmRemoveMember = async () => {
+        if (memberToRemove) {
+            await removeMember.mutateAsync({ groupId, memberId: memberToRemove.id });
+            setMemberToRemove(null);
         }
     };
 
@@ -96,7 +103,7 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                             avatar={member.user?.avatar}
                             onRemove={
                                 isAdmin && member.userId !== currentUserId
-                                    ? () => handleRemoveMember(member.id)
+                                    ? () => handleRemoveMember(member.id, fullName)
                                     : undefined
                             }
                         />
@@ -108,6 +115,17 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                 groupId={groupId}
                 open={showAddMember}
                 onOpenChange={setShowAddMember}
+            />
+
+            <ConfirmationModal
+                open={!!memberToRemove}
+                onClose={() => setMemberToRemove(null)}
+                onConfirm={confirmRemoveMember}
+                title="Remove Member"
+                description={`Are you sure you want to remove ${memberToRemove?.name || 'this member'} from the group? This action cannot be undone.`}
+                confirmText="Remove"
+                cancelText="Cancel"
+                variant="destructive"
             />
         </div>
     );

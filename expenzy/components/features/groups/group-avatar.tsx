@@ -1,13 +1,11 @@
 import React from 'react';
 import { GroupIcon } from '@/components/ui/group-icon';
-import { cn } from '@/lib/utils/cn';
 
 interface GroupAvatarProps {
     name: string;
     iconSeed?: string;
     iconProvider?: string;
     imageUrl?: string;
-    icon?: 'home' | 'trip' | 'couple' | 'friends' | 'work' | 'shopping' | 'other';
     size?: 'sm' | 'md' | 'lg' | 'xl';
     className?: string;
 }
@@ -24,7 +22,6 @@ export const GroupAvatar: React.FC<GroupAvatarProps> = ({
     iconSeed,
     iconProvider,
     imageUrl,
-    icon,
     size = 'md',
     className,
 }) => {
@@ -32,8 +29,8 @@ export const GroupAvatar: React.FC<GroupAvatarProps> = ({
 
     return (
         <GroupIcon
-            seed={iconSeed || name}
-            provider={iconProvider as any}
+            seed={iconSeed}
+            provider={iconProvider as 'jdenticon' | undefined}
             fallbackUrl={imageUrl}
             size={sizeInPixels}
             className={className}

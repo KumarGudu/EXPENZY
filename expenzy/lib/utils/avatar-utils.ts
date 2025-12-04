@@ -29,21 +29,17 @@ export function generateDiceBearUrl(seed: string, style: UserAvatarStyle = 'adve
 /**
  * Generate Jdenticon SVG string
  * @param seed - Unique seed for icon generation
- * @param size - Size of the icon in pixels (default: 64)
+ * @param size - Size of the icon in pixels (default: 40)
  * @returns SVG string
  */
-export function generateJdenticonSvg(seed: string, size: number = 64): string {
-    // Dynamic import to avoid SSR issues
-    if (typeof window === 'undefined') {
-        return '';
-    }
+export function generateJdenticonSvg(seed: string, size: number = 40): string {
+    if (typeof window === 'undefined') return '';
 
     try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const jdenticon = require('jdenticon');
         return jdenticon.toSvg(seed, size);
-    } catch (error) {
-        console.error('Failed to generate Jdenticon:', error);
+    } catch {
         return '';
     }
 }

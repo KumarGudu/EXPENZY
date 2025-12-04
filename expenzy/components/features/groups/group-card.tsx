@@ -30,7 +30,6 @@ const GROUP_TYPE_CONFIG = {
 };
 
 export const GroupCard: React.FC<GroupCardProps> = ({
-    id,
     name,
     icon,
     groupType = 'other',
@@ -56,7 +55,6 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             <div className="flex items-start gap-4">
                 <GroupAvatar
                     name={name}
-                    icon={icon}
                     iconSeed={iconSeed}
                     iconProvider={iconProvider}
                     imageUrl={imageUrl}

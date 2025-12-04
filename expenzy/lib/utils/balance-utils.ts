@@ -3,13 +3,12 @@
  */
 
 import type { GroupExpense } from '@/types/group';
-import type { Split } from '@/types/split';
 
 export interface MemberBalance {
     userId: string;
     userName: string;
     userEmail: string;
-    balance: number; // Positive = gets back, Negative = owes
+    balance: number;
     currency: string;
 }
 
@@ -23,12 +22,10 @@ export interface SettlementSuggestion {
 /**
  * Calculate balances for all members in a group
  * @param expenses - Array of group expenses with splits
- * @param currentUserId - Current user's ID for reference
- * @returns Array of member balances
+ * @returns Map of member balances
  */
 export function calculateMemberBalances(
     expenses: GroupExpense[],
-    currentUserId: string
 ): Map<string, MemberBalance> {
     const balances = new Map<string, MemberBalance>();
 

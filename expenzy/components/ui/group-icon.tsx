@@ -1,7 +1,7 @@
 'use client';
 
 import { generateJdenticonSvg, GroupIconProvider } from '@/lib/utils/avatar-utils';
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import Image from 'next/image';
 
 interface GroupIconProps {
@@ -22,13 +22,11 @@ export function GroupIcon({
     fallbackUrl,
     className = '',
 }: GroupIconProps) {
-    const [svgContent, setSvgContent] = useState<string>('');
-
-    useEffect(() => {
+    const svgContent = useMemo(() => {
         if (seed && provider === 'jdenticon') {
-            const svg = generateJdenticonSvg(seed, size);
-            setSvgContent(svg);
+            return generateJdenticonSvg(seed, size);
         }
+        return '';
     }, [seed, provider, size]);
 
     // Use fallback if no seed provided

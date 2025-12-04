@@ -110,7 +110,7 @@ export function DesktopSidebar() {
                     >
                         <UserAvatar
                             seed={user.avatarSeed}
-                            style={user.avatarStyle as any}
+                            style={user.avatarStyle as 'adventurer' | 'adventurer-neutral' | 'thumbs' | 'fun-emoji' | undefined}
                             fallbackUrl={user.avatar}
                             size={36}
                             className="flex-shrink-0 group-hover:scale-105 transition-transform"
@@ -136,7 +136,7 @@ export function DesktopSidebar() {
                     >
                         <UserAvatar
                             seed={user.avatarSeed}
-                            style={user.avatarStyle as any}
+                            style={user.avatarStyle as 'adventurer' | 'adventurer-neutral' | 'thumbs' | 'fun-emoji' | undefined}
                             fallbackUrl={user.avatar}
                             size={40}
                             className="shadow-md"

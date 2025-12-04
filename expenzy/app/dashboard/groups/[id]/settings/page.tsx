@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GlassCard } from '@/components/shared/glass-card';
 import { GroupMemberList } from '@/components/features/groups/group-member-list';
+import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -26,6 +27,7 @@ export default function GroupSettingsPage() {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [hasChanges, setHasChanges] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     // Initialize form when group data loads
     useState(() => {
@@ -51,22 +53,20 @@ export default function GroupSettingsPage() {
             });
             setHasChanges(false);
             toast.success('Group updated successfully');
-        } catch (error) {
+        } catch (_error) {
             toast.error('Failed to update group');
         }
     };
 
     const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
-            return;
-        }
-
         try {
             await deleteGroup.mutateAsync(groupId);
             toast.success('Group deleted successfully');
             router.push('/dashboard/groups');
-        } catch (error) {
+        } catch (_error) {
             toast.error('Failed to delete group');
+        } finally {
+            setShowDeleteConfirm(false);
         }
     };
 
@@ -205,7 +205,7 @@ export default function GroupSettingsPage() {
 
                         <Button
                             variant="destructive"
-                            onClick={handleDelete}
+                            onClick={() => setShowDeleteConfirm(true)}
                             disabled={deleteGroup.isPending}
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
@@ -213,6 +213,18 @@ export default function GroupSettingsPage() {
                         </Button>
                     </div>
                 </GlassCard>
+
+                {/* Delete Confirmation Modal */}
+                <ConfirmationModal
+                    open={showDeleteConfirm}
+                    onClose={() => setShowDeleteConfirm(false)}
+                    onConfirm={handleDelete}
+                    title="Delete Group"
+                    description={`Are you sure you want to delete "${group.name}"? This action cannot be undone and all group data will be permanently deleted.`}
+                    confirmText="Delete Group"
+                    cancelText="Cancel"
+                    variant="destructive"
+                />
             </div>
         </PageWrapper>
     );

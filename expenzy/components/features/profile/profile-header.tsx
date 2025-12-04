@@ -15,19 +15,12 @@ export function ProfileHeader({ user, onEditProfile }: ProfileHeaderProps) {
         ? `${user.firstName} ${user.lastName}`
         : user?.username || 'User';
 
-    const initials = displayName
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-
     return (
         <div className="rounded-xl bg-card border border-border p-8 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <UserAvatar
                     seed={user?.avatarSeed}
-                    style={user?.avatarStyle as any}
+                    style={user?.avatarStyle as 'adventurer' | 'adventurer-neutral' | 'thumbs' | 'fun-emoji' | undefined}
                     fallbackUrl={user?.avatar}
                     size={96}
                     className="ring-2 ring-primary/20"

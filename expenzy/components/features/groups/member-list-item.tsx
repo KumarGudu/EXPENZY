@@ -1,7 +1,6 @@
 import React from 'react';
 import { MoreVertical, Crown } from 'lucide-react';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -30,7 +29,6 @@ interface MemberListItemProps {
 }
 
 export const MemberListItem: React.FC<MemberListItemProps> = ({
-    userId,
     name,
     email,
     role,
@@ -48,12 +46,6 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
     const balanceText = getBalanceText(balance);
     const balanceColor = getBalanceColor(balance);
     const formattedBalance = formatBalance(balance, currency);
-    const initials = name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
 
     return (
         <div
@@ -65,7 +57,7 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
             <div className="flex items-center gap-3 flex-1 min-w-0">
                 <UserAvatar
                     seed={avatarSeed}
-                    style={avatarStyle as any}
+                    style={avatarStyle as 'adventurer' | 'adventurer-neutral' | 'thumbs' | 'fun-emoji' | undefined}
                     fallbackUrl={avatar}
                     size={40}
                     className="shrink-0"
