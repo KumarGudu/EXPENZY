@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -18,7 +19,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('categories')
 @UseGuards(JwtAuthGuard)
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(private readonly categoriesService: CategoriesService) { }
 
   @Post()
   create(
@@ -29,8 +30,11 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload) {
-    return this.categoriesService.findAll(user.userId);
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query('type') type?: 'income' | 'expense',
+  ) {
+    return this.categoriesService.findAll(user.userId, type);
   }
 
   @Get(':id')

@@ -20,7 +20,7 @@ interface GoogleProfile {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -208,25 +208,5 @@ export class UsersService {
         isDeleted: true,
       },
     });
-  }
-
-  async getUserTags(userId: string) {
-    const tags = await this.prisma.tag.findMany({
-      where: { userId },
-      include: {
-        _count: {
-          select: { expenses: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return tags.map((tag) => ({
-      id: tag.id,
-      name: tag.name,
-      color: tag.color,
-      createdAt: tag.createdAt,
-      expenseCount: tag._count.expenses,
-    }));
   }
 }

@@ -62,10 +62,4 @@ export class UsersController {
   ) {
     return this.usersService.deleteAccount(user.userId, deleteAccountDto);
   }
-
-  @UseGuards(JwtAuthGuard)
-  @Get('tags')
-  getUserTags(@CurrentUser() user: JwtPayload) {
-    return this.usersService.getUserTags(user.userId);
-  }
 }

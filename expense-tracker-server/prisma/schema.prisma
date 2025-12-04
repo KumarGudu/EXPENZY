@@ -54,14 +54,11 @@ model User {
   groupsCreated        Group[]             @relation("GroupCreator")
   groupMemberships     GroupMember[]       @relation("GroupMemberships")
   incomes              Income[]
-  incomeCategories     IncomeCategory[]
   savingsGoals         SavingsGoal[]
   subscriptions        Subscription[]
-  tags                 Tag[]
   paymentMethods       PaymentMethod[]
   accounts             Account[]
   settings             UserSettings?
-  categoryKeywords     CategoryKeyword[]
   groupExpensesPaid    GroupExpense[]      @relation("GroupExpensePaidBy")
   groupExpenseSplits   GroupExpenseSplit[] @relation("GroupExpenseSplitUser")
   settlementsFrom      Settlement[]        @relation("SettlementFrom")
@@ -91,6 +88,7 @@ model Category {
   subCategories    Category[]     @relation("CategoryHierarchy")
   user             User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   expenses         Expense[]
+  incomes          Income[]
   subscriptions    Subscription[]
   groupExpenses    GroupExpense[]
 
@@ -132,7 +130,6 @@ model Expense {
   recurringPattern     RecurringPattern? @relation(fields: [recurringPatternId], references: [id])
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   splitExpense         SplitExpense[]
-  expenseTags          ExpenseTag[]
 
   @@index([userId, expenseDate(sort: Desc)])
   @@index([categoryId])
@@ -390,21 +387,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-model ExchangeRate {
-  id             String   @id @default(uuid())
-  baseCurrency   String   @map("base_currency")
-  targetCurrency String   @map("target_currency")
-  rate           Decimal  @db.Decimal(15, 6)
-  rateDate       DateTime @map("rate_date") @db.Date
-  source         String?
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  @@unique([baseCurrency, targetCurrency, rateDate])
-  @@index([baseCurrency, targetCurrency, rateDate(sort: Desc)])
-  @@index([rateDate(sort: Desc)])
-  @@map("exchange_rates")
-}
-
 model Attachment {
   id         String   @id @default(uuid())
   userId     String   @map("user_id")
@@ -495,7 +477,7 @@ model Income {
   deletedAt          DateTime? @map("deleted_at")
 
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category         IncomeCategory?   @relation(fields: [categoryId], references: [id])
+  category         Category?         @relation(fields: [categoryId], references: [id])
   recurringPattern RecurringPattern? @relation(fields: [recurringPatternId], references: [id])
 
   @@index([userId, incomeDate(sort: Desc)])
@@ -507,24 +489,6 @@ model Income {
   @@index([userId, categoryId])
   @@index([incomeDate])
   @@map("incomes")
-}
-
-model IncomeCategory {
-  id        String   @id @default(uuid())
-  userId    String?  @map("user_id")
-  name      String
-  icon      String?
-  color     String?
-  isSystem  Boolean  @default(false) @map("is_system")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user    User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  incomes Income[]
-
-  @@unique([userId, name])
-  @@index([userId, isSystem])
-  @@map("income_categories")
 }
 
 // ============================================
@@ -611,41 +575,6 @@ model Subscription {
   @@index([userId, billingCycle])
   @@index([categoryId])
   @@map("subscriptions")
-}
-
-// ============================================
-// NORMALIZED TAGS MODELS
-// ============================================
-
-model Tag {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  name      String
-  color     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expenses ExpenseTag[]
-
-  @@unique([userId, name])
-  @@index([userId])
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("tags")
-}
-
-model ExpenseTag {
-  expenseId String   @map("expense_id")
-  tagId     String   @map("tag_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
-  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([expenseId, tagId])
-  @@index([tagId])
-  @@index([expenseId])
-  @@map("expense_tags")
 }
 
 // ============================================
@@ -751,49 +680,6 @@ model UserSettings {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
-}
-
-// ============================================
-// ML CATEGORIZATION CACHE
-// ============================================
-
-model CategoryCache {
-  id          String   @id @default(uuid())
-  description String   @unique
-  category    String
-  confidence  Float
-  source      String // 'keyword', 'ml', or 'llm'
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@index([description])
-  @@index([category])
-  @@index([source])
-  @@map("category_cache")
-}
-
-// ============================================
-// CATEGORY KEYWORDS (Database-stored)
-// ============================================
-
-model CategoryKeyword {
-  id        String   @id @default(uuid())
-  category  String // 'food', 'groceries', etc.
-  keyword   String // 'pizza', 'uber', etc.
-  isSystem  Boolean  @default(true) // System vs user-added
-  userId    String?  @map("user_id") // null for system, userId for custom
-  priority  Int      @default(0) // Higher priority = checked first
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([category, keyword, userId])
-  @@index([category])
-  @@index([keyword])
-  @@index([userId])
-  @@index([isSystem, priority])
-  @@map("category_keywords")
 }
 
 // ============================================

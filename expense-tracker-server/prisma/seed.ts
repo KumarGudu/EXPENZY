@@ -13,10 +13,7 @@ async function main() {
     await prisma.savingsContribution.deleteMany();
     await prisma.savingsGoal.deleteMany();
     await prisma.subscription.deleteMany();
-    await prisma.expenseTag.deleteMany();
-    await prisma.tag.deleteMany();
     await prisma.income.deleteMany();
-    await prisma.incomeCategory.deleteMany();
     await prisma.paymentMethod.deleteMany();
     await prisma.userSettings.deleteMany();
     await prisma.loanPayment.deleteMany();
@@ -30,7 +27,6 @@ async function main() {
     await prisma.yearlySummary.deleteMany();
     await prisma.notification.deleteMany();
     await prisma.auditLog.deleteMany();
-    await prisma.exchangeRate.deleteMany();
     await prisma.attachment.deleteMany();
     await prisma.category.deleteMany();
     await prisma.groupMember.deleteMany();
@@ -877,48 +873,8 @@ async function main() {
 
     console.log(`✅ Created ${2} audit logs`);
 
-    // Create Exchange Rates
-    console.log('💱 Creating exchange rates...');
-    await Promise.all([
-        prisma.exchangeRate.create({
-            data: {
-                baseCurrency: 'USD',
-                targetCurrency: 'EUR',
-                rate: 0.92,
-                rateDate: new Date('2025-11-29'),
-                source: 'ECB',
-            },
-        }),
-        prisma.exchangeRate.create({
-            data: {
-                baseCurrency: 'USD',
-                targetCurrency: 'GBP',
-                rate: 0.79,
-                rateDate: new Date('2025-11-29'),
-                source: 'ECB',
-            },
-        }),
-        prisma.exchangeRate.create({
-            data: {
-                baseCurrency: 'EUR',
-                targetCurrency: 'USD',
-                rate: 1.09,
-                rateDate: new Date('2025-11-29'),
-                source: 'ECB',
-            },
-        }),
-        prisma.exchangeRate.create({
-            data: {
-                baseCurrency: 'USD',
-                targetCurrency: 'INR',
-                rate: 83.5,
-                rateDate: new Date('2025-11-29'),
-                source: 'RBI',
-            },
-        }),
-    ]);
-
-    console.log(`✅ Created ${4} exchange rates`);
+    // Exchange rates feature has been removed
+    console.log('✅ Skipped exchange rates (feature removed)');
 
     // Create Attachments
     console.log('📎 Creating attachments...');
@@ -951,42 +907,20 @@ async function main() {
 
     // Create Income Categories
     console.log('💰 Creating income categories...');
-    const incomeCategories = await Promise.all([
-        prisma.incomeCategory.create({
-            data: {
-                userId: user1.id,
-                name: 'Salary',
-                icon: '💼',
-                color: '#4CAF50',
-            },
-        }),
-        prisma.incomeCategory.create({
-            data: {
-                userId: user1.id,
-                name: 'Freelance',
-                icon: '💻',
-                color: '#2196F3',
-            },
-        }),
-        prisma.incomeCategory.create({
-            data: {
-                userId: user2.id,
-                name: 'Investment',
-                icon: '📈',
-                color: '#9C27B0',
-            },
-        }),
-    ]);
-
-    console.log(`✅ Created ${incomeCategories.length} income categories`);
+    // Income categories are now part of the unified Category table with type='income'
+    // Using system categories created earlier
 
     // Create Income
     console.log('💵 Creating income entries...');
+    const incomeSalaryCategory = createdSystemCategories.find(c => c.name === 'salary');
+    const incomeFreelanceCategory = createdSystemCategories.find(c => c.name === 'freelance');
+    const incomeInvestmentCategory = createdSystemCategories.find(c => c.name === 'investment');
+
     const incomes = await Promise.all([
         prisma.income.create({
             data: {
                 userId: user1.id,
-                categoryId: incomeCategories[0].id,
+                categoryId: incomeSalaryCategory?.id,
                 source: 'Monthly Salary',
                 amount: 5000.0,
                 currency: 'USD',
@@ -998,7 +932,7 @@ async function main() {
         prisma.income.create({
             data: {
                 userId: user1.id,
-                categoryId: incomeCategories[1].id,
+                categoryId: incomeFreelanceCategory?.id,
                 source: 'Web Development Project',
                 amount: 1500.0,
                 currency: 'USD',
@@ -1009,7 +943,7 @@ async function main() {
         prisma.income.create({
             data: {
                 userId: user2.id,
-                categoryId: incomeCategories[2].id,
+                categoryId: incomeInvestmentCategory?.id,
                 source: 'Stock Dividends',
                 amount: 250.0,
                 currency: 'USD',
@@ -1148,65 +1082,13 @@ async function main() {
 
     console.log(`✅ Created ${subscriptions.length} subscriptions`);
 
-    // Create Tags
-    console.log('🏷️ Creating tags...');
-    const tags = await Promise.all([
-        prisma.tag.create({
-            data: {
-                userId: user1.id,
-                name: 'work',
-                color: '#2196F3',
-            },
-        }),
-        prisma.tag.create({
-            data: {
-                userId: user1.id,
-                name: 'personal',
-                color: '#4CAF50',
-            },
-        }),
-        prisma.tag.create({
-            data: {
-                userId: user1.id,
-                name: 'urgent',
-                color: '#F44336',
-            },
-        }),
-        prisma.tag.create({
-            data: {
-                userId: user2.id,
-                name: 'business',
-                color: '#FF9800',
-            },
-        }),
-    ]);
+    // Tags feature has been removed
+    // const tags = [];
+    console.log('✅ Skipped tags creation (feature removed)');
 
-    console.log(`✅ Created ${tags.length} tags`);
+    // ExpenseTags feature has been removed
+    console.log('✅ Skipped expense tags (feature removed)');
 
-    // Attach tags to expenses
-    console.log('🔗 Attaching tags to expenses...');
-    await Promise.all([
-        prisma.expenseTag.create({
-            data: {
-                expenseId: expenses[0].id,
-                tagId: tags[0].id,
-            },
-        }),
-        prisma.expenseTag.create({
-            data: {
-                expenseId: expenses[1].id,
-                tagId: tags[0].id,
-            },
-        }),
-        prisma.expenseTag.create({
-            data: {
-                expenseId: expenses[2].id,
-                tagId: tags[1].id,
-            },
-        }),
-    ]);
-
-    console.log(`✅ Attached tags to expenses`);
 
     // Create Payment Methods
     console.log('💳 Creating payment methods...');
@@ -1376,14 +1258,12 @@ async function main() {
     console.log(`   - Yearly Summaries: 1`);
     console.log(`   - Notifications: 3`);
     console.log(`   - Audit Logs: 2`);
-    console.log(`   - Exchange Rates: 4`);
+    console.log(`   - Audit Logs: 2`);
     console.log(`   - Attachments: 2`);
-    console.log(`   - Income Categories: ${incomeCategories.length}`);
     console.log(`   - Income Entries: ${incomes.length}`);
     console.log(`   - Savings Goals: ${savingsGoals.length}`);
     console.log(`   - Savings Contributions: 3`);
     console.log(`   - Subscriptions: ${subscriptions.length}`);
-    console.log(`   - Tags: ${tags.length}`);
     console.log(`   - Payment Methods: ${paymentMethods.length}`);
     console.log(`   - Accounts: ${accounts.length}`);
     console.log(`   - Account Transactions: 3`);

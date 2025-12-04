@@ -9,7 +9,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createCategoryDto: CreateCategoryDto, userId: string) {
     return this.prisma.category.create({
@@ -27,14 +27,25 @@ export class CategoriesService {
     });
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, type?: 'income' | 'expense') {
+    const whereClause: any = {
+      OR: [{ isSystem: true }, { userId: userId }],
+    };
+
+    // Add type filter if provided
+    if (type) {
+      whereClause.type = type;
+    }
+
     return this.prisma.category.findMany({
-      where: {
-        OR: [{ isSystem: true }, { userId: userId }],
-      },
+      where: whereClause,
       include: {
         subCategories: true,
       },
+      orderBy: [
+        { isSystem: 'desc' },
+        { name: 'asc' },
+      ],
     });
   }
 
