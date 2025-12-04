@@ -718,6 +718,8 @@ async function main() {
                 groupId: group1.id,
                 userId: user1.id,
                 role: 'ADMIN',
+                inviteStatus: 'accepted',
+                joinedAt: new Date(),
             },
         }),
         prisma.groupMember.create({
@@ -725,6 +727,8 @@ async function main() {
                 groupId: group1.id,
                 userId: user2.id,
                 role: 'MEMBER',
+                inviteStatus: 'accepted',
+                joinedAt: new Date(),
             },
         }),
         prisma.groupMember.create({
@@ -732,6 +736,8 @@ async function main() {
                 groupId: group1.id,
                 userId: user3.id,
                 role: 'MEMBER',
+                inviteStatus: 'accepted',
+                joinedAt: new Date(),
             },
         }),
     ]);

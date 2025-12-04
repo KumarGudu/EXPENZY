@@ -5,14 +5,14 @@ export interface Group {
     name: string;
     description?: string;
     currency: string;
-    createdById: string;
+    createdByUserId: string;
     createdAt: string;
     updatedAt: string;
     members?: GroupMember[];
-    expenses?: GroupExpense[];
+    groupExpenses?: GroupExpense[];
     _count?: {
         members: number;
-        expenses: number;
+        splitExpenses: number;
     };
 }
 
@@ -22,9 +22,11 @@ export interface GroupMember {
     userId: string;
     role: 'ADMIN' | 'MEMBER';
     joinedAt: string;
+    inviteStatus?: string;
     user?: {
         id: string;
-        name: string;
+        firstName: string;
+        lastName: string;
         email: string;
         avatar?: string;
     };
@@ -33,12 +35,23 @@ export interface GroupMember {
 export interface GroupExpense {
     id: string;
     groupId: string;
-    paidById: string;
+    paidByUserId: string;
     amount: number;
     currency: string;
     description: string;
     expenseDate: string;
-    category?: string;
+    category?: {
+        id: string;
+        name: string;
+        icon?: string;
+        color?: string;
+    };
+    paidBy?: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
     createdAt: string;
     splits?: Split[];
 }

@@ -11,7 +11,6 @@ interface GroupHeaderProps {
     description?: string;
     icon?: 'home' | 'trip' | 'couple' | 'friends' | 'work' | 'shopping' | 'other';
     memberCount: number;
-    isAdmin?: boolean;
 }
 
 export const GroupHeader: React.FC<GroupHeaderProps> = ({
@@ -20,7 +19,6 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
     description,
     icon,
     memberCount,
-    isAdmin = false,
 }) => {
     const router = useRouter();
 
@@ -31,22 +29,17 @@ export const GroupHeader: React.FC<GroupHeaderProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => router.push('/dashboard/groups')}
-                    className="lg:hidden"
                 >
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
 
-                {isAdmin && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => router.push(`/dashboard/groups/${groupId}/settings`)}
-                        className="ml-auto"
-                    >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Settings
-                    </Button>
-                )}
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => router.push(`/dashboard/groups/${groupId}/settings`)}
+                >
+                    <Settings className="h-5 w-5" />
+                </Button>
             </div>
 
             <div className="flex items-start gap-4">

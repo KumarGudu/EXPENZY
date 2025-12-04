@@ -12,7 +12,7 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class GroupsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     return this.prisma.group.create({
@@ -79,16 +79,18 @@ export class GroupsService {
             user: true,
           },
         },
-        splitExpenses: {
+        groupExpenses: {
           include: {
-            participants: {
+            paidBy: true,
+            category: true,
+            splits: {
               include: {
                 user: true,
               },
             },
           },
           orderBy: {
-            createdAt: 'desc',
+            expenseDate: 'desc',
           },
         },
       },
@@ -303,7 +305,7 @@ export class GroupsService {
     });
   }
 
-  async getGroupExpenses(groupId: string, userId: string) {
+  async getGroupMembers(groupId: string, userId: string) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
       include: {
@@ -319,22 +321,79 @@ export class GroupsService {
       throw new ForbiddenException('You are not a member of this group');
     }
 
-    return this.prisma.splitExpense.findMany({
+    return this.prisma.groupMember.findMany({
       where: {
         groupId,
       },
       include: {
-        paidByUser: true,
-        participants: {
-          include: {
-            user: true,
-          },
-        },
+        user: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'asc',
       },
     });
+  }
+
+  async getGroupExpenses(
+    groupId: string,
+    userId: string,
+    page: number = 1,
+    limit: number = 50,
+  ) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    if (!this.isGroupMember(group, userId)) {
+      throw new ForbiddenException('You are not a member of this group');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [expenses, total] = await Promise.all([
+      this.prisma.groupExpense.findMany({
+        where: {
+          groupId,
+        },
+        include: {
+          paidBy: true,
+          category: true,
+          splits: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: {
+          expenseDate: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.groupExpense.count({
+        where: {
+          groupId,
+        },
+      }),
+    ]);
+
+    return {
+      data: expenses,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasMore: page * limit < total,
+      },
+    };
   }
 
   // Helper methods

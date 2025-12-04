@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -19,7 +20,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(private readonly groupsService: GroupsService) { }
 
   @Post()
   create(
@@ -62,6 +63,11 @@ export class GroupsController {
     return this.groupsService.addMember(id, addMemberDto, user.userId);
   }
 
+  @Get(':id/members')
+  getMembers(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.groupsService.getGroupMembers(id, user.userId);
+  }
+
   @Delete(':id/members/:memberId')
   removeMember(
     @Param('id') id: string,
@@ -72,7 +78,14 @@ export class GroupsController {
   }
 
   @Get(':id/expenses')
-  getGroupExpenses(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.groupsService.getGroupExpenses(id, user.userId);
+  getGroupExpenses(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 50;
+    return this.groupsService.getGroupExpenses(id, user.userId, pageNum, limitNum);
   }
 }

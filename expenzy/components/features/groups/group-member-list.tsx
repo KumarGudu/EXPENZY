@@ -75,24 +75,30 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
             </div>
 
             <div className="space-y-1">
-                {members.map((member) => (
-                    <MemberListItem
-                        key={member.id}
-                        userId={member.userId}
-                        name={member.user?.name || 'Unknown'}
-                        email={member.user?.email || ''}
-                        role={member.role}
-                        balance={memberBalances.get(member.userId) || 0}
-                        currency={currency}
-                        isCurrentUser={member.userId === currentUserId}
-                        isAdmin={isAdmin}
-                        onRemove={
-                            isAdmin && member.userId !== currentUserId
-                                ? () => handleRemoveMember(member.id)
-                                : undefined
-                        }
-                    />
-                ))}
+                {members.map((member) => {
+                    const fullName = member.user
+                        ? `${member.user.firstName} ${member.user.lastName}`.trim()
+                        : 'Unknown';
+
+                    return (
+                        <MemberListItem
+                            key={member.id}
+                            userId={member.userId}
+                            name={fullName}
+                            email={member.user?.email || ''}
+                            role={member.role}
+                            balance={memberBalances.get(member.userId) || 0}
+                            currency={currency}
+                            isCurrentUser={member.userId === currentUserId}
+                            isAdmin={isAdmin}
+                            onRemove={
+                                isAdmin && member.userId !== currentUserId
+                                    ? () => handleRemoveMember(member.id)
+                                    : undefined
+                            }
+                        />
+                    );
+                })}
             </div>
 
             <AddMemberModal

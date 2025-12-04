@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GlassCard } from '@/components/shared/glass-card';
+import { GroupMemberList } from '@/components/features/groups/group-member-list';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
@@ -176,6 +177,18 @@ export default function GroupSettingsPage() {
                             </div>
                         )}
                     </div>
+                </GlassCard>
+
+                {/* Member Management */}
+                <GlassCard>
+                    <GroupMemberList
+                        groupId={groupId}
+                        members={group.members || []}
+                        currentUserId={typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : ''}
+                        isAdmin={group.members?.some(m => m.userId === (typeof window !== 'undefined' ? localStorage.getItem('userId') : '') && m.role === 'ADMIN') || false}
+                        memberBalances={new Map()}
+                        currency={group.currency}
+                    />
                 </GlassCard>
 
                 {/* Danger Zone */}

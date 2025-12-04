@@ -2,18 +2,17 @@
 
 import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
+import { useGroup } from '@/lib/hooks/use-groups';
 import { Plus, Receipt } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GroupHeader } from '@/components/features/groups/group-header';
 import { BalanceSummary } from '@/components/features/groups/balance-summary';
-import { GroupMemberList } from '@/components/features/groups/group-member-list';
 import { GlassCard } from '@/components/shared/glass-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { calculateMemberBalances, getUserBalance } from '@/lib/utils/balance-utils';
-import { formatDate } from '@/lib/utils/format';
+import { VirtualList } from '@/components/shared/virtual-list';
 import { formatCurrency } from '@/lib/utils/currency';
+import { getIconByName } from '@/lib/categorization/category-icons';
 
 export default function GroupDetailPage() {
     const params = useParams();
@@ -21,40 +20,47 @@ export default function GroupDetailPage() {
     const groupId = params.id as string;
 
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
-    const { data: members = [], isLoading: membersLoading } = useGroupMembers(groupId);
 
     // Get current user ID from localStorage
     const currentUserId = typeof window !== 'undefined'
         ? localStorage.getItem('userId') || ''
         : '';
 
-    // Calculate balances
-    const { balances, userBalance, memberBalances } = useMemo(() => {
-        if (!group) return { balances: new Map(), userBalance: 0, memberBalances: new Map() };
+    // Calculate user's balance
+    const userBalance = 0; // TODO: Calculate from expenses
 
-        const expenses = group.expenses || [];
-        const calculatedBalances = calculateMemberBalances(expenses, currentUserId);
-        const balance = getUserBalance(calculatedBalances, currentUserId);
+    // Group expenses by month
+    const groupedExpenses = useMemo(() => {
+        if (!group?.groupExpenses) return [];
 
-        // Create a map of userId to balance for easy lookup
-        const memberBalanceMap = new Map<string, number>();
-        members.forEach((member) => {
-            memberBalanceMap.set(member.userId, calculatedBalances.get(member.userId)?.balance || 0);
-        });
+        const expenses = [...group.groupExpenses].sort((a, b) =>
+            new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
+        );
 
-        return {
-            balances: calculatedBalances,
-            userBalance: balance,
-            memberBalances: memberBalanceMap,
+        type GroupedExpense = {
+            monthName: string;
+            expenses: typeof group.groupExpenses;
         };
-    }, [group, members, currentUserId]);
 
-    // Check if current user is admin
-    const isAdmin = members.some(
-        (member) => member.userId === currentUserId && member.role === 'ADMIN'
-    );
+        const grouped = expenses.reduce((acc, expense) => {
+            const date = new Date(expense.expenseDate);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-    if (groupLoading || membersLoading) {
+            if (!acc[monthKey]) {
+                acc[monthKey] = {
+                    monthName,
+                    expenses: []
+                };
+            }
+            acc[monthKey].expenses.push(expense);
+            return acc;
+        }, {} as Record<string, GroupedExpense>);
+
+        return Object.values(grouped);
+    }, [group]);
+
+    if (groupLoading) {
         return (
             <PageWrapper>
                 <div className="space-y-6">
@@ -79,6 +85,79 @@ export default function GroupDetailPage() {
         );
     }
 
+    const renderExpenseItem = (monthGroup: { monthName: string; expenses: NonNullable<typeof group>['groupExpenses'] }) => (
+        <div key={monthGroup.monthName} className="space-y-2">
+            {/* Month Header */}
+            <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                    {monthGroup.monthName}
+                </h3>
+            </div>
+
+            {/* Expenses for this month */}
+            <div className="space-y-0">
+                {(monthGroup.expenses || []).map((expense) => {
+                    const CategoryIcon = expense.category?.icon
+                        ? getIconByName(expense.category.icon)
+                        : Receipt;
+                    const expenseDate = new Date(expense.expenseDate);
+                    const dayMonth = expenseDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: '2-digit'
+                    });
+
+                    return (
+                        <div
+                            key={expense.id}
+                            className="flex items-center gap-3 py-3 px-0 hover:bg-muted/30 -mx-4 px-4 transition-colors cursor-pointer"
+                        >
+                            {/* Date */}
+                            <div className="flex flex-col items-center w-12 flex-shrink-0">
+                                <span className="text-xs text-muted-foreground">
+                                    {dayMonth.split(' ')[0]}
+                                </span>
+                                <span className="text-lg font-semibold">
+                                    {dayMonth.split(' ')[1]}
+                                </span>
+                            </div>
+
+                            {/* Category Icon */}
+                            <div className="flex-shrink-0">
+                                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                                    <CategoryIcon className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate text-sm">
+                                    {expense.description}
+                                </p>
+                                <p className="text-xs">
+                                    {expense.paidByUserId === currentUserId ? (
+                                        <span className="text-red-600 dark:text-red-400">you lent</span>
+                                    ) : (
+                                        <span className="text-green-600 dark:text-green-400">you borrowed</span>
+                                    )}
+                                </p>
+                            </div>
+
+                            {/* Amount */}
+                            <div className="text-right flex-shrink-0">
+                                <p className={`font-semibold text-sm ${expense.paidByUserId === currentUserId
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-green-600 dark:text-green-400'
+                                    }`}>
+                                    {formatCurrency(Number(expense.amount), expense.currency as 'INR' | 'USD' | 'EUR')}
+                                </p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
     return (
         <PageWrapper>
             <div className="space-y-6 pb-24 lg:pb-6">
@@ -88,67 +167,49 @@ export default function GroupDetailPage() {
                     name={group.name}
                     description={group.description}
                     icon="friends"
-                    memberCount={members.length}
-                    isAdmin={isAdmin}
+                    memberCount={group.members?.length || 0}
                 />
 
                 {/* Balance Summary */}
                 <GlassCard className="text-center">
-                    <BalanceSummary balance={userBalance} currency="INR" showLabel />
+                    <BalanceSummary balance={userBalance} currency={group.currency} showLabel />
                 </GlassCard>
 
-                {/* Members List */}
-                <GlassCard>
-                    <GroupMemberList
-                        groupId={groupId}
-                        members={members}
-                        currentUserId={currentUserId}
-                        isAdmin={isAdmin}
-                        memberBalances={memberBalances}
-                        currency="INR"
-                    />
-                </GlassCard>
-
-                {/* Expenses List */}
-                <GlassCard>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold">Group Expenses</h3>
-                        </div>
-
-                        {!group.expenses || group.expenses.length === 0 ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p className="font-medium">No expenses yet</p>
-                                <p className="text-sm mt-1">Add an expense to get started</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {group.expenses.map((expense) => (
-                                    <div
-                                        key={expense.id}
-                                        className="flex items-center justify-between p-4 hover:bg-muted/50 rounded-lg transition-colors"
-                                    >
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate">{expense.description}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {formatDate(expense.expenseDate)}
-                                            </p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-semibold">
-                                                {formatCurrency(expense.amount, 'INR')}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                Paid by {expense.paidById === currentUserId ? 'you' : 'member'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                {/* Expenses List - Splitwise Style */}
+                <div className="space-y-4">
+                    <div className="px-1">
+                        <h3 className="text-lg font-semibold">Expenses</h3>
                     </div>
-                </GlassCard>
+
+                    {!group.groupExpenses || group.groupExpenses.length === 0 ? (
+                        <div className="text-center py-16 text-muted-foreground">
+                            <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="font-medium">No expenses yet</p>
+                            <p className="text-sm mt-1">Add an expense to get started</p>
+                        </div>
+                    ) : (
+                        <VirtualList
+                            fetchData={async (page) => {
+                                // Since data is already loaded, just paginate locally
+                                const itemsPerPage = 20;
+                                const start = (page - 1) * itemsPerPage;
+                                const end = start + itemsPerPage;
+                                const paginatedData = groupedExpenses.slice(start, end);
+
+                                return {
+                                    data: paginatedData,
+                                    hasMore: end < groupedExpenses.length,
+                                    total: groupedExpenses.length,
+                                };
+                            }}
+                            renderItem={renderExpenseItem}
+                            getItemKey={(item) => item.monthName}
+                            itemsPerPage={20}
+                            enableDesktopPagination={false}
+                            dependencies={[groupedExpenses]}
+                        />
+                    )}
+                </div>
 
                 {/* Floating Add Expense Button (Mobile) */}
                 <div className="fixed bottom-20 right-4 lg:hidden z-10">
