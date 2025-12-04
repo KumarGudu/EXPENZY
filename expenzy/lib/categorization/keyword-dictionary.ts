@@ -1040,7 +1040,7 @@ export function matchAllCategories(description: string): CategoryMatch[] {
     }
 
     // Strategy 2: Check multi-word phrases
-    for (const { phrase, category, priority } of PHRASE_INDEX) {
+    for (const { phrase, category } of PHRASE_INDEX) {
         if (normalized.includes(phrase)) {
             // Phrase matches get higher confidence
             const confidence = contextualMatch?.category === category ? 90 : 80;

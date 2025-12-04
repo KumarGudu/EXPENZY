@@ -26,7 +26,7 @@ import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/lib/routes';
-import { AddTransactionModal } from '@/components/modals/add-transaction-modal';
+import { TransactionModal } from '@/components/modals/transaction-modal';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 
 // Reusable Stat Card Component
@@ -136,9 +136,10 @@ export default function DashboardPage() {
                     </div>
                 </GlassCard>
 
-                <AddTransactionModal
+                <TransactionModal
                     open={isTransactionModalOpen}
                     onClose={() => setIsTransactionModalOpen(false)}
+                    mode="add"
                 />
 
                 {/* Summary Cards - Responsive */}
@@ -328,7 +329,7 @@ export default function DashboardPage() {
                     <h2 className="text-base lg:text-xl font-semibold mb-4 lg:mb-6">Top Spending Categories</h2>
                     {dashboard?.topCategories && dashboard.topCategories.length > 0 ? (
                         <div className="space-y-3 lg:space-y-4">
-                            {dashboard.topCategories.map((category, index) => (
+                            {dashboard.topCategories.map((category) => (
                                 <div key={category.categoryId} className="p-3 lg:p-4 rounded-lg lg:rounded-xl bg-muted/50 backdrop-blur-sm space-y-2 lg:space-y-3 transition-all hover:bg-muted/70">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">

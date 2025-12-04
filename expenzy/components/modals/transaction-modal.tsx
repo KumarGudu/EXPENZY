@@ -313,17 +313,14 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
 
                         {/* Single match display */}
                         {selectedMatchCategory && categoryMatches.length <= 1 && selectedType === 'expense' && description && description.length >= 3 && (
-                            <div className="flex items-center gap-2 p-2 rounded-md bg-secondary/50 border border-border">
+                            <div className="flex items-center gap-2 p-2.5 rounded-md bg-muted/50 border border-border">
                                 <CategoryIcon
                                     iconName={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.icon}
                                     color={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.color}
-                                    className="w-5 h-5"
+                                    className="w-5 h-5 flex-shrink-0"
                                 />
-                                <span className="text-sm font-medium">
+                                <span className="text-sm font-medium text-foreground">
                                     Category: {formatCategoryName(selectedMatchCategory)}
-                                </span>
-                                <span className="text-xs text-muted-foreground ml-auto">
-                                    (Auto-detected)
                                 </span>
                             </div>
                         )}

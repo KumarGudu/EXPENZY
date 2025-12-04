@@ -42,7 +42,6 @@ import {
     Coffee,
     type LucideIcon,
 } from 'lucide-react';
-import { createElement } from 'react';
 
 export type CategoryType =
     | 'food'
