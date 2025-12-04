@@ -22,7 +22,7 @@ import {
     Sparkles,
     LucideIcon
 } from 'lucide-react';
-import { CategoryIcon, getCategoryLabel } from '@/lib/categorization/category-icons';
+import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/lib/routes';
@@ -276,41 +276,40 @@ export default function DashboardPage() {
 
                     {dashboard?.recentTransactions && dashboard.recentTransactions.length > 0 ? (
                         <div className="space-y-2">
-                            {dashboard.recentTransactions.slice(0, 5).map((transaction) => {
-                                const categoryName = transaction.category?.name.toLowerCase() || 'other';
-
-                                return (
+                            {dashboard.recentTransactions.slice(0, 5).map((transaction) => (
+                                <div
+                                    key={transaction.id}
+                                    className="group/trans flex items-center gap-3 lg:gap-4 p-3 lg:p-4 rounded-lg lg:rounded-xl hover:bg-muted/70 backdrop-blur-sm transition-all cursor-pointer"
+                                    onClick={() => router.push(ROUTES.TRANSACTIONS)}
+                                >
                                     <div
-                                        key={transaction.id}
-                                        className="group/trans flex items-center gap-3 lg:gap-4 p-3 lg:p-4 rounded-lg lg:rounded-xl hover:bg-muted/70 backdrop-blur-sm transition-all cursor-pointer"
-                                        onClick={() => router.push(ROUTES.TRANSACTIONS)}
+                                        className="w-8 lg:w-12 h-8 lg:h-12 rounded-lg lg:rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover/trans:scale-110 bg-secondary/30"
                                     >
-                                        <div
-                                            className="w-8 lg:w-12 h-8 lg:h-12 rounded-lg lg:rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover/trans:scale-110 bg-secondary/30"
-                                        >
-                                            <CategoryIcon
-                                                category={categoryName}
-                                                className="w-4 lg:w-6 h-4 lg:h-6"
-                                            />
-                                        </div>
-
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm lg:text-base font-semibold truncate group-hover/trans:text-primary transition-colors">
-                                                {transaction.description}
-                                            </p>
-                                            <div className="flex items-center gap-1.5 text-xs lg:text-sm text-muted-foreground mt-0.5 lg:mt-1">
-                                                <span className="truncate">{getCategoryLabel(categoryName)}</span>
-                                                <span>•</span>
-                                                <span>{formatDate(transaction.date)}</span>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-sm lg:text-lg font-bold tabular-nums flex-shrink-0">
-                                            {formatCurrency(transaction.amount)}
-                                        </p>
+                                        <CategoryIcon
+                                            iconName={transaction.category?.icon}
+                                            color={transaction.category?.color}
+                                            className="w-4 lg:w-6 h-4 lg:h-6"
+                                        />
                                     </div>
-                                );
-                            })}
+
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm lg:text-base font-semibold truncate group-hover/trans:text-primary transition-colors">
+                                            {transaction.description}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 text-xs lg:text-sm text-muted-foreground mt-0.5 lg:mt-1">
+                                            <span className="truncate">
+                                                {transaction.category?.name ? formatCategoryName(transaction.category.name) : 'Other'}
+                                            </span>
+                                            <span>•</span>
+                                            <span>{formatDate(transaction.date)}</span>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm lg:text-lg font-bold tabular-nums flex-shrink-0">
+                                        {formatCurrency(transaction.amount)}
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <EmptyState
@@ -332,11 +331,22 @@ export default function DashboardPage() {
                             {dashboard.topCategories.map((category, index) => (
                                 <div key={category.categoryId} className="p-3 lg:p-4 rounded-lg lg:rounded-xl bg-muted/50 backdrop-blur-sm space-y-2 lg:space-y-3 transition-all hover:bg-muted/70">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2 lg:gap-3">
-                                            <div className="w-6 lg:w-8 h-6 lg:h-8 rounded-lg flex items-center justify-center text-xs lg:text-sm font-bold text-primary bg-primary/10">
-                                                {index + 1}
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center">
+                                                <CategoryIcon
+                                                    iconName={category.categoryIcon}
+                                                    color={category.categoryColor}
+                                                    className="w-5 h-5"
+                                                />
                                             </div>
-                                            <span className="text-sm lg:text-base font-semibold truncate">{category.categoryName}</span>
+                                            <div>
+                                                <p className="font-medium text-sm">
+                                                    {category.categoryName ? formatCategoryName(category.categoryName) : 'Other'}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {category.transactionCount} transactions
+                                                </p>
+                                            </div>
                                         </div>
                                         <span className="text-sm lg:text-lg font-bold ml-2">
                                             {formatCurrency(category.totalAmount)}

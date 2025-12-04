@@ -372,7 +372,7 @@ export const KEYWORD_DICTIONARY: Record<string, string[]> = {
     shopping: [
         // E-commerce Platforms
         'amazon', 'flipkart', 'myntra', 'ajio', 'meesho', 'nykaa', 'tatacliq', 'snapdeal',
-        'ebay', 'etsy', 'aliexpress', 'temu', 'shein', 'wish', 'jiomart',
+        'ebay', 'etsy', 'aliexpress', 'temu', 'shein', 'wish', 'jiomart', 'shoping', 'shops', 'shopping', 'buying', 'buy',
 
         // General Shopping & Contextual Keywords
         'shopping', 'purchase', 'buy', 'bought', 'buying', 'purchased', 'purchasing',

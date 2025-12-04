@@ -5,7 +5,7 @@ import { useDeleteExpense } from '@/lib/hooks/use-expenses';
 import { useDeleteIncome } from '@/lib/hooks/use-income';
 import { formatCurrency, formatDate } from '@/lib/utils/format';
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
-import { CategoryIcon, getCategoryLabel } from '@/lib/categorization/category-icons';
+import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { TransactionModal } from '@/components/modals/transaction-modal';
 import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import { VirtualList } from '@/components/shared/virtual-list';
@@ -128,7 +128,8 @@ export default function TransactionsPage() {
                     {/* Category Icon */}
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0">
                         <CategoryIcon
-                            category={categoryName}
+                            iconName={transaction.category?.icon}
+                            color={transaction.category?.color}
                             className="w-6 h-6"
                         />
                     </div>
@@ -139,7 +140,7 @@ export default function TransactionsPage() {
                             {description}
                         </h3>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{getCategoryLabel(categoryName)}</span>
+                            <span>{transaction.category?.name ? formatCategoryName(transaction.category.name) : 'Other'}</span>
                             <span>•</span>
                             <span>{formatDate(date)}</span>
                         </div>

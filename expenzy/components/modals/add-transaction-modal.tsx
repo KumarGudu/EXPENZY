@@ -6,7 +6,7 @@ import { useCategories } from '@/lib/hooks/use-categories';
 import { useCreateExpense } from '@/lib/hooks/use-expenses';
 import { useCreateIncome } from '@/lib/hooks/use-income';
 import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-matcher';
-import { CategoryIcon, getCategoryLabel } from '@/lib/categorization/category-icons';
+import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { CategorySelector } from '@/components/shared/category-selector';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -222,7 +222,8 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                             {selectedMatchCategory && categoryMatches.length === 1 && transactionType === 'expense' && (
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                                     <CategoryIcon
-                                        category={selectedMatchCategory}
+                                        iconName={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.icon}
+                                        color={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.color}
                                         className="w-5 h-5"
                                     />
                                 </div>
@@ -232,31 +233,37 @@ export function AddTransactionModal({ open, onClose }: AddTransactionModalProps)
                             <p className="text-sm text-destructive">{errors.description.message}</p>
                         )}
 
-                        {/* Single Category Match - Show label */}
-                        {selectedMatchCategory && categoryMatches.length === 1 && transactionType === 'expense' && description && description.length >= 3 && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <span>Category:</span>
-                                <span className="font-medium">{getCategoryLabel(selectedMatchCategory)}</span>
-                            </p>
-                        )}
-
                         {/* Multiple Category Matches - Show selector */}
                         {categoryMatches.length > 1 && transactionType === 'expense' && description && description.length >= 3 && (
                             <CategorySelector
                                 matches={categoryMatches}
                                 selectedCategory={selectedMatchCategory || undefined}
-                                onSelect={(categoryKey) => {
-                                    setSelectedMatchCategory(categoryKey);
-                                    // Find matching backend category and set it
+                                onSelect={(category) => {
                                     const matchingCategory = categories.find(c =>
-                                        c.name.toLowerCase() === categoryKey.toLowerCase() ||
-                                        c.name.toLowerCase().includes(categoryKey.toLowerCase())
+                                        c.name.toLowerCase() === category.toLowerCase() ||
+                                        c.name.toLowerCase().includes(category.toLowerCase())
                                     );
                                     if (matchingCategory) {
                                         setValue('categoryId', matchingCategory.id);
+                                        setSelectedMatchCategory(category);
                                     }
                                 }}
+                                categories={categories}
                             />
+                        )}
+
+                        {/* Single match display */}
+                        {selectedMatchCategory && categoryMatches.length <= 1 && transactionType === 'expense' && description && description.length >= 3 && (
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 border border-border">
+                                <CategoryIcon
+                                    iconName={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.icon}
+                                    color={categories.find(c => c.name.toLowerCase() === selectedMatchCategory.toLowerCase() || c.name.toLowerCase().includes(selectedMatchCategory.toLowerCase()))?.color}
+                                    className="w-5 h-5"
+                                />
+                                <span className="text-sm font-medium">
+                                    Category: {formatCategoryName(selectedMatchCategory)}
+                                </span>
+                            </div>
                         )}
                     </div>
 

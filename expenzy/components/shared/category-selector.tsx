@@ -1,6 +1,7 @@
-import { CategoryIcon, getCategoryLabel } from '@/lib/categorization/category-icons';
+import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { CategoryMatch } from '@/lib/categorization/keyword-matcher';
 import { cn } from '@/lib/utils/cn';
+import { Category } from '@/types';
 import { Check } from 'lucide-react';
 
 interface CategorySelectorProps {
@@ -8,9 +9,10 @@ interface CategorySelectorProps {
     selectedCategory?: string;
     onSelect: (categoryKey: string) => void;
     className?: string;
+    categories: Category[];
 }
 
-export function CategorySelector({ matches, selectedCategory, onSelect, className }: CategorySelectorProps) {
+export function CategorySelector({ matches, selectedCategory, onSelect, className, categories }: CategorySelectorProps) {
     if (matches.length === 0) return null;
 
     return (
@@ -22,6 +24,12 @@ export function CategorySelector({ matches, selectedCategory, onSelect, classNam
                 {matches.map((match) => {
                     const isSelected = selectedCategory === match.category;
                     const isRecommended = match === matches[0]; // First match is highest confidence
+
+                    // Find the full category object from the list
+                    const categoryObj = categories.find(c =>
+                        c.name.toLowerCase() === match.category.toLowerCase() ||
+                        c.name.toLowerCase().includes(match.category.toLowerCase())
+                    );
 
                     return (
                         <button
@@ -39,7 +47,8 @@ export function CategorySelector({ matches, selectedCategory, onSelect, classNam
                             {/* Category Icon */}
                             <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center">
                                 <CategoryIcon
-                                    category={match.category}
+                                    iconName={categoryObj?.icon}
+                                    color={categoryObj?.color}
                                     className="w-5 h-5"
                                 />
                             </div>
@@ -48,7 +57,7 @@ export function CategorySelector({ matches, selectedCategory, onSelect, classNam
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                     <span className="font-medium text-sm">
-                                        {getCategoryLabel(match.category)}
+                                        {categoryObj ? formatCategoryName(categoryObj.name) : formatCategoryName(match.category)}
                                     </span>
                                     {isRecommended && (
                                         <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
