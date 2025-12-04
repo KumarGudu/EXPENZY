@@ -18,12 +18,11 @@ import { DeleteAccountDto } from './dto/delete-account.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
+  // POST /users endpoint removed for security reasons
+  // Users should register via POST /auth/register instead
+  // This endpoint was unprotected and duplicated registration functionality
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')

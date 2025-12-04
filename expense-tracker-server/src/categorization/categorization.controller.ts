@@ -15,12 +15,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('categorization')
 export class CategorizationController {
-  constructor(private readonly categorizationService: CategorizationService) {}
+  constructor(private readonly categorizationService: CategorizationService) { }
 
   /**
    * Categorize a single expense description
    */
   @Post('detect')
+  @UseGuards(JwtAuthGuard)
   async categorize(
     @Body() dto: CategorizeDto,
   ): Promise<CategorizationResultDto> {
@@ -31,6 +32,7 @@ export class CategorizationController {
    * Categorize multiple descriptions
    */
   @Post('batch')
+  @UseGuards(JwtAuthGuard)
   async categorizeBatch(
     @Body() dto: { descriptions: string[] },
   ): Promise<CategorizationResultDto[]> {
@@ -100,6 +102,7 @@ export class CategorizationController {
    * Get cache statistics
    */
   @Get('cache/stats')
+  @UseGuards(JwtAuthGuard)
   async getCacheStats() {
     return this.categorizationService.getCacheStats();
   }
@@ -108,6 +111,7 @@ export class CategorizationController {
    * Clear cache
    */
   @Delete('cache')
+  @UseGuards(JwtAuthGuard)
   async clearCache() {
     await this.categorizationService.clearCache();
     return { message: 'Cache cleared successfully' };
