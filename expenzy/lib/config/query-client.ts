@@ -6,7 +6,21 @@ export const queryClient = new QueryClient({
             staleTime: 5 * 60 * 1000, // 5 minutes
             gcTime: 10 * 60 * 1000, // 10 minutes
             refetchOnWindowFocus: false,
-            retry: 1,
+            // Custom retry logic: don't retry on auth errors (401, 403)
+            retry: (failureCount, error: any) => {
+                // Don't retry on authentication errors
+                if (error?.response?.status === 401 || error?.response?.status === 403) {
+                    console.log('[Query Client] Skipping retry for auth error:', error?.response?.status);
+                    return false;
+                }
+                // Don't retry on 404 errors
+                if (error?.response?.status === 404) {
+                    console.log('[Query Client] Skipping retry for 404 error');
+                    return false;
+                }
+                // Retry other errors max 1 time
+                return failureCount < 1;
+            },
             refetchOnMount: true,
         },
         mutations: {
