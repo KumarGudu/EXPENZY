@@ -91,6 +91,9 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                             currency={currency}
                             isCurrentUser={member.userId === currentUserId}
                             isAdmin={isAdmin}
+                            avatarSeed={member.user?.avatarSeed}
+                            avatarStyle={member.user?.avatarStyle}
+                            avatar={member.user?.avatar}
                             onRemove={
                                 isAdmin && member.userId !== currentUserId
                                     ? () => handleRemoveMember(member.id)

@@ -20,9 +20,10 @@ enum CategoryType {
 }
 
 enum UserAvatarStyle {
-  rings
-  shapes
-  initials
+  adventurer
+  adventurer_neutral
+  thumbs
+  fun_emoji
 }
 
 enum GroupIconProvider {
@@ -47,7 +48,7 @@ model User {
   deletedAt            DateTime?           @map("deleted_at")
   avatar               String?
   avatarSeed           String?             @map("avatar_seed")
-  avatarStyle          UserAvatarStyle?    @default(rings) @map("avatar_style")
+  avatarStyle          UserAvatarStyle?    @default(adventurer) @map("avatar_style")
   avatarUrl            String?             @map("avatar_url")
   firstName            String?             @map("first_name")
   googleId             String?             @unique

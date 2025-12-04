@@ -1,6 +1,6 @@
 import React from 'react';
 import { MoreVertical, Crown } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +21,9 @@ interface MemberListItemProps {
     currency?: string;
     isCurrentUser?: boolean;
     isAdmin?: boolean;
+    avatarSeed?: string;
+    avatarStyle?: string;
+    avatar?: string;
     onRemove?: () => void;
     onChangeRole?: (newRole: 'ADMIN' | 'MEMBER') => void;
     className?: string;
@@ -35,6 +38,9 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
     currency = 'INR',
     isCurrentUser = false,
     isAdmin = false,
+    avatarSeed,
+    avatarStyle,
+    avatar,
     onRemove,
     onChangeRole,
     className,
@@ -57,11 +63,13 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
             )}
         >
             <div className="flex items-center gap-3 flex-1 min-w-0">
-                <Avatar className="h-10 w-10 shrink-0">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                        {initials}
-                    </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                    seed={avatarSeed}
+                    style={avatarStyle as any}
+                    fallbackUrl={avatar}
+                    size={40}
+                    className="shrink-0"
+                />
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">

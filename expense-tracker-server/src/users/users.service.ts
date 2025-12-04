@@ -35,7 +35,7 @@ export class UsersService {
     const avatarStyle =
       createUserDto.avatarStyle && validateUserAvatarStyle(createUserDto.avatarStyle)
         ? createUserDto.avatarStyle
-        : 'rings';
+        : 'adventurer';
     const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
 
     return this.prisma.user.create({
@@ -82,7 +82,7 @@ export class UsersService {
       const style =
         updateUserDto.avatarStyle && validateUserAvatarStyle(updateUserDto.avatarStyle)
           ? updateUserDto.avatarStyle
-          : user?.avatarStyle || 'rings';
+          : user?.avatarStyle || 'adventurer';
       avatarUrl = generateDiceBearUrl(seed, style);
     }
 
@@ -159,7 +159,7 @@ export class UsersService {
     // Create new user
     const username = email.split('@')[0] || 'user';
     const avatarSeed = generateRandomSeed();
-    const avatarStyle = 'rings';
+    const avatarStyle = 'adventurer';
     const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
 
     return this.prisma.user.create({

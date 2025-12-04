@@ -2,7 +2,7 @@
  * Avatar utility functions for generating user avatars and group icons
  */
 
-export const USER_AVATAR_STYLES = ['rings', 'shapes', 'initials'] as const;
+export const USER_AVATAR_STYLES = ['adventurer', 'adventurer-neutral', 'thumbs', 'fun-emoji'] as const;
 export const GROUP_ICON_PROVIDERS = ['jdenticon'] as const;
 
 export type UserAvatarStyle = (typeof USER_AVATAR_STYLES)[number];
@@ -22,7 +22,7 @@ export function generateRandomSeed(): string {
  * @param style - Avatar style (rings, shapes, initials)
  * @returns DiceBear CDN URL
  */
-export function generateDiceBearUrl(seed: string, style: UserAvatarStyle = 'rings'): string {
+export function generateDiceBearUrl(seed: string, style: UserAvatarStyle = 'adventurer'): string {
     return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
 }
 

@@ -23,7 +23,7 @@ export class UpdateUserDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['rings', 'shapes', 'initials'])
+  @IsIn(['adventurer', 'adventurer-neutral', 'thumbs', 'fun-emoji'])
   avatarStyle?: string;
 
   @IsOptional()

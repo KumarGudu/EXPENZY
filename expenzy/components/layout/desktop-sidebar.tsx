@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 const navigation = [
     { name: 'Dashboard', route: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -105,11 +106,15 @@ export function DesktopSidebar() {
                 <div className="px-4 pb-4">
                     <button
                         onClick={() => router.push(ROUTES.PROFILE)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-accent/50 hover:bg-accent transition-colors cursor-pointer group"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all cursor-pointer group"
                     >
-                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
-                            {user.firstName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-                        </div>
+                        <UserAvatar
+                            seed={user.avatarSeed}
+                            style={user.avatarStyle as any}
+                            fallbackUrl={user.avatar}
+                            size={36}
+                            className="flex-shrink-0 group-hover:scale-105 transition-transform"
+                        />
                         <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-foreground truncate">
                                 {user.firstName && user.lastName
@@ -126,10 +131,16 @@ export function DesktopSidebar() {
                 <div className="px-4 pb-4 flex justify-center">
                     <button
                         onClick={() => router.push(ROUTES.PROFILE)}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold shadow-md hover:scale-110 transition-transform cursor-pointer"
+                        className="hover:scale-110 transition-transform cursor-pointer"
                         title="Go to Profile"
                     >
-                        {user.firstName?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
+                        <UserAvatar
+                            seed={user.avatarSeed}
+                            style={user.avatarStyle as any}
+                            fallbackUrl={user.avatar}
+                            size={40}
+                            className="shadow-md"
+                        />
                     </button>
                 </div>
             )}

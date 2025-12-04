@@ -16,7 +16,7 @@ interface UserAvatarProps {
  */
 export function UserAvatar({
     seed,
-    style = 'rings',
+    style = 'adventurer',
     size = 40,
     fallbackUrl,
     className = '',

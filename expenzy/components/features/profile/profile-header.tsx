@@ -2,6 +2,7 @@
 
 import { Mail, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import type { User } from '@/types/user';
 
 interface ProfileHeaderProps {
@@ -24,18 +25,13 @@ export function ProfileHeader({ user, onEditProfile }: ProfileHeaderProps) {
     return (
         <div className="rounded-xl bg-card border border-border p-8 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-                {user?.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                        src={user.avatar}
-                        alt={displayName}
-                        className="w-24 h-24 rounded-full object-cover ring-2 ring-primary/20"
-                    />
-                ) : (
-                    <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-3xl font-bold">
-                        {initials}
-                    </div>
-                )}
+                <UserAvatar
+                    seed={user?.avatarSeed}
+                    style={user?.avatarStyle as any}
+                    fallbackUrl={user?.avatar}
+                    size={96}
+                    className="ring-2 ring-primary/20"
+                />
                 <div className="flex-1 text-center md:text-left">
                     <h2 className="text-2xl font-bold mb-2">{displayName}</h2>
                     <div className="space-y-1 text-muted-foreground">
