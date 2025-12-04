@@ -61,10 +61,9 @@ export default function GroupSettingsPage() {
     const handleDelete = async () => {
         try {
             await deleteGroup.mutateAsync(groupId);
-            toast.success('Group deleted successfully');
             router.push('/dashboard/groups');
         } catch (_error) {
-            toast.error('Failed to delete group');
+            // Error toast is already shown by the hook
         } finally {
             setShowDeleteConfirm(false);
         }
