@@ -6,6 +6,10 @@ export interface Group {
     description?: string;
     groupType?: string;
     currency: string;
+    iconSeed?: string;
+    iconProvider?: string;
+    iconUrl?: string;
+    imageUrl?: string;
     createdByUserId: string;
     createdAt: string;
     updatedAt: string;
@@ -30,6 +34,9 @@ export interface GroupMember {
         lastName: string;
         email: string;
         avatar?: string;
+        avatarSeed?: string;
+        avatarStyle?: string;
+        avatarUrl?: string;
     };
 }
 

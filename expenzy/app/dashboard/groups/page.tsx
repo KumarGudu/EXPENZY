@@ -133,6 +133,9 @@ export default function GroupsPage() {
                                 memberCount={group._count?.members || 0}
                                 balance={group.userBalance}
                                 currency="INR"
+                                iconSeed={group.iconSeed}
+                                iconProvider={group.iconProvider}
+                                imageUrl={group.imageUrl}
                                 onClick={() => handleGroupClick(group.id)}
                             />
                         ))

@@ -14,6 +14,9 @@ interface GroupCardProps {
     memberCount: number;
     balance: number;
     currency?: string;
+    iconSeed?: string;
+    iconProvider?: string;
+    imageUrl?: string;
     onClick?: () => void;
     className?: string;
 }
@@ -35,6 +38,9 @@ export const GroupCard: React.FC<GroupCardProps> = ({
     memberCount,
     balance,
     currency = 'INR',
+    iconSeed,
+    iconProvider,
+    imageUrl,
     onClick,
     className,
 }) => {
@@ -48,7 +54,14 @@ export const GroupCard: React.FC<GroupCardProps> = ({
             padding="md"
         >
             <div className="flex items-start gap-4">
-                <GroupAvatar name={name} icon={icon} size="lg" />
+                <GroupAvatar
+                    name={name}
+                    icon={icon}
+                    iconSeed={iconSeed}
+                    iconProvider={iconProvider}
+                    imageUrl={imageUrl}
+                    size="lg"
+                />
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

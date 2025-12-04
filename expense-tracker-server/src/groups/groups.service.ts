@@ -9,17 +9,30 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AddGroupMemberDto } from './dto/add-group-member.dto';
 import * as crypto from 'crypto';
+import {
+  generateRandomSeed,
+  validateGroupIconProvider,
+} from '../common/utils/avatar-utils';
 
 @Injectable()
 export class GroupsService {
   constructor(private prisma: PrismaService) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
+    // Generate icon data
+    const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
+    const iconProvider =
+      createGroupDto.iconProvider && validateGroupIconProvider(createGroupDto.iconProvider)
+        ? createGroupDto.iconProvider
+        : 'jdenticon';
+
     return this.prisma.group.create({
       data: {
         name: createGroupDto.name,
         description: createGroupDto.description,
         imageUrl: createGroupDto.imageUrl,
+        iconSeed,
+        iconProvider: iconProvider as any,
         createdByUserId: userId,
         members: {
           create: {
@@ -132,6 +145,8 @@ export class GroupsService {
         name: updateGroupDto.name,
         description: updateGroupDto.description,
         imageUrl: updateGroupDto.imageUrl,
+        iconSeed: updateGroupDto.iconSeed,
+        iconProvider: updateGroupDto.iconProvider as any,
       },
       include: {
         members: {

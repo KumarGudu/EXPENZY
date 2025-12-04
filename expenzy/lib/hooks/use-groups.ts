@@ -9,6 +9,8 @@ export interface CreateGroupData {
     description?: string;
     memberEmails?: string[];
     groupType?: string;
+    iconSeed?: string;
+    iconProvider?: string;
 }
 
 export interface UpdateGroupData {

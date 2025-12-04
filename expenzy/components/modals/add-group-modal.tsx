@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Home, Briefcase, Plane, Users, Folder } from 'lucide-react';
+import { GroupIcon } from '@/components/ui/group-icon';
+import { generateRandomSeed } from '@/lib/utils/avatar-utils';
+import { useState, useEffect } from 'react';
 
 interface AddGroupModalProps {
     open: boolean;
@@ -26,6 +29,14 @@ const GROUP_CATEGORIES = [
 
 export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
     const createGroup = useCreateGroup();
+    const [iconSeed, setIconSeed] = useState<string>('');
+
+    // Generate new icon seed when modal opens
+    useEffect(() => {
+        if (open) {
+            setIconSeed(generateRandomSeed());
+        }
+    }, [open]);
 
     const {
         register,
@@ -45,7 +56,11 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
 
     const onSubmit = async (data: CreateGroupInput) => {
         try {
-            await createGroup.mutateAsync(data);
+            await createGroup.mutateAsync({
+                ...data,
+                iconSeed,
+                iconProvider: 'jdenticon' as const,
+            });
             reset();
             onClose();
         } catch (error) {
@@ -73,6 +88,17 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                         {errors.name && (
                             <p className="text-sm text-destructive">{errors.name.message}</p>
                         )}
+                    </div>
+
+                    {/* Icon Preview */}
+                    <div className="space-y-2">
+                        <Label>Group Icon Preview</Label>
+                        <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                            <GroupIcon seed={iconSeed} size={48} />
+                            <div className="text-sm text-muted-foreground">
+                                A unique icon will be generated for your group
+                            </div>
+                        </div>
                     </div>
 
                     {/* Category Selection */}

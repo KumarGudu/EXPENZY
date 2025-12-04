@@ -9,6 +9,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
+import {
+  generateDiceBearUrl,
+  generateRandomSeed,
+  validateUserAvatarStyle,
+} from '../common/utils/avatar-utils';
 
 interface GoogleProfile {
   id: string;
@@ -20,10 +25,18 @@ interface GoogleProfile {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    // Generate avatar data
+    const avatarSeed = createUserDto.avatarSeed || generateRandomSeed();
+    const avatarStyle =
+      createUserDto.avatarStyle && validateUserAvatarStyle(createUserDto.avatarStyle)
+        ? createUserDto.avatarStyle
+        : 'rings';
+    const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
 
     return this.prisma.user.create({
       data: {
@@ -33,6 +46,9 @@ export class UsersService {
         firstName: createUserDto.firstName,
         lastName: createUserDto.lastName,
         phone: createUserDto.phone,
+        avatarSeed,
+        avatarStyle: avatarStyle as any,
+        avatarUrl,
       },
     });
   }
@@ -58,6 +74,18 @@ export class UsersService {
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
 
+    // Regenerate avatar URL if seed or style changed
+    let avatarUrl: string | undefined;
+    if (updateUserDto.avatarSeed || updateUserDto.avatarStyle) {
+      const user = await this.prisma.user.findUnique({ where: { id } });
+      const seed = updateUserDto.avatarSeed || user?.avatarSeed || id;
+      const style =
+        updateUserDto.avatarStyle && validateUserAvatarStyle(updateUserDto.avatarStyle)
+          ? updateUserDto.avatarStyle
+          : user?.avatarStyle || 'rings';
+      avatarUrl = generateDiceBearUrl(seed, style);
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: {
@@ -65,6 +93,9 @@ export class UsersService {
         lastName: updateUserDto.lastName,
         phone: updateUserDto.phone,
         avatar: updateUserDto.avatar,
+        avatarSeed: updateUserDto.avatarSeed,
+        avatarStyle: updateUserDto.avatarStyle as any,
+        avatarUrl,
         timezone: updateUserDto.timezone,
         defaultCurrency: updateUserDto.defaultCurrency,
       },
@@ -127,12 +158,19 @@ export class UsersService {
 
     // Create new user
     const username = email.split('@')[0] || 'user';
+    const avatarSeed = generateRandomSeed();
+    const avatarStyle = 'rings';
+    const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
+
     return this.prisma.user.create({
       data: {
         email,
         username: `${username}_${Math.floor(Math.random() * 1000)}`,
         googleId: profile.id,
         avatar,
+        avatarSeed,
+        avatarStyle: avatarStyle as any,
+        avatarUrl,
         firstName,
         lastName,
         isVerified: true,

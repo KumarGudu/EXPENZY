@@ -17,4 +17,13 @@ export class CreateGroupDto {
   @IsString()
   @IsIn(['home', 'office', 'trip', 'friends', 'other'])
   groupType?: string;
+
+  @IsOptional()
+  @IsString()
+  iconSeed?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['jdenticon'])
+  iconProvider?: string;
 }
