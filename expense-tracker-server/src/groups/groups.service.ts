@@ -18,7 +18,11 @@ import {
 
 @Injectable()
 export class GroupsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private splitCalculationService: SplitCalculationService,
+    private balanceCalculationService: BalanceCalculationService,
+  ) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
@@ -451,8 +455,7 @@ export class GroupsService {
       include: { splits: true },
     });
 
-    const { BalanceCalculationService } = await import('./services/balance-calculation.service');
-    const balanceService = new BalanceCalculationService();
+    const balanceService = this.balanceCalculationService;
     const balances = balanceService.calculateGroupBalances(expenses as any);
     const userBalance = balanceService.getUserBalance(balances, userId);
 
@@ -540,8 +543,7 @@ export class GroupsService {
     }
 
     // Use split calculation service
-    const { SplitCalculationService } = await import('./services/split-calculation.service');
-    const splitService = new SplitCalculationService();
+    const splitService = this.splitCalculationService;
 
     const splits = splitService.calculateSplits(
       createExpenseDto.amount,
@@ -557,8 +559,8 @@ export class GroupsService {
     }
 
     // Validate participants are group members
-    const memberIds = group.members.map((m) => m.userId);
-    const participantValidation = splitService.validateParticipants(
+    const memberIds = group.members.map((m) => m.userId).filter((id): id is string => id !== null);
+    const participantValidation = this.splitCalculationService.validateParticipants(
       createExpenseDto.participants,
       memberIds,
     );
@@ -621,7 +623,30 @@ export class GroupsService {
         },
       });
 
-      return expense;
+      // Fetch the expense again with splits to return in response
+      const expenseWithSplits = await tx.groupExpense.findUnique({
+        where: { id: expense.id },
+        include: {
+          splits: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  username: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          paidBy: true,
+          category: true,
+          splitCalculations: true,
+        },
+      });
+
+      return expenseWithSplits;
     });
   }
 
@@ -702,7 +727,7 @@ export class GroupsService {
     }
 
     // Cannot edit if partial payments made
-    const hasPartialPayments = expense.splits.some((s) => s.amountPaid > 0);
+    const hasPartialPayments = expense.splits.some((s) => Number(s.amountPaid) > 0);
     if (hasPartialPayments) {
       throw new BadRequestException(
         'Cannot edit expense with partial payments. Please settle or cancel payments first.',
@@ -711,8 +736,7 @@ export class GroupsService {
 
     // If amount or split type changed, recalculate splits
     if (updateDto.amount || updateDto.splitType || updateDto.participants) {
-      const { SplitCalculationService } = await import('./services/split-calculation.service');
-      const splitService = new SplitCalculationService();
+      const splitService = this.splitCalculationService;
 
       const newAmount = updateDto.amount || expense.amount;
       const newSplitType = updateDto.splitType || expense.splitType;
@@ -851,14 +875,14 @@ export class GroupsService {
       },
     });
 
-    const { BalanceCalculationService } = await import('./services/balance-calculation.service');
-    const balanceService = new BalanceCalculationService();
-
-    const balances = balanceService.calculateGroupBalances(expenses as any);
+    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
 
     return Array.from(balances.values()).map((balance) => ({
-      ...balance,
-      formatted: balanceService.formatBalance(balance.balance),
+      userId: balance.userId,
+      totalPaid: balance.totalPaid,
+      totalOwed: balance.totalOwed,
+      balance: balance.balance,
+      formatted: this.balanceCalculationService.formatBalance(balance.balance),
     }));
   }
 
@@ -879,16 +903,13 @@ export class GroupsService {
       },
     });
 
-    const { BalanceCalculationService } = await import('./services/balance-calculation.service');
-    const balanceService = new BalanceCalculationService();
-
-    const balances = balanceService.calculateGroupBalances(expenses as any);
-    const userBalance = balanceService.getUserBalance(balances, targetUserId);
+    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
+    const userBalance = this.balanceCalculationService.getUserBalance(balances, targetUserId);
 
     return {
       userId: targetUserId,
       balance: userBalance,
-      formatted: balanceService.formatBalance(userBalance),
+      formatted: this.balanceCalculationService.formatBalance(userBalance),
     };
   }
 
@@ -909,11 +930,8 @@ export class GroupsService {
       },
     });
 
-    const { BalanceCalculationService } = await import('./services/balance-calculation.service');
-    const balanceService = new BalanceCalculationService();
-
-    const balances = balanceService.calculateGroupBalances(expenses as any);
-    const simplifiedDebts = balanceService.simplifyDebts(balances);
+    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
+    const simplifiedDebts = this.balanceCalculationService.simplifyDebts(balances);
 
     return simplifiedDebts;
   }
@@ -1030,25 +1048,6 @@ export class GroupsService {
   }
 
   // ==================== HELPER METHODS ====================
-
-  /**
-   * Verify user is a group member
-   */
-  private async verifyGroupMembership(groupId: string, userId: string) {
-    const membership = await this.prisma.groupMember.findFirst({
-      where: {
-        groupId,
-        userId,
-        inviteStatus: 'accepted',
-      },
-    });
-
-    if (!membership) {
-      throw new ForbiddenException('You are not a member of this group');
-    }
-
-    return membership;
-  }
 
   /**
    * Verify user is a group member

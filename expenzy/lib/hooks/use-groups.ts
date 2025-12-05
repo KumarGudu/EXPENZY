@@ -165,10 +165,9 @@ export function useLeaveGroup() {
             queryClient.invalidateQueries({ queryKey: ['groups'] });
             toast.success('You have left the group');
         },
-        onError: (error: any) => {
-            const message = error?.response?.data?.message || 'Failed to leave group';
+        onError: (error: unknown) => {
+            const message = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to leave group';
             toast.error(message);
         },
     });
 }
-

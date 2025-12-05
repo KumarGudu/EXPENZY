@@ -98,6 +98,12 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) => `/groups/${id}`,
         MEMBERS: (id: string) => `/groups/${id}/members`,
         EXPENSES: (id: string) => `/groups/${id}/expenses`,
+        EXPENSE_BY_ID: (groupId: string, expenseId: string) => `/groups/${groupId}/expenses/${expenseId}`,
+        BALANCES: (id: string) => `/groups/${id}/balances`,
+        USER_BALANCE: (groupId: string, userId: string) => `/groups/${groupId}/balances/user/${userId}`,
+        SIMPLIFIED_DEBTS: (id: string) => `/groups/${id}/balances/simplified`,
+        SETTLE_EXPENSE: (groupId: string, expenseId: string) => `/groups/${groupId}/expenses/${expenseId}/settle`,
+        SETTLEMENTS: (id: string) => `/groups/${id}/settlements`,
     },
 
     // Loans

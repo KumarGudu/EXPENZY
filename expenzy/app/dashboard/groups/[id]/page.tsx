@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGroup } from '@/lib/hooks/use-groups';
-import { Plus, Receipt } from 'lucide-react';
+import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
+import { useGroupBalances } from '@/lib/hooks/use-group-balances';
+import { Plus, Receipt, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GroupHeader } from '@/components/features/groups/group-header';
@@ -11,6 +12,7 @@ import { BalanceSummary } from '@/components/features/groups/balance-summary';
 import { GlassCard } from '@/components/shared/glass-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VirtualList } from '@/components/shared/virtual-list';
+import { AddExpenseModal } from '@/components/features/groups/add-expense-modal';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
@@ -19,16 +21,20 @@ export default function GroupDetailPage() {
     const params = useParams();
     const router = useRouter();
     const groupId = params.id as string;
+    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
+    const { data: members = [] } = useGroupMembers(groupId);
+    const { data: balances = [] } = useGroupBalances(groupId);
 
     // Get current user ID from localStorage
     const currentUserId = typeof window !== 'undefined'
         ? localStorage.getItem('userId') || ''
         : '';
 
-    // Calculate user's balance
-    const userBalance = 0; // TODO: Calculate from expenses
+    // Get user's balance
+    const userBalance = balances.find((b) => b.userId === currentUserId);
+    const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
 
     // Group expenses by month
     const groupedExpenses = useMemo(() => {
@@ -59,7 +65,7 @@ export default function GroupDetailPage() {
         }, {} as Record<string, GroupedExpense>);
 
         return Object.values(grouped);
-    }, [group]);
+    }, [group?.groupExpenses]);
 
     if (groupLoading) {
         return (
@@ -77,8 +83,9 @@ export default function GroupDetailPage() {
         return (
             <PageWrapper>
                 <div className="text-center py-12">
-                    <p className="text-muted-foreground">Group not found</p>
-                    <Button onClick={() => router.push('/dashboard/groups')} className="mt-4">
+                    <p className="text-muted-foreground mb-4">Group not found</p>
+                    <Button onClick={() => router.push('/dashboard/groups')}>
+                        <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Groups
                     </Button>
                 </div>
@@ -180,6 +187,16 @@ export default function GroupDetailPage() {
     return (
         <PageWrapper>
             <div className="space-y-6 pb-24 lg:pb-6">
+                {/* Back Button */}
+                <Button
+                    variant="ghost"
+                    onClick={() => router.push('/dashboard/groups')}
+                    className="mb-2"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to Groups
+                </Button>
+
                 {/* Header */}
                 <GroupHeader
                     groupId={groupId}
@@ -188,13 +205,19 @@ export default function GroupDetailPage() {
                     iconSeed={group.iconSeed}
                     iconProvider={group.iconProvider}
                     imageUrl={group.imageUrl}
-                    memberCount={group.members?.length || 0}
+                    memberCount={acceptedMembers.length}
                 />
 
                 {/* Balance Summary */}
-                <GlassCard className="text-center">
-                    <BalanceSummary balance={userBalance} currency={group.currency} showLabel />
-                </GlassCard>
+                {userBalance && (
+                    <GlassCard className="text-center">
+                        <BalanceSummary
+                            balance={userBalance.balance}
+                            currency={group.currency}
+                            showLabel
+                        />
+                    </GlassCard>
+                )}
 
                 {/* Expenses List - Splitwise Style */}
                 <div className="space-y-4">
@@ -237,10 +260,7 @@ export default function GroupDetailPage() {
                     <Button
                         size="lg"
                         className="h-14 w-14 rounded-full shadow-lg"
-                        onClick={() => {
-                            // TODO: Open add expense modal
-                            console.log('Add expense');
-                        }}
+                        onClick={() => setIsExpenseModalOpen(true)}
                     >
                         <Plus className="h-6 w-6" />
                     </Button>
@@ -251,15 +271,26 @@ export default function GroupDetailPage() {
                     <Button
                         size="lg"
                         className="w-full"
-                        onClick={() => {
-                            // TODO: Open add expense modal
-                            console.log('Add expense');
-                        }}
+                        onClick={() => setIsExpenseModalOpen(true)}
                     >
                         <Plus className="h-5 w-5 mr-2" />
                         Add Expense
                     </Button>
                 </div>
+
+                {/* Add Expense Modal */}
+                <AddExpenseModal
+                    open={isExpenseModalOpen}
+                    onClose={() => setIsExpenseModalOpen(false)}
+                    groupId={groupId}
+                    members={acceptedMembers.map((m) => ({
+                        id: m.userId,
+                        username: m.user?.firstName && m.user?.lastName
+                            ? `${m.user.firstName} ${m.user.lastName}`
+                            : m.user?.email || m.memberEmail || '',
+                        email: m.user?.email || m.memberEmail || '',
+                    }))}
+                />
             </div>
         </PageWrapper>
     );

@@ -1,4 +1,4 @@
-import type { Split } from './split';
+import type { GroupExpense } from './split';
 
 export interface Group {
     id: string;
@@ -40,29 +40,7 @@ export interface GroupMember {
     };
 }
 
-export interface GroupExpense {
-    id: string;
-    groupId: string;
-    paidByUserId: string;
-    amount: number;
-    currency: string;
-    description: string;
-    expenseDate: string;
-    category?: {
-        id: string;
-        name: string;
-        icon?: string;
-        color?: string;
-    };
-    paidBy?: {
-        id: string;
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
-    createdAt: string;
-    splits?: Split[];
-}
+// GroupExpense is now defined in split.ts with more comprehensive fields
 
 export interface CreateGroupDto {
     name: string;

@@ -2,7 +2,7 @@
  * Balance calculation utilities for group expenses
  */
 
-import type { GroupExpense } from '@/types/group';
+import type { GroupExpense } from '@/types/split';
 
 export interface MemberBalance {
     userId: string;
@@ -30,7 +30,8 @@ export function calculateMemberBalances(
     const balances = new Map<string, MemberBalance>();
 
     expenses.forEach((expense) => {
-        const { paidByUserId, amount, currency, splits = [] } = expense;
+        const { paidByUserId, currency, splits = [] } = expense;
+        const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount;
 
         // Initialize payer if not exists
         if (!balances.has(paidByUserId)) {
@@ -52,7 +53,7 @@ export function calculateMemberBalances(
             if (!balances.has(split.userId)) {
                 balances.set(split.userId, {
                     userId: split.userId,
-                    userName: split.user?.name || 'Unknown',
+                    userName: split.user?.username || 'Unknown',
                     userEmail: split.user?.email || '',
                     balance: 0,
                     currency,
@@ -61,7 +62,7 @@ export function calculateMemberBalances(
 
             const memberBalance = balances.get(split.userId)!;
             memberBalance.balance -= (typeof split.amountOwed === 'string' ? parseFloat(split.amountOwed) : split.amountOwed);
-            memberBalance.userName = split.user?.name || memberBalance.userName;
+            memberBalance.userName = split.user?.username || memberBalance.userName;
             memberBalance.userEmail = split.user?.email || memberBalance.userEmail;
         });
     });
