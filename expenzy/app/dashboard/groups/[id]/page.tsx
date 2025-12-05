@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
 import { useGroupBalances } from '@/lib/hooks/use-group-balances';
@@ -12,7 +12,6 @@ import { BalanceSummary } from '@/components/features/groups/balance-summary';
 import { GlassCard } from '@/components/shared/glass-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VirtualList } from '@/components/shared/virtual-list';
-import { AddExpenseModal } from '@/components/features/groups/add-expense-modal';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
@@ -21,7 +20,6 @@ export default function GroupDetailPage() {
     const params = useParams();
     const router = useRouter();
     const groupId = params.id as string;
-    const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
     const { data: members = [] } = useGroupMembers(groupId);
@@ -65,7 +63,7 @@ export default function GroupDetailPage() {
         }, {} as Record<string, GroupedExpense>);
 
         return Object.values(grouped);
-    }, [group?.groupExpenses]);
+    }, [group]);
 
     if (groupLoading) {
         return (
@@ -260,7 +258,7 @@ export default function GroupDetailPage() {
                     <Button
                         size="lg"
                         className="h-14 w-14 rounded-full shadow-lg"
-                        onClick={() => setIsExpenseModalOpen(true)}
+                        onClick={() => router.push(`/dashboard/groups/${groupId}/add-expense`)}
                     >
                         <Plus className="h-6 w-6" />
                     </Button>
@@ -271,26 +269,12 @@ export default function GroupDetailPage() {
                     <Button
                         size="lg"
                         className="w-full"
-                        onClick={() => setIsExpenseModalOpen(true)}
+                        onClick={() => router.push(`/dashboard/groups/${groupId}/add-expense`)}
                     >
                         <Plus className="h-5 w-5 mr-2" />
                         Add Expense
                     </Button>
                 </div>
-
-                {/* Add Expense Modal */}
-                <AddExpenseModal
-                    open={isExpenseModalOpen}
-                    onClose={() => setIsExpenseModalOpen(false)}
-                    groupId={groupId}
-                    members={acceptedMembers.map((m) => ({
-                        id: m.userId,
-                        username: m.user?.firstName && m.user?.lastName
-                            ? `${m.user.firstName} ${m.user.lastName}`
-                            : m.user?.email || m.memberEmail || '',
-                        email: m.user?.email || m.memberEmail || '',
-                    }))}
-                />
             </div>
         </PageWrapper>
     );

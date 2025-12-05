@@ -58,11 +58,13 @@ export interface GroupExpense {
 export interface CreateExpenseData {
     description: string;
     amount: number;
+    paidBy: string;
     splitType: SplitType;
     expenseDate?: string;
     notes?: string;
     categoryId?: string;
     participants: ParticipantInput[];
+    currency?: string;
 }
 
 export interface UpdateExpenseData {
