@@ -24,7 +24,10 @@ export function BottomNav() {
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom md:hidden">
             <div className="flex items-center justify-around h-16">
                 {tabs.map((tab) => {
-                    const isActive = pathname === tab.route || pathname.startsWith(tab.route + '/');
+                    // Special handling for Dashboard - only active on exact match
+                    const isActive = tab.route === ROUTES.DASHBOARD
+                        ? pathname === tab.route
+                        : pathname === tab.route || pathname.startsWith(tab.route + '/');
                     const Icon = tab.icon;
 
                     return (
