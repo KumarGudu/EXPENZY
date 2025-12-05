@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { VirtualList } from '@/components/shared/virtual-list';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getIconByName } from '@/lib/categorization/category-icons';
+import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
 
 export default function GroupDetailPage() {
     const params = useParams();
@@ -111,6 +112,16 @@ export default function GroupDetailPage() {
                         : 'Unknown';
                     const isPaidByMe = expense.paidByUserId === currentUserId;
 
+                    // Calculate balance for this expense
+                    const balance = calculateUserExpenseBalance(expense, currentUserId);
+
+                    // Determine color based on lent/borrowed
+                    const amountColorClass = balance.displayColor === 'green'
+                        ? 'text-green-600 dark:text-green-400'
+                        : balance.displayColor === 'red'
+                            ? 'text-red-400 dark:text-red-300'
+                            : 'text-foreground';
+
                     return (
                         <div
                             key={expense.id}
@@ -139,20 +150,23 @@ export default function GroupDetailPage() {
                                     {expense.description}
                                 </p>
                                 <p className="text-sm">
-                                    {isPaidByMe ? (
-                                        <span className="text-red-600 dark:text-red-400">you paid</span>
-                                    ) : (
-                                        <span className="text-green-600 dark:text-green-400">{paidByName} paid</span>
+                                    <span className="text-foreground">
+                                        {isPaidByMe ? 'You paid' : `${paidByName} paid`}
+                                    </span>
+                                    {balance.displayText !== 'not involved' && (
+                                        <>
+                                            {' · '}
+                                            <span className={amountColorClass}>
+                                                {balance.displayText}
+                                            </span>
+                                        </>
                                     )}
                                 </p>
                             </div>
 
                             {/* Amount */}
                             <div className="text-right flex-shrink-0">
-                                <p className={`font-semibold text-base ${isPaidByMe
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-green-600 dark:text-green-400'
-                                    }`}>
+                                <p className={`font-semibold text-base ${amountColorClass}`}>
                                     {formatCurrency(Number(expense.amount), expense.currency as 'INR' | 'USD' | 'EUR')}
                                 </p>
                             </div>

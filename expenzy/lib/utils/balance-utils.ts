@@ -60,7 +60,7 @@ export function calculateMemberBalances(
             }
 
             const memberBalance = balances.get(split.userId)!;
-            memberBalance.balance -= split.amount;
+            memberBalance.balance -= (typeof split.amountOwed === 'string' ? parseFloat(split.amountOwed) : split.amountOwed);
             memberBalance.userName = split.user?.name || memberBalance.userName;
             memberBalance.userEmail = split.user?.email || memberBalance.userEmail;
         });
@@ -80,6 +80,73 @@ export function getUserBalance(
     userId: string
 ): number {
     return balances.get(userId)?.balance || 0;
+}
+
+/**
+ * Calculate what the current user lent or borrowed for a single expense
+ * 
+ * Logic:
+ * - yourShare = amount you owe from the split
+ * - youPaid = total amount if you're the payer, else 0
+ * - youLent = max(0, youPaid - yourShare) → GREEN
+ * - youBorrowed = max(0, yourShare - youPaid) → RED
+ */
+export function calculateUserExpenseBalance(
+    expense: GroupExpense,
+    currentUserId: string
+): {
+    youPaid: number;
+    yourShare: number;
+    youLent: number;
+    youBorrowed: number;
+    displayText: string;
+    displayColor: 'green' | 'red' | 'neutral';
+} {
+    const amount = typeof expense.amount === 'string'
+        ? parseFloat(expense.amount)
+        : Number(expense.amount);
+
+    const isPayer = expense.paidByUserId === currentUserId;
+    const youPaid = isPayer ? amount : 0;
+
+    // Find user's split
+    const yourSplit = expense.splits?.find(s => s.userId === currentUserId);
+    const yourShare = yourSplit
+        ? (typeof yourSplit.amountOwed === 'string'
+            ? parseFloat(yourSplit.amountOwed)
+            : Number(yourSplit.amountOwed))
+        : 0;
+
+    // Calculate lent/borrowed
+    const youLent = Math.max(0, youPaid - yourShare);
+    const youBorrowed = Math.max(0, yourShare - youPaid);
+
+    // Determine display
+    let displayText = '';
+    let displayColor: 'green' | 'red' | 'neutral' = 'neutral';
+
+    if (youLent > 0) {
+        displayText = `you lent ₹${youLent.toFixed(2)}`;
+        displayColor = 'green';
+    } else if (youBorrowed > 0) {
+        displayText = `you borrowed ₹${youBorrowed.toFixed(2)}`;
+        displayColor = 'red';
+    } else if (yourShare > 0) {
+        displayText = 'settled';
+        displayColor = 'neutral';
+    } else {
+        displayText = 'not involved';
+        displayColor = 'neutral';
+    }
+
+    return {
+        youPaid,
+        yourShare,
+        youLent,
+        youBorrowed,
+        displayText,
+        displayColor,
+    };
 }
 
 /**

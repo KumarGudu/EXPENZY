@@ -751,34 +751,53 @@ model GroupExpense {
   receiptUrl   String?  @map("receipt_url")
   splitType    String   @default("equal") @map("split_type") // 'equal', 'exact', 'percentage'
   isSettled    Boolean  @default(false) @map("is_settled")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  group    Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  paidBy   User?               @relation("GroupExpensePaidBy", fields: [paidByUserId], references: [id])
-  category Category?           @relation(fields: [categoryId], references: [id])
-  splits   GroupExpenseSplit[]
+  // Validation tracking
+  splitValidationStatus String? @default("valid") @map("split_validation_status") // 'valid', 'sum_mismatch', 'percentage_mismatch', 'pending'
+  hasAdjustments        Boolean @default(false) @map("has_adjustments")
+  adjustmentReason      String? @map("adjustment_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  group             Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  paidBy            User?               @relation("GroupExpensePaidBy", fields: [paidByUserId], references: [id])
+  category          Category?           @relation(fields: [categoryId], references: [id])
+  splits            GroupExpenseSplit[]
+  splitCalculations SplitCalculation[]
 
   @@index([groupId])
   @@index([paidByUserId])
   @@index([expenseDate])
   @@index([isSettled])
   @@index([categoryId])
+  @@index([splitValidationStatus])
   @@map("group_expenses")
 }
 
 model GroupExpenseSplit {
-  id             String    @id @default(uuid())
-  groupExpenseId String    @map("group_expense_id")
-  userId         String?   @map("user_id") // Can be null for non-members
-  memberName     String?   @map("member_name") // For non-member participants
-  amountOwed     Decimal   @map("amount_owed") @db.Decimal(15, 2)
-  amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(15, 2)
-  percentage     Decimal?  @db.Decimal(5, 2) // For percentage splits
-  isPaid         Boolean   @default(false) @map("is_paid")
-  paidAt         DateTime? @map("paid_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  groupExpenseId String   @map("group_expense_id")
+  userId         String?  @map("user_id") // Can be null for non-members
+  memberName     String?  @map("member_name") // For non-member participants
+  amountOwed     Decimal  @map("amount_owed") @db.Decimal(15, 2)
+  amountPaid     Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  percentage     Decimal? @db.Decimal(5, 2) // For percentage splits
+
+  // Calculation tracking
+  isRoundingAdjustment Boolean  @default(false) @map("is_rounding_adjustment")
+  calculatedAmount     Decimal? @map("calculated_amount") @db.Decimal(15, 2)
+  adjustmentAmount     Decimal? @default(0) @map("adjustment_amount") @db.Decimal(15, 2)
+  calculatedPercentage Decimal? @map("calculated_percentage") @db.Decimal(5, 2)
+
+  // Multi-currency support
+  originalCurrency String?  @map("original_currency")
+  exchangeRate     Decimal? @map("exchange_rate") @db.Decimal(10, 4)
+
+  isPaid    Boolean   @default(false) @map("is_paid")
+  paidAt    DateTime? @map("paid_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   groupExpense GroupExpense @relation(fields: [groupExpenseId], references: [id], onDelete: Cascade)
   user         User?        @relation("GroupExpenseSplitUser", fields: [userId], references: [id])
@@ -788,6 +807,22 @@ model GroupExpenseSplit {
   @@index([userId])
   @@index([isPaid])
   @@map("group_expense_splits")
+}
+
+// Metadata table for tracking split calculations
+model SplitCalculation {
+  id                 String   @id @default(uuid())
+  groupExpenseId     String   @map("group_expense_id")
+  splitType          String   @map("split_type") // 'equal', 'exact', 'percentage'
+  totalAmount        Decimal  @db.Decimal(15, 2)
+  participantsCount  Int      @map("participants_count")
+  roundingDifference Decimal  @default(0) @map("rounding_difference") @db.Decimal(15, 4)
+  calculatedAt       DateTime @default(now()) @map("calculated_at")
+
+  groupExpense GroupExpense @relation(fields: [groupExpenseId], references: [id], onDelete: Cascade)
+
+  @@index([groupExpenseId])
+  @@map("split_calculations")
 }
 
 model Settlement {

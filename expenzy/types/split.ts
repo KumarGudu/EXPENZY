@@ -2,10 +2,11 @@ export interface Split {
     id: string;
     groupExpenseId: string;
     userId: string;
-    amount: number;
+    amountOwed: number; // Changed from 'amount' to match backend
+    amountPaid?: number;
     percentage?: number;
-    settled: boolean;
-    settledAt?: string;
+    isPaid: boolean; // Changed from 'settled' to match backend
+    paidAt?: string; // Changed from 'settledAt' to match backend
     createdAt: string;
     updatedAt: string;
     user?: {
