@@ -61,25 +61,32 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
 
     return (
         <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Group Members</h3>
-                {isAdmin && (
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowAddMember(true)}
-                        >
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Add people
-                        </Button>
-                        <Button variant="outline" size="sm">
-                            <LinkIcon className="h-4 w-4 mr-2" />
-                            Invite link
-                        </Button>
-                    </div>
-                )}
-            </div>
+            <h3 className="text-lg font-semibold">Group Members</h3>
+
+            {isAdmin && (
+                <div className="space-y-2">
+                    <button
+                        type="button"
+                        className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/30 rounded-lg transition-colors"
+                        onClick={() => setShowAddMember(true)}
+                    >
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                            <UserPlus className="h-5 w-5" />
+                        </div>
+                        <span className="text-base">Add people to group</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/30 rounded-lg transition-colors"
+                    >
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                            <LinkIcon className="h-5 w-5" />
+                        </div>
+                        <span className="text-base">Invite via link</span>
+                    </button>
+                </div>
+            )}
 
             <div className="space-y-1">
                 {members.map((member) => {
@@ -102,7 +109,8 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                             avatarStyle={member.user?.avatarStyle}
                             avatar={member.user?.avatar}
                             onRemove={
-                                isAdmin && member.userId !== currentUserId
+                                // Admin can remove others, or current user can leave
+                                (isAdmin && member.userId !== currentUserId) || member.userId === currentUserId
                                     ? () => handleRemoveMember(member.id, fullName)
                                     : undefined
                             }

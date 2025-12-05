@@ -88,4 +88,9 @@ export class GroupsController {
     const limitNum = limit ? parseInt(limit, 10) : 50;
     return this.groupsService.getGroupExpenses(id, user.userId, pageNum, limitNum);
   }
+
+  @Post(':id/leave')
+  leaveGroup(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.groupsService.leaveGroup(id, user.userId);
+  }
 }

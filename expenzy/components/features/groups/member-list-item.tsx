@@ -91,7 +91,8 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
                     <p className="text-sm text-muted-foreground">settled up</p>
                 )}
 
-                {isAdmin && !isCurrentUser && (onRemove || onChangeRole) && (
+                {/* Show menu for: 1) Admin viewing other members, OR 2) Current user (to leave) */}
+                {((isAdmin && !isCurrentUser && (onRemove || onChangeRole)) || (isCurrentUser && onRemove)) && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -99,22 +100,33 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            {onChangeRole && (
-                                <DropdownMenuItem
-                                    onClick={() =>
-                                        onChangeRole(role === 'ADMIN' ? 'MEMBER' : 'ADMIN')
-                                    }
-                                >
-                                    {role === 'ADMIN' ? 'Remove admin' : 'Make admin'}
-                                </DropdownMenuItem>
-                            )}
-                            {onRemove && (
+                            {isCurrentUser ? (
                                 <DropdownMenuItem
                                     onClick={onRemove}
                                     className="text-destructive"
                                 >
-                                    Remove from group
+                                    Leave group
                                 </DropdownMenuItem>
+                            ) : (
+                                <>
+                                    {onChangeRole && (
+                                        <DropdownMenuItem
+                                            onClick={() =>
+                                                onChangeRole(role === 'ADMIN' ? 'MEMBER' : 'ADMIN')
+                                            }
+                                        >
+                                            {role === 'ADMIN' ? 'Remove admin' : 'Make admin'}
+                                        </DropdownMenuItem>
+                                    )}
+                                    {onRemove && (
+                                        <DropdownMenuItem
+                                            onClick={onRemove}
+                                            className="text-destructive"
+                                        >
+                                            Remove from group
+                                        </DropdownMenuItem>
+                                    )}
+                                </>
                             )}
                         </DropdownMenuContent>
                     </DropdownMenu>

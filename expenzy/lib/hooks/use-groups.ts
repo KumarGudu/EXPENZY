@@ -152,3 +152,23 @@ export function useRemoveGroupMember() {
         },
     });
 }
+
+// Leave group
+export function useLeaveGroup() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (groupId: string) => {
+            await apiClient.post(`${API_ENDPOINTS.GROUPS.LIST}/${groupId}/leave`, {});
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['groups'] });
+            toast.success('You have left the group');
+        },
+        onError: (error: any) => {
+            const message = error?.response?.data?.message || 'Failed to leave group';
+            toast.error(message);
+        },
+    });
+}
+

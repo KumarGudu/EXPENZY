@@ -1,18 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useGroup, useUpdateGroup, useDeleteGroup } from '@/lib/hooks/use-groups';
-import { ArrowLeft, Trash2, Save } from 'lucide-react';
+import { useGroup, useDeleteGroup, useLeaveGroup } from '@/lib/hooks/use-groups';
+import { ArrowLeft, Pencil, LogOut, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { PageWrapper } from '@/components/layout/page-wrapper';
-import { GlassCard } from '@/components/shared/glass-card';
 import { GroupMemberList } from '@/components/features/groups/group-member-list';
+import { EditGroupModal } from '@/components/modals/edit-group-modal';
 import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { GroupIcon } from '@/components/ui/group-icon';
 import { toast } from 'sonner';
 
 export default function GroupSettingsPage() {
@@ -21,42 +19,39 @@ export default function GroupSettingsPage() {
     const groupId = params.id as string;
 
     const { data: group, isLoading } = useGroup(groupId);
-    const updateGroup = useUpdateGroup();
     const deleteGroup = useDeleteGroup();
+    const leaveGroup = useLeaveGroup();
 
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [hasChanges, setHasChanges] = useState(false);
+    const [showEditGroup, setShowEditGroup] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
-    // Initialize form when group data loads
-    useState(() => {
-        if (group) {
-            setName(group.name);
-            setDescription(group.description || '');
-        }
-    });
-
-    const handleSave = async () => {
-        if (!name.trim()) {
-            toast.error('Group name is required');
-            return;
-        }
-
+    // Get current user ID from localStorage
+    const getCurrentUserId = () => {
+        if (typeof window === 'undefined') return '';
+        const userStr = localStorage.getItem('user');
+        if (!userStr) return '';
         try {
-            await updateGroup.mutateAsync({
-                id: groupId,
-                data: {
-                    name: name.trim(),
-                    description: description.trim() || undefined,
-                },
-            });
-            setHasChanges(false);
-            toast.success('Group updated successfully');
-        } catch (_error) {
-            toast.error('Failed to update group');
+            const user = JSON.parse(userStr);
+            return user.id || '';
+        } catch {
+            return '';
         }
     };
+
+    const currentUserId = getCurrentUserId();
+    const isAdmin = group?.members?.some(m => m.userId === currentUserId && m.role === 'ADMIN') || false;
+
+    // Debug logging
+    useEffect(() => {
+        if (group) {
+            console.log('Admin Check Debug:');
+            console.log('- currentUserId:', currentUserId);
+            console.log('- isAdmin:', isAdmin);
+            console.log('- group.members:', group.members);
+            console.log('- group.createdByUserId:', group.createdByUserId);
+        }
+    }, [group, currentUserId, isAdmin]);
 
     const handleDelete = async () => {
         try {
@@ -69,14 +64,15 @@ export default function GroupSettingsPage() {
         }
     };
 
-    const handleNameChange = (value: string) => {
-        setName(value);
-        setHasChanges(true);
-    };
-
-    const handleDescriptionChange = (value: string) => {
-        setDescription(value);
-        setHasChanges(true);
+    const handleLeave = async () => {
+        try {
+            await leaveGroup.mutateAsync(groupId);
+            router.push('/dashboard/groups');
+        } catch (_error) {
+            // Error toast is already shown by the hook
+        } finally {
+            setShowLeaveConfirm(false);
+        }
     };
 
     if (isLoading) {
@@ -105,115 +101,103 @@ export default function GroupSettingsPage() {
 
     return (
         <PageWrapper>
-            <div className="space-y-6 max-w-2xl">
+            <div className="space-y-6 max-w-2xl pb-6">
                 {/* Header */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+                        className="h-10 w-10"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold">Group Settings</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Manage your group details
-                        </p>
-                    </div>
+                    <h1 className="text-xl font-semibold">Group settings</h1>
                 </div>
 
-                {/* Group Details */}
-                <GlassCard>
-                    <div className="space-y-6">
-                        <div>
-                            <h3 className="text-lg font-semibold mb-4">Group Details</h3>
-
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Group Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={name}
-                                        onChange={(e) => handleNameChange(e.target.value)}
-                                        placeholder="Enter group name"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description (Optional)</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={description}
-                                        onChange={(e) => handleDescriptionChange(e.target.value)}
-                                        placeholder="Add a description for your group"
-                                        rows={3}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {hasChanges && (
-                            <div className="flex gap-3">
-                                <Button
-                                    onClick={handleSave}
-                                    disabled={updateGroup.isPending}
-                                    className="flex-1"
-                                >
-                                    <Save className="h-4 w-4 mr-2" />
-                                    {updateGroup.isPending ? 'Saving...' : 'Save Changes'}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => {
-                                        setName(group.name);
-                                        setDescription(group.description || '');
-                                        setHasChanges(false);
-                                    }}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        )}
-                    </div>
-                </GlassCard>
-
-                {/* Member Management */}
-                <GlassCard>
-                    <GroupMemberList
-                        groupId={groupId}
-                        members={group.members || []}
-                        currentUserId={typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : ''}
-                        isAdmin={group.members?.some(m => m.userId === (typeof window !== 'undefined' ? localStorage.getItem('userId') : '') && m.role === 'ADMIN') || false}
-                        memberBalances={new Map()}
-                        currency={group.currency}
+                {/* Group Icon and Name Section */}
+                <div className="flex items-center gap-4 py-4">
+                    <GroupIcon
+                        seed={group.iconSeed}
+                        provider={group.iconProvider as 'jdenticon' | undefined}
+                        fallbackUrl={group.imageUrl}
+                        size={64}
                     />
-                </GlassCard>
-
-                {/* Danger Zone */}
-                <GlassCard className="border-destructive/50">
-                    <div className="space-y-4">
-                        <div>
-                            <h3 className="text-lg font-semibold text-destructive mb-1">
-                                Danger Zone
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                Once you delete a group, there is no going back. Please be certain.
-                            </p>
-                        </div>
-
-                        <Button
-                            variant="destructive"
-                            onClick={() => setShowDeleteConfirm(true)}
-                            disabled={deleteGroup.isPending}
-                        >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            {deleteGroup.isPending ? 'Deleting...' : 'Delete Group'}
-                        </Button>
+                    <div className="flex-1">
+                        <h2 className="text-lg font-medium">{group.name}</h2>
+                        <p className="text-sm text-muted-foreground">{group.description || 'Other'}</p>
                     </div>
-                </GlassCard>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            console.log('Edit button clicked, isAdmin:', isAdmin);
+                            setShowEditGroup(true);
+                        }}
+                        disabled={!isAdmin}
+                        className="h-10 w-10"
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                </div>
 
-                {/* Delete Confirmation Modal */}
+                <div className="border-t border-border" />
+
+                {/* Member List */}
+                <GroupMemberList
+                    groupId={groupId}
+                    members={group.members || []}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
+                    memberBalances={new Map()}
+                    currency={group.currency}
+                />
+
+                <div className="border-t border-border" />
+
+                {/* Actions Section */}
+                <div className="space-y-2">
+                    <button
+                        type="button"
+                        className="w-full flex items-center gap-3 py-3 text-left rounded-lg transition-colors text-destructive hover:text-destructive/80"
+                        onClick={() => {
+                            console.log('Leave button clicked');
+                            setShowLeaveConfirm(true);
+                        }}
+                    >
+                        <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                            <LogOut className="h-5 w-5" />
+                        </div>
+                        <span className="text-base font-medium">Leave group</span>
+                    </button>
+
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            className="w-full flex items-center gap-3 py-3 text-left rounded-lg transition-colors text-destructive hover:text-destructive/80"
+                            onClick={() => {
+                                console.log('Delete button clicked');
+                                setShowDeleteConfirm(true);
+                            }}
+                        >
+                            <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                                <Trash2 className="h-5 w-5" />
+                            </div>
+                            <span className="text-base font-medium">Delete group</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Modals */}
+                <EditGroupModal
+                    open={showEditGroup}
+                    onClose={() => setShowEditGroup(false)}
+                    groupId={groupId}
+                    initialName={group.name}
+                    initialDescription={group.description || ''}
+                />
+
                 <ConfirmationModal
                     open={showDeleteConfirm}
                     onClose={() => setShowDeleteConfirm(false)}
@@ -221,6 +205,17 @@ export default function GroupSettingsPage() {
                     title="Delete Group"
                     description={`Are you sure you want to delete "${group.name}"? This action cannot be undone and all group data will be permanently deleted.`}
                     confirmText="Delete Group"
+                    cancelText="Cancel"
+                    variant="destructive"
+                />
+
+                <ConfirmationModal
+                    open={showLeaveConfirm}
+                    onClose={() => setShowLeaveConfirm(false)}
+                    onConfirm={handleLeave}
+                    title="Leave Group"
+                    description={`Are you sure you want to leave "${group.name}"? You will no longer have access to this group's expenses and data.`}
+                    confirmText="Leave Group"
                     cancelText="Cancel"
                     variant="destructive"
                 />

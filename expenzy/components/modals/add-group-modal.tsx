@@ -70,7 +70,7 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px] max-w-[95vw]">
                 <DialogHeader>
                     <DialogTitle>Create Group</DialogTitle>
                 </DialogHeader>
@@ -104,7 +104,7 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                     {/* Category Selection */}
                     <div className="space-y-2">
                         <Label>Category</Label>
-                        <div className="flex gap-2 overflow-x-auto pb-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                             {GROUP_CATEGORIES.map((category) => {
                                 const Icon = category.icon;
                                 const isSelected = selectedCategory === category.value;
@@ -113,7 +113,7 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                                         key={category.value}
                                         type="button"
                                         onClick={() => setValue('groupType', category.value as 'home' | 'office' | 'trip' | 'friends' | 'other')}
-                                        className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all min-w-[80px] ${isSelected
+                                        className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all ${isSelected
                                             ? 'border-primary bg-primary/10'
                                             : 'border-border hover:border-primary/50 hover:bg-accent'
                                             }`}

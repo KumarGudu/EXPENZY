@@ -412,6 +412,40 @@ export class GroupsService {
     };
   }
 
+  async leaveGroup(groupId: string, userId: string) {
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+      include: {
+        members: true,
+      },
+    });
+
+    if (!group) {
+      throw new NotFoundException(`Group with ID ${groupId} not found`);
+    }
+
+    // Find the member record for this user
+    const member = group.members.find((m) => m.userId === userId);
+    if (!member) {
+      throw new NotFoundException('You are not a member of this group');
+    }
+
+    // Prevent the last admin from leaving
+    if (member.role === 'admin') {
+      const adminCount = group.members.filter((m) => m.role === 'admin').length;
+      if (adminCount === 1) {
+        throw new BadRequestException(
+          'Cannot leave the group as you are the last admin. Please assign another admin first or delete the group.',
+        );
+      }
+    }
+
+    // Remove the member
+    return this.prisma.groupMember.delete({
+      where: { id: member.id },
+    });
+  }
+
   // Helper methods
   private isGroupMember(
     group: {

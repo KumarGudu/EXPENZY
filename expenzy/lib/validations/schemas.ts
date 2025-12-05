@@ -35,6 +35,14 @@ export const createGroupSchema = z.object({
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 
+export const updateGroupSchema = z.object({
+    name: z.string().min(1, 'Group name is required').max(100),
+    description: z.string().max(500).optional(),
+});
+
+export type UpdateGroupInput = z.infer<typeof updateGroupSchema>;
+
+
 // ============= LOAN VALIDATIONS =============
 export const createLoanSchema = z.object({
     amount: z.number().positive('Amount must be positive'),

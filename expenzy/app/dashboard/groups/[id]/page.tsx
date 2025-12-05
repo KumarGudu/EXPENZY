@@ -150,8 +150,8 @@ export default function GroupDetailPage() {
                             {/* Amount */}
                             <div className="text-right flex-shrink-0">
                                 <p className={`font-semibold text-base ${isPaidByMe
-                                        ? 'text-red-600 dark:text-red-400'
-                                        : 'text-green-600 dark:text-green-400'
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-green-600 dark:text-green-400'
                                     }`}>
                                     {formatCurrency(Number(expense.amount), expense.currency as 'INR' | 'USD' | 'EUR')}
                                 </p>
@@ -171,7 +171,9 @@ export default function GroupDetailPage() {
                     groupId={groupId}
                     name={group.name}
                     description={group.description}
-                    icon="friends"
+                    iconSeed={group.iconSeed}
+                    iconProvider={group.iconProvider}
+                    imageUrl={group.imageUrl}
                     memberCount={group.members?.length || 0}
                 />
 
