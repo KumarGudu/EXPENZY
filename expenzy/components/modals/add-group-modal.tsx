@@ -95,9 +95,6 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                         <Label>Group Icon Preview</Label>
                         <div className="flex items-center gap-3 p-4 border rounded-lg bg-muted/30">
                             <GroupIcon seed={iconSeed} size={48} />
-                            <div className="text-sm text-muted-foreground">
-                                A unique icon will be generated for your group
-                            </div>
                         </div>
                     </div>
 

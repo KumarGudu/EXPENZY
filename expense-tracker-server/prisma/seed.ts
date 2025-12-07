@@ -1,7 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import {
+    generateDiceBearUrl,
+    generateRandomSeed,
+} from '../src/common/utils/avatar-utils';
 
 const prisma = new PrismaClient();
+
+const AVATAR_STYLES = ['adventurer', 'adventurer-neutral', 'thumbs', 'fun-emoji'];
+
+function getRandomStyle() {
+    return AVATAR_STYLES[Math.floor(Math.random() * AVATAR_STYLES.length)];
+}
 
 async function main() {
     console.log('🌱 Starting database seeding...');
@@ -85,6 +95,25 @@ async function main() {
     });
 
     console.log(`✅ Created ${3} users`);
+
+    // Seed user avatars
+    console.log('🎨 Seeding user avatars...');
+    const users = [user1, user2, user3];
+    for (const user of users) {
+        const avatarSeed = generateRandomSeed();
+        const avatarStyle = getRandomStyle();
+        const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
+        const dbAvatarStyle = avatarStyle.replace(/-/g, '_');
+
+        await prisma.$executeRawUnsafe(
+            `UPDATE users SET avatar_seed = $1, avatar_style = $2::"UserAvatarStyle", avatar_url = $3 WHERE id = $4`,
+            avatarSeed,
+            dbAvatarStyle,
+            avatarUrl,
+            user.id,
+        );
+    }
+    console.log(`✅ Seeded avatars for ${users.length} users`);
 
     // Create System Categories (Available to all users)
     console.log('📁 Creating system categories...');
@@ -709,6 +738,23 @@ async function main() {
     });
 
     console.log(`✅ Created ${1} group`);
+
+    // Seed group icons
+    console.log('🎨 Seeding group icons...');
+    const groups = [group1];
+    for (const group of groups) {
+        const iconSeed = generateRandomSeed();
+        const iconProvider = 'jdenticon';
+
+        await prisma.group.update({
+            where: { id: group.id },
+            data: {
+                iconSeed,
+                iconProvider: iconProvider as any,
+            },
+        });
+    }
+    console.log(`✅ Seeded icons for ${groups.length} group(s)`);
 
     // Create Group Members
     console.log('👤 Creating group members...');
