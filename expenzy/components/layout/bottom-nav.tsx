@@ -16,12 +16,18 @@ const tabs = [
     { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 },
 ];
 
-export function BottomNav() {
+interface BottomNavProps {
+    visible?: boolean;
+}
+
+export function BottomNav({ visible = true }: BottomNavProps) {
     const pathname = usePathname();
     const router = useRouter();
 
+    if (!visible) return null;
+
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom md:hidden">
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom md:hidden">\n
             <div className="flex items-center justify-around h-16">
                 {tabs.map((tab) => {
                     // Special handling for Dashboard - only active on exact match

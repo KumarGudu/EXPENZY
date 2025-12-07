@@ -6,13 +6,19 @@ import { useTheme } from '@/contexts/theme-context';
 import { Bell, Moon, Sun, User } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 
-export function MobileHeader() {
+interface MobileHeaderProps {
+    visible?: boolean;
+}
+
+export function MobileHeader({ visible = true }: MobileHeaderProps) {
     const router = useRouter();
     const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
 
+    if (!visible) return null;
+
     return (
-        <header className="md:hidden sticky top-0 z-40 w-full bg-card border-b border-border safe-top">
+        <header className="md:hidden sticky top-0 z-40 w-full bg-card border-b border-border safe-top">\n
             <div className="flex items-center justify-between h-14 px-4">
                 <div className="flex items-center gap-2">
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">

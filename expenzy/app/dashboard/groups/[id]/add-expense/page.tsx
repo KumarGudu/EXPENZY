@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
 import { useCreateGroupExpense } from '@/lib/hooks/use-group-expenses';
+import { useLayout } from '@/contexts/layout-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Check, Receipt, ChevronDown } from 'lucide-react';
-import { PageWrapper } from '@/components/layout/page-wrapper';
 import { toast } from 'sonner';
 import type { SplitType, ParticipantInput } from '@/types/split';
 import {
@@ -30,6 +30,7 @@ export default function AddExpensePage() {
     const params = useParams();
     const router = useRouter();
     const groupId = params.id as string;
+    const { setLayoutVisibility } = useLayout();
 
     const { data: group } = useGroup(groupId);
     const { data: members = [] } = useGroupMembers(groupId);
@@ -37,6 +38,14 @@ export default function AddExpensePage() {
 
     const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '';
     const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
+
+    // Hide mobile navigation on mount, restore on unmount
+    useEffect(() => {
+        setLayoutVisibility({ showMobileHeader: false, showBottomNav: false });
+        return () => {
+            setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
+        };
+    }, [setLayoutVisibility]);
 
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
@@ -178,332 +187,330 @@ export default function AddExpensePage() {
     };
 
     return (
-        <PageWrapper>
-            <div className="min-h-screen bg-background">
-                {/* Header */}
-                <div className="sticky top-0 z-10 bg-background border-b px-4">
-                    <div className="flex items-center justify-between py-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.push(`/dashboard/groups/${groupId}`)}
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                        <h1 className="text-lg font-semibold">Add expense</h1>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={handleSubmit}
-                            disabled={createExpense.isPending}
-                        >
-                            <Check className="h-5 w-5" />
-                        </Button>
+        <div className="min-h-screen bg-background">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-background border-b px-4">
+                <div className="flex items-center justify-between py-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <h1 className="text-lg font-semibold">Add expense</h1>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleSubmit}
+                        disabled={createExpense.isPending}
+                    >
+                        <Check className="h-5 w-5" />
+                    </Button>
+                </div>
+            </div>
+
+            <div className="p-4 space-y-6 pb-6">
+                {/* Description */}
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <Receipt className="h-6 w-6 text-muted-foreground" />
                     </div>
+                    <Input
+                        placeholder="Enter a description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-base"
+                    />
                 </div>
 
-                <div className="p-4 space-y-6">
-                    {/* Description */}
-                    <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                            <Receipt className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <Input
-                            placeholder="Enter a description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-base"
-                        />
+                {/* Amount */}
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <span className="text-lg font-semibold text-muted-foreground">₹</span>
                     </div>
+                    <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-2xl font-semibold"
+                    />
+                </div>
 
-                    {/* Amount */}
-                    <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                            <span className="text-lg font-semibold text-muted-foreground">₹</span>
-                        </div>
-                        <Input
-                            type="number"
-                            placeholder="0.00"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-2xl font-semibold"
-                        />
-                    </div>
+                {/* Paid by & Split type */}
+                <div className="flex items-center gap-2 text-sm flex-wrap">
+                    <span className="text-muted-foreground">Paid by</span>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowPaidByModal(true)}
+                        className="rounded-full"
+                    >
+                        {getMemberName(paidBy)}
+                    </Button>
+                    <span className="text-muted-foreground">and split</span>
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowSplitTypeModal(true)}
+                        className="rounded-full gap-1"
+                    >
+                        {SPLIT_TYPES.find((t) => t.value === splitType)?.label || 'equally'}
+                        <ChevronDown className="h-3 w-3" />
+                    </Button>
+                </div>
 
-                    {/* Paid by & Split type */}
-                    <div className="flex items-center gap-2 text-sm flex-wrap">
-                        <span className="text-muted-foreground">Paid by</span>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setShowPaidByModal(true)}
-                            className="rounded-full"
-                        >
-                            {getMemberName(paidBy)}
-                        </Button>
-                        <span className="text-muted-foreground">and split</span>
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setShowSplitTypeModal(true)}
-                            className="rounded-full gap-1"
-                        >
-                            {SPLIT_TYPES.find((t) => t.value === splitType)?.label || 'equally'}
-                            <ChevronDown className="h-3 w-3" />
-                        </Button>
-                    </div>
+                {/* Participants */}
+                <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-muted-foreground">
+                        {splitType === 'equal' && 'Split equally'}
+                        {splitType === 'exact' && 'Enter exact amounts'}
+                        {splitType === 'percentage' && 'Enter percentages'}
+                        {splitType === 'shares' && 'Enter shares'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                        {splitType === 'equal' && 'Select which people owe an equal share.'}
+                        {splitType === 'exact' && 'Enter the exact amount each person owes.'}
+                        {splitType === 'percentage' && 'Enter the percentage each person owes (must total 100%).'}
+                        {splitType === 'shares' && 'Enter the share ratio for each person.'}
+                    </p>
 
-                    {/* Participants */}
-                    <div className="space-y-3">
-                        <h3 className="text-sm font-medium text-muted-foreground">
-                            {splitType === 'equal' && 'Split equally'}
-                            {splitType === 'exact' && 'Enter exact amounts'}
-                            {splitType === 'percentage' && 'Enter percentages'}
-                            {splitType === 'shares' && 'Enter shares'}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                            {splitType === 'equal' && 'Select which people owe an equal share.'}
-                            {splitType === 'exact' && 'Enter the exact amount each person owes.'}
-                            {splitType === 'percentage' && 'Enter the percentage each person owes (must total 100%).'}
-                            {splitType === 'shares' && 'Enter the share ratio for each person.'}
-                        </p>
+                    <div className="space-y-2">
+                        {acceptedMembers.map((member) => {
+                            const isSelected = selectedParticipants.includes(member.userId);
+                            const memberName = getMemberName(member.userId);
 
-                        <div className="space-y-2">
-                            {acceptedMembers.map((member) => {
-                                const isSelected = selectedParticipants.includes(member.userId);
-                                const memberName = getMemberName(member.userId);
-
-                                return (
-                                    <div
-                                        key={member.userId}
-                                        className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted transition-colors"
-                                    >
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <MemberAvatar
-                                                name={memberName}
-                                                isSelected={isSelected}
-                                                onClick={() => toggleParticipant(member.userId)}
-                                                size="md"
-                                            />
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{memberName}</span>
-                                                {isSelected && splitType !== 'exact' && (
-                                                    <span className="text-sm text-muted-foreground">
-                                                        ₹{getCalculatedAmount(member.userId)}
-                                                    </span>
-                                                )}
-                                            </div>
+                            return (
+                                <div
+                                    key={member.userId}
+                                    className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted transition-colors"
+                                >
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <MemberAvatar
+                                            name={memberName}
+                                            isSelected={isSelected}
+                                            onClick={() => toggleParticipant(member.userId)}
+                                            size="md"
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{memberName}</span>
+                                            {isSelected && splitType !== 'exact' && (
+                                                <span className="text-sm text-muted-foreground">
+                                                    ₹{getCalculatedAmount(member.userId)}
+                                                </span>
+                                            )}
                                         </div>
+                                    </div>
 
-                                        {isSelected && splitType !== 'equal' && (
-                                            <div className="flex items-center gap-2">
-                                                {splitType === 'percentage' && (
-                                                    <div className="flex items-center gap-1">
-                                                        <Input
-                                                            type="number"
-                                                            placeholder="0"
-                                                            value={percentages[member.userId] || ''}
-                                                            onChange={(e) =>
-                                                                setPercentages((prev) => ({
-                                                                    ...prev,
-                                                                    [member.userId]: e.target.value,
-                                                                }))
-                                                            }
-                                                            className="w-20 text-right"
-                                                            min="0"
-                                                            max="100"
-                                                        />
-                                                        <span className="text-sm text-muted-foreground">%</span>
-                                                    </div>
-                                                )}
-                                                {splitType === 'exact' && (
+                                    {isSelected && splitType !== 'equal' && (
+                                        <div className="flex items-center gap-2">
+                                            {splitType === 'percentage' && (
+                                                <div className="flex items-center gap-1">
                                                     <Input
                                                         type="number"
-                                                        placeholder="0.00"
-                                                        value={exactAmounts[member.userId] || ''}
+                                                        placeholder="0"
+                                                        value={percentages[member.userId] || ''}
                                                         onChange={(e) =>
-                                                            setExactAmounts((prev) => ({
-                                                                ...prev,
-                                                                [member.userId]: e.target.value,
-                                                            }))
-                                                        }
-                                                        className="w-24 text-right"
-                                                        min="0"
-                                                        step="0.01"
-                                                    />
-                                                )}
-                                                {splitType === 'shares' && (
-                                                    <Input
-                                                        type="number"
-                                                        placeholder="1"
-                                                        value={shares[member.userId] || '1'}
-                                                        onChange={(e) =>
-                                                            setShares((prev) => ({
+                                                            setPercentages((prev) => ({
                                                                 ...prev,
                                                                 [member.userId]: e.target.value,
                                                             }))
                                                         }
                                                         className="w-20 text-right"
                                                         min="0"
-                                                        step="0.1"
+                                                        max="100"
                                                     />
-                                                )}
-                                            </div>
-                                        )}
+                                                    <span className="text-sm text-muted-foreground">%</span>
+                                                </div>
+                                            )}
+                                            {splitType === 'exact' && (
+                                                <Input
+                                                    type="number"
+                                                    placeholder="0.00"
+                                                    value={exactAmounts[member.userId] || ''}
+                                                    onChange={(e) =>
+                                                        setExactAmounts((prev) => ({
+                                                            ...prev,
+                                                            [member.userId]: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-24 text-right"
+                                                    min="0"
+                                                    step="0.01"
+                                                />
+                                            )}
+                                            {splitType === 'shares' && (
+                                                <Input
+                                                    type="number"
+                                                    placeholder="1"
+                                                    value={shares[member.userId] || '1'}
+                                                    onChange={(e) =>
+                                                        setShares((prev) => ({
+                                                            ...prev,
+                                                            [member.userId]: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-20 text-right"
+                                                    min="0"
+                                                    step="0.1"
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Summary */}
+                    {amount && selectedParticipants.length > 0 && (
+                        <div className="space-y-2">
+                            {/* Equal split summary */}
+                            {splitType === 'equal' && (
+                                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                    <span className="text-sm font-medium">
+                                        {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        ₹{(parseFloat(amount) / selectedParticipants.length).toFixed(2)}/person
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Exact amounts summary */}
+                            {splitType === 'exact' && (() => {
+                                const totalEntered = selectedParticipants.reduce(
+                                    (sum, userId) => sum + parseFloat(exactAmounts[userId] || '0'),
+                                    0
+                                );
+                                const remaining = parseFloat(amount) - totalEntered;
+                                const isValid = Math.abs(remaining) < 0.01;
+
+                                return (
+                                    <div className={`p-3 rounded-lg border-2 ${isValid
+                                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                                        : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
+                                        }`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Total entered</span>
+                                            <span className="text-sm font-semibold">₹{totalEntered.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Balanced'}
+                                            </span>
+                                            <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                                                }`}>
+                                                ₹{Math.abs(remaining).toFixed(2)}
+                                            </span>
+                                        </div>
                                     </div>
                                 );
-                            })}
+                            })()}
+
+                            {/* Percentage summary */}
+                            {splitType === 'percentage' && (() => {
+                                const totalPercentage = selectedParticipants.reduce(
+                                    (sum, userId) => sum + parseFloat(percentages[userId] || '0'),
+                                    0
+                                );
+                                const remaining = 100 - totalPercentage;
+                                const isValid = Math.abs(remaining) < 0.01;
+
+                                return (
+                                    <div className={`p-3 rounded-lg border-2 ${isValid
+                                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                                        : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
+                                        }`}>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-sm font-medium">Total percentage</span>
+                                            <span className="text-sm font-semibold">{totalPercentage.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium">
+                                                {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Complete'}
+                                            </span>
+                                            <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                                                }`}>
+                                                {Math.abs(remaining).toFixed(1)}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Shares summary */}
+                            {splitType === 'shares' && (
+                                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                    <span className="text-sm font-medium">
+                                        {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
+                                    </span>
+                                    <span className="text-sm font-medium">
+                                        Total: {selectedParticipants.reduce(
+                                            (sum, userId) => sum + parseFloat(shares[userId] || '1'),
+                                            0
+                                        ).toFixed(1)} shares
+                                    </span>
+                                </div>
+                            )}
                         </div>
-
-                        {/* Summary */}
-                        {amount && selectedParticipants.length > 0 && (
-                            <div className="space-y-2">
-                                {/* Equal split summary */}
-                                {splitType === 'equal' && (
-                                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                        <span className="text-sm font-medium">
-                                            {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
-                                        </span>
-                                        <span className="text-sm font-medium">
-                                            ₹{(parseFloat(amount) / selectedParticipants.length).toFixed(2)}/person
-                                        </span>
-                                    </div>
-                                )}
-
-                                {/* Exact amounts summary */}
-                                {splitType === 'exact' && (() => {
-                                    const totalEntered = selectedParticipants.reduce(
-                                        (sum, userId) => sum + parseFloat(exactAmounts[userId] || '0'),
-                                        0
-                                    );
-                                    const remaining = parseFloat(amount) - totalEntered;
-                                    const isValid = Math.abs(remaining) < 0.01;
-
-                                    return (
-                                        <div className={`p-3 rounded-lg border-2 ${isValid
-                                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                                            : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
-                                            }`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-medium">Total entered</span>
-                                                <span className="text-sm font-semibold">₹{totalEntered.toFixed(2)}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">
-                                                    {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Balanced'}
-                                                </span>
-                                                <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                                                    }`}>
-                                                    ₹{Math.abs(remaining).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Percentage summary */}
-                                {splitType === 'percentage' && (() => {
-                                    const totalPercentage = selectedParticipants.reduce(
-                                        (sum, userId) => sum + parseFloat(percentages[userId] || '0'),
-                                        0
-                                    );
-                                    const remaining = 100 - totalPercentage;
-                                    const isValid = Math.abs(remaining) < 0.01;
-
-                                    return (
-                                        <div className={`p-3 rounded-lg border-2 ${isValid
-                                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                                            : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
-                                            }`}>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-sm font-medium">Total percentage</span>
-                                                <span className="text-sm font-semibold">{totalPercentage.toFixed(1)}%</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-medium">
-                                                    {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Complete'}
-                                                </span>
-                                                <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                                                    }`}>
-                                                    {Math.abs(remaining).toFixed(1)}%
-                                                </span>
-                                            </div>
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Shares summary */}
-                                {splitType === 'shares' && (
-                                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                        <span className="text-sm font-medium">
-                                            {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
-                                        </span>
-                                        <span className="text-sm font-medium">
-                                            Total: {selectedParticipants.reduce(
-                                                (sum, userId) => sum + parseFloat(shares[userId] || '1'),
-                                                0
-                                            ).toFixed(1)} shares
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
-
-                {/* Split Type Modal */}
-                <Dialog open={showSplitTypeModal} onOpenChange={setShowSplitTypeModal}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Choose split type</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-2">
-                            {SPLIT_TYPES.map((type) => (
-                                <div
-                                    key={type.value}
-                                    onClick={() => {
-                                        setSplitType(type.value);
-                                        setShowSplitTypeModal(false);
-                                    }}
-                                    className="p-4 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                                >
-                                    <div className="font-medium">{type.label}</div>
-                                    <div className="text-sm text-muted-foreground">{type.description}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </DialogContent>
-                </Dialog>
-
-                {/* Paid By Modal */}
-                <Dialog open={showPaidByModal} onOpenChange={setShowPaidByModal}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Who paid?</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-2">
-                            {acceptedMembers.map((member) => (
-                                <div
-                                    key={member.userId}
-                                    onClick={() => {
-                                        setPaidBy(member.userId);
-                                        setShowPaidByModal(false);
-                                    }}
-                                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                                >
-                                    <MemberAvatar
-                                        name={getMemberName(member.userId)}
-                                        size="md"
-                                        showCheckmark={false}
-                                    />
-                                    <span className="font-medium">{getMemberName(member.userId)}</span>
-                                    {paidBy === member.userId && <Check className="h-5 w-5 ml-auto text-primary" />}
-                                </div>
-                            ))}
-                        </div>
-                    </DialogContent>
-                </Dialog>
             </div>
-        </PageWrapper>
+
+            {/* Split Type Modal */}
+            <Dialog open={showSplitTypeModal} onOpenChange={setShowSplitTypeModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Choose split type</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        {SPLIT_TYPES.map((type) => (
+                            <div
+                                key={type.value}
+                                onClick={() => {
+                                    setSplitType(type.value);
+                                    setShowSplitTypeModal(false);
+                                }}
+                                className="p-4 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                            >
+                                <div className="font-medium">{type.label}</div>
+                                <div className="text-sm text-muted-foreground">{type.description}</div>
+                            </div>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Paid By Modal */}
+            <Dialog open={showPaidByModal} onOpenChange={setShowPaidByModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Who paid?</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        {acceptedMembers.map((member) => (
+                            <div
+                                key={member.userId}
+                                onClick={() => {
+                                    setPaidBy(member.userId);
+                                    setShowPaidByModal(false);
+                                }}
+                                className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                            >
+                                <MemberAvatar
+                                    name={getMemberName(member.userId)}
+                                    size="md"
+                                    showCheckmark={false}
+                                />
+                                <span className="font-medium">{getMemberName(member.userId)}</span>
+                                {paidBy === member.userId && <Check className="h-5 w-5 ml-auto text-primary" />}
+                            </div>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }

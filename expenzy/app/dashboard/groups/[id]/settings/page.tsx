@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useDeleteGroup, useLeaveGroup } from '@/lib/hooks/use-groups';
+import { useLayout } from '@/contexts/layout-context';
 import { ArrowLeft, Pencil, LogOut, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageWrapper } from '@/components/layout/page-wrapper';
@@ -17,6 +18,7 @@ export default function GroupSettingsPage() {
     const params = useParams();
     const router = useRouter();
     const groupId = params.id as string;
+    const { setLayoutVisibility } = useLayout();
 
     const { data: group, isLoading } = useGroup(groupId);
     const deleteGroup = useDeleteGroup();
@@ -25,6 +27,14 @@ export default function GroupSettingsPage() {
     const [showEditGroup, setShowEditGroup] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+
+    // Hide mobile navigation on mount, restore on unmount
+    useEffect(() => {
+        setLayoutVisibility({ showMobileHeader: false, showBottomNav: false });
+        return () => {
+            setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
+        };
+    }, [setLayoutVisibility]);
 
     // Get current user ID from localStorage
     const getCurrentUserId = () => {
@@ -102,8 +112,23 @@ export default function GroupSettingsPage() {
     return (
         <PageWrapper>
             <div className="space-y-6 max-w-2xl pb-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
+                {/* Mobile Header with Back Button */}
+                <div className="md:hidden sticky top-0 z-10 bg-background border-b px-4 -mx-4 mb-4">
+                    <div className="flex items-center gap-3 py-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => router.push(`/dashboard/groups/${groupId}`)}
+                            className="h-10 w-10"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                        <h1 className="text-lg font-semibold">Group settings</h1>
+                    </div>
+                </div>
+
+                {/* Desktop Header - Hidden on mobile */}
+                <div className="hidden md:flex items-center gap-3">
                     <Button
                         variant="ghost"
                         size="icon"
