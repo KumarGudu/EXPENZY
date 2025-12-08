@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
 import { useSimplifiedDebts } from '@/lib/hooks/use-group-balances';
@@ -11,23 +11,44 @@ import { Button } from '@/components/ui/button';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GroupHeader } from '@/components/features/groups/group-header';
 import { SimplifiedBalanceView } from '@/components/features/groups/simplified-balance-view';
+import { ExpenseDetailModal } from '@/components/features/groups/expense-detail-modal';
 import { GlassCard } from '@/components/shared/glass-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VirtualList } from '@/components/shared/virtual-list';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
+import type { GroupExpense } from '@/types/split';
+
+// Hook to detect mobile
+function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    return isMobile;
+}
 
 export default function GroupDetailPage() {
     const params = useParams();
     const router = useRouter();
     const groupId = params.id as string;
     const { setLayoutVisibility } = useLayout();
+    const isMobile = useIsMobile();
 
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
     const { data: members = [] } = useGroupMembers(groupId);
     const { data: simplifiedDebts = [] } = useSimplifiedDebts(groupId);
     const { data: profile } = useProfile();
+
+    // Modal state
+    const [selectedExpense, setSelectedExpense] = useState<GroupExpense | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Hide mobile header on mount, restore on unmount (keep bottom nav)
     useEffect(() => {
@@ -39,6 +60,17 @@ export default function GroupDetailPage() {
 
     // Get current user ID from profile
     const currentUserId = profile?.id || '';
+
+    // Handle expense click
+    const handleExpenseClick = (expense: GroupExpense) => {
+        setSelectedExpense(expense);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setTimeout(() => setSelectedExpense(null), 300);
+    };
 
     const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
 
@@ -131,7 +163,8 @@ export default function GroupDetailPage() {
                     return (
                         <div
                             key={expense.id}
-                            className="flex items-center gap-3 py-3 px-0 hover:bg-muted/30 -mx-4 px-4 transition-colors cursor-pointer"
+                            onClick={() => handleExpenseClick(expense)}
+                            className="flex items-center gap-3 py-3 px-0 hover:bg-muted/30 -mx-4 px-4 transition-colors cursor-pointer active:bg-muted/50"
                         >
                             {/* Date */}
                             <div className="flex flex-col items-center w-14 flex-shrink-0">
@@ -280,6 +313,16 @@ export default function GroupDetailPage() {
                         Add Expense
                     </Button>
                 </div>
+
+                {/* Expense Detail Modal */}
+                <ExpenseDetailModal
+                    expense={selectedExpense}
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    currentUserId={currentUserId}
+                    groupId={groupId}
+                    isMobile={isMobile}
+                />
             </div>
         </PageWrapper>
     );
