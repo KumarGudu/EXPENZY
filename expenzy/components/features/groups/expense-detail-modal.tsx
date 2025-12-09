@@ -6,13 +6,23 @@ import { GroupExpense } from '@/types/split';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatCurrency } from '@/lib/utils/currency';
 import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
-import { getIconByName } from '@/lib/categorization/category-icons';
+import { CategoryIcon } from '@/lib/categorization/category-icons';
 import { useDeleteGroupExpense } from '@/lib/hooks/use-group-expenses';
-import { Pencil, Trash2, X } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface ExpenseDetailModalProps {
     expense: GroupExpense | null;
@@ -38,24 +48,24 @@ export function ExpenseDetailModal({
     if (!expense) return null;
 
     const balance = calculateUserExpenseBalance(expense, currentUserId);
-    const CategoryIcon = getIconByName(expense.category?.icon || 'MoreHorizontal');
+    const categoryIconName = expense.category?.icon || 'MoreHorizontal';
     const isPaidByYou = expense.paidByUserId === currentUserId;
     const paidByName = expense.paidBy
         ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}`.trim()
         : 'Unknown';
 
     const handleEdit = () => {
-        router.push(`/dashboard/groups/${groupId}/add-expense?expenseId=${expense.id}`);
         onClose();
+        router.push(`/dashboard/groups/${groupId}/add-expense?expenseId=${expense.id}`);
     };
 
     const handleDelete = async () => {
         try {
             await deleteExpense.mutateAsync({ groupId, expenseId: expense.id });
-            setShowDeleteDialog(false);
+            toast.success('Expense deleted successfully');
             onClose();
         } catch (error) {
-            console.error('Failed to delete expense:', error);
+            // Error handled by mutation
         }
     };
 
@@ -64,7 +74,7 @@ export function ExpenseDetailModal({
             {/* Header Section */}
             <div className="flex items-start gap-4">
                 <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center flex-shrink-0 border border-primary/10">
-                    <CategoryIcon className="h-8 w-8 text-primary" />
+                    <CategoryIcon iconName={categoryIconName} className="h-8 w-8 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-bold truncate mb-1">{expense.description}</h3>

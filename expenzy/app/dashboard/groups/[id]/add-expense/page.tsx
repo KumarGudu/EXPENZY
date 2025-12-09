@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
-import { useCreateGroupExpense } from '@/lib/hooks/use-group-expenses';
+import { useCreateGroupExpense, useUpdateGroupExpense, useGroupExpense } from '@/lib/hooks/use-group-expenses';
+import { useCategories } from '@/lib/hooks/use-categories';
 import { useLayout } from '@/contexts/layout-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Check, Receipt, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { getIconByName } from '@/lib/categorization/category-icons';
 import type { SplitType, ParticipantInput } from '@/types/split';
 import {
     Dialog,
@@ -29,15 +31,22 @@ const SPLIT_TYPES: { value: SplitType; label: string; description: string }[] = 
 export default function AddExpensePage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const groupId = params.id as string;
+    const expenseId = searchParams.get('expenseId');
+    const isEditMode = !!expenseId;
     const { setLayoutVisibility } = useLayout();
 
     const { data: group } = useGroup(groupId);
     const { data: members = [] } = useGroupMembers(groupId);
+    const { data: existingExpense } = useGroupExpense(groupId, expenseId || '');
+    const { data: categories = [] } = useCategories();
     const createExpense = useCreateGroupExpense();
+    const updateExpense = useUpdateGroupExpense();
 
     const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '';
     const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
+    const expenseCategories = categories.filter(c => c.type.toLowerCase() === 'expense');
 
     // Hide mobile navigation on mount, restore on unmount
     useEffect(() => {
@@ -49,6 +58,7 @@ export default function AddExpensePage() {
 
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
+    const [categoryId, setCategoryId] = useState<string>('');
     const [paidBy, setPaidBy] = useState(currentUserId);
     const [splitType, setSplitType] = useState<SplitType>('equal');
     const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
@@ -56,6 +66,7 @@ export default function AddExpensePage() {
     );
     const [showSplitTypeModal, setShowSplitTypeModal] = useState(false);
     const [showPaidByModal, setShowPaidByModal] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
 
     // For exact amounts
     const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
@@ -63,6 +74,46 @@ export default function AddExpensePage() {
     const [percentages, setPercentages] = useState<Record<string, string>>({});
     // For shares
     const [shares, setShares] = useState<Record<string, string>>({});
+
+    // Pre-fill form when editing
+    useEffect(() => {
+        if (isEditMode && existingExpense) {
+            setDescription(existingExpense.description);
+            setAmount(existingExpense.amount.toString());
+            setCategoryId(existingExpense.category?.id || '');
+            setPaidBy(existingExpense.paidByUserId);
+            setSplitType(existingExpense.splitType as SplitType);
+
+            // Set participants from splits
+            const participants = existingExpense.splits?.map(s => s.userId) || [];
+            setSelectedParticipants(participants);
+
+            // Pre-fill split amounts based on type
+            if (existingExpense.splitType === 'exact') {
+                const amounts: Record<string, string> = {};
+                existingExpense.splits?.forEach(split => {
+                    amounts[split.userId] = split.amountOwed.toString();
+                });
+                setExactAmounts(amounts);
+            } else if (existingExpense.splitType === 'percentage') {
+                const pcts: Record<string, string> = {};
+                existingExpense.splits?.forEach(split => {
+                    if (split.percentage) {
+                        pcts[split.userId] = split.percentage.toString();
+                    }
+                });
+                setPercentages(pcts);
+            } else if (existingExpense.splitType === 'shares') {
+                const shrs: Record<string, string> = {};
+                existingExpense.splits?.forEach(split => {
+                    if (split.shares) {
+                        shrs[split.userId] = split.shares.toString();
+                    }
+                });
+                setShares(shrs);
+            }
+        }
+    }, [isEditMode, existingExpense]);
 
     const handleSubmit = async () => {
         if (!description.trim()) {
@@ -133,18 +184,33 @@ export default function AddExpensePage() {
                 }));
             }
 
-            await createExpense.mutateAsync({
-                groupId,
-                data: {
-                    description: description.trim(),
-                    amount: parseFloat(amount),
-                    paidBy: paidBy,
-                    splitType,
-                    participants,
-                    expenseDate: new Date().toISOString(),
-                    currency: group?.currency || 'INR',
-                },
-            });
+            if (isEditMode && expenseId) {
+                await updateExpense.mutateAsync({
+                    groupId,
+                    expenseId,
+                    data: {
+                        description: description.trim(),
+                        amount: parseFloat(amount),
+                        splitType,
+                        participants,
+                        categoryId: categoryId || undefined,
+                    },
+                });
+            } else {
+                await createExpense.mutateAsync({
+                    groupId,
+                    data: {
+                        description: description.trim(),
+                        amount: parseFloat(amount),
+                        paidBy: paidBy,
+                        splitType,
+                        participants,
+                        expenseDate: new Date().toISOString(),
+                        categoryId: categoryId || undefined,
+                        currency: group?.currency || 'INR',
+                    },
+                });
+            }
 
             router.push(`/dashboard/groups/${groupId}`);
         } catch (_error) {
@@ -198,12 +264,12 @@ export default function AddExpensePage() {
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
-                    <h1 className="text-lg font-semibold">Add expense</h1>
+                    <h1 className="text-lg font-semibold">{isEditMode ? 'Edit expense' : 'Add expense'}</h1>
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleSubmit}
-                        disabled={createExpense.isPending}
+                        disabled={createExpense.isPending || updateExpense.isPending}
                     >
                         <Check className="h-5 w-5" />
                     </Button>
@@ -213,8 +279,15 @@ export default function AddExpensePage() {
             <div className="p-4 space-y-6 pb-6">
                 {/* Description */}
                 <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                        <Receipt className="h-6 w-6 text-muted-foreground" />
+                    <div
+                        onClick={() => setShowCategoryModal(true)}
+                        className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors"
+                    >
+                        {categoryId ? (() => {
+                            const category = expenseCategories.find(c => c.id === categoryId);
+                            const CategoryIcon = category?.icon ? getIconByName(category.icon) : getIconByName('Receipt');
+                            return <CategoryIcon className="h-6 w-6 text-muted-foreground" />;
+                        })() : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                     </div>
                     <Input
                         placeholder="Enter a description"
@@ -508,6 +581,34 @@ export default function AddExpensePage() {
                                 {paidBy === member.userId && <Check className="h-5 w-5 ml-auto text-primary" />}
                             </div>
                         ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Category Modal */}
+            <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Choose category</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid grid-cols-3 gap-3">
+                        {expenseCategories.map((category) => {
+                            const CategoryIcon = category.icon ? getIconByName(category.icon) : getIconByName('Receipt');
+                            return (
+                                <div
+                                    key={category.id}
+                                    onClick={() => {
+                                        setCategoryId(category.id);
+                                        setShowCategoryModal(false);
+                                    }}
+                                    className={`p-4 rounded-lg hover:bg-muted cursor-pointer transition-colors flex flex-col items-center gap-2 ${categoryId === category.id ? 'bg-primary/10 border-2 border-primary' : 'border border-border'
+                                        }`}
+                                >
+                                    <CategoryIcon className="h-6 w-6" />
+                                    <span className="text-xs text-center font-medium">{category.name}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </DialogContent>
             </Dialog>
