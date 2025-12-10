@@ -26,14 +26,14 @@ export class GroupsService {
     private prisma: PrismaService,
     private splitCalculationService: SplitCalculationService,
     private balanceCalculationService: BalanceCalculationService,
-  ) {}
+  ) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
     const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
     const iconProvider =
       createGroupDto.iconProvider &&
-      validateGroupIconProvider(createGroupDto.iconProvider)
+        validateGroupIconProvider(createGroupDto.iconProvider)
         ? createGroupDto.iconProvider
         : 'jdenticon';
 
@@ -468,7 +468,7 @@ export class GroupsService {
     if (userBalance < -0.01) {
       throw new BadRequestException(
         `You cannot leave the group with outstanding debts. ` +
-          `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
+        `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
       );
     }
 
@@ -956,13 +956,59 @@ export class GroupsService {
       },
     });
 
+    console.log(
+      `[DEBUG] Found ${expenses.length} expenses for group ${groupId}`,
+    );
+    console.log(`[DEBUG] First expense:`, JSON.stringify(expenses[0], null, 2));
+
     const balances = this.balanceCalculationService.calculateGroupBalances(
       expenses as any,
     );
+
+    console.log(`[DEBUG] Calculated balances:`, Array.from(balances.entries()));
+
     const simplifiedDebts =
       this.balanceCalculationService.simplifyDebts(balances);
 
-    return simplifiedDebts;
+    console.log(`[DEBUG] Simplified debts:`, simplifiedDebts);
+
+    // Fetch user data for each debt
+    const debtsWithUsers = await Promise.all(
+      simplifiedDebts.map(async (debt) => {
+        const [fromUser, toUser] = await Promise.all([
+          this.prisma.user.findUnique({
+            where: { id: debt.from },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          }),
+          this.prisma.user.findUnique({
+            where: { id: debt.to },
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          }),
+        ]);
+
+        return {
+          fromUserId: debt.from,
+          toUserId: debt.to,
+          amount: debt.amount,
+          fromUser: fromUser || undefined,
+          toUser: toUser || undefined,
+        };
+      }),
+    );
+
+    return debtsWithUsers;
   }
 
   /**
@@ -1001,7 +1047,7 @@ export class GroupsService {
     if (settleDto.amount > remainingOwed + 0.01) {
       throw new BadRequestException(
         `Overpayment detected. Remaining owed: ₹${remainingOwed.toFixed(2)}, ` +
-          `Payment: ₹${settleDto.amount.toFixed(2)}`,
+        `Payment: ₹${settleDto.amount.toFixed(2)}`,
       );
     }
 
@@ -1237,10 +1283,10 @@ export class GroupsService {
         avgMonthlySpending:
           monthlyArray.length > 0
             ? Math.round(
-                (monthlyArray.reduce((sum, m) => sum + m.totalSpending, 0) /
-                  monthlyArray.length) *
-                  100,
-              ) / 100
+              (monthlyArray.reduce((sum, m) => sum + m.totalSpending, 0) /
+                monthlyArray.length) *
+              100,
+            ) / 100
             : 0,
       },
     };

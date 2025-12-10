@@ -112,13 +112,13 @@ export class BalanceCalculationService {
         if (!balances.has(expense.paidByUserId)) {
           balances.set(expense.paidByUserId, {
             userId: expense.paidByUserId,
-            totalPaid: 0,
-            totalOwed: 0,
+            totalPaid: 0, // Initialize as number, not string
+            totalOwed: 0, // Initialize as number, not string
             balance: 0,
           });
         }
         const payerBalance = balances.get(expense.paidByUserId)!;
-        payerBalance.totalPaid += amount;
+        payerBalance.totalPaid += amount; // Now properly adds numbers
       }
 
       // Track each participant's share
@@ -128,8 +128,8 @@ export class BalanceCalculationService {
         if (!balances.has(split.userId)) {
           balances.set(split.userId, {
             userId: split.userId,
-            totalPaid: 0,
-            totalOwed: 0,
+            totalPaid: 0, // Initialize as number, not string
+            totalOwed: 0, // Initialize as number, not string
             balance: 0,
           });
         }
@@ -140,7 +140,7 @@ export class BalanceCalculationService {
             ? parseFloat(split.amountOwed)
             : split.amountOwed;
 
-        memberBalance.totalOwed += owedAmount;
+        memberBalance.totalOwed += owedAmount; // Now properly adds numbers
       });
     });
 

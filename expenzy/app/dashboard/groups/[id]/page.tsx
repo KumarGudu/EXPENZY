@@ -345,6 +345,8 @@ export default function GroupDetailPage() {
                     isOpen={isStatisticsModalOpen}
                     onClose={() => setIsStatisticsModalOpen(false)}
                     statistics={statistics}
+                    simplifiedDebts={simplifiedDebts}
+                    currentUserId={currentUserId}
                     isMobile={isMobile}
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
                 />
