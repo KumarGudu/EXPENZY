@@ -70,44 +70,48 @@ export function ExpenseDetailModal({
     };
 
     const content = (
-        <div className="space-y-5 pb-6">
-            {/* Header Section */}
-            <div className="flex items-start gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center flex-shrink-0 border border-primary/10">
-                    <CategoryIcon iconName={categoryIconName} className="h-8 w-8 text-primary" />
+        <div className="space-y-4">
+            {/* Header Section - Compact */}
+            <div className="flex items-start gap-3">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <CategoryIcon
+                        iconName={categoryIconName}
+                        color={expense.category?.color}
+                        className="h-6 w-6"
+                    />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold truncate mb-1">{expense.description}</h3>
-                    <p className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                    <h3 className="text-lg font-bold truncate">{expense.description}</h3>
+                    <p className="text-2xl font-bold text-primary">
                         {formatCurrency(Number(expense.amount), expense.currency as 'INR' | 'USD' | 'EUR')}
                     </p>
-                    <p className="text-sm text-muted-foreground mt-1.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         {format(new Date(expense.expenseDate), 'MMM dd, yyyy')}
                     </p>
                 </div>
             </div>
 
-            {/* Payer Info */}
-            <div className="bg-muted/30 rounded-2xl p-4 border border-border/50">
-                <p className="text-xs font-medium text-muted-foreground mb-1.5 uppercase tracking-wide">Paid by</p>
-                <p className="text-base font-semibold">
+            {/* Payer Info - Compact */}
+            <div className="bg-muted/30 rounded-lg p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-1 uppercase">Paid by</p>
+                <p className="text-sm font-semibold">
                     {isPaidByYou ? 'You' : paidByName} paid {formatCurrency(Number(expense.amount), expense.currency as 'INR' | 'USD' | 'EUR')}
                 </p>
             </div>
 
-            {/* Your Balance */}
+            {/* Your Balance - Compact */}
             {balance.displayText !== 'not involved' && balance.displayText !== 'settled' && (
-                <div className={`rounded-2xl p-5 border-2 ${balance.youLent > 0
-                    ? 'bg-gradient-to-br from-green-50 to-green-50/50 dark:from-green-950/30 dark:to-green-950/10 border-green-200 dark:border-green-900/50'
-                    : 'bg-gradient-to-br from-red-50 to-red-50/50 dark:from-red-950/30 dark:to-red-950/10 border-red-200 dark:border-red-900/50'
+                <div className={`rounded-lg p-3 ${balance.youLent > 0
+                    ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900/50'
+                    : 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50'
                     }`}>
-                    <p className={`text-sm font-bold mb-2 uppercase tracking-wide ${balance.youLent > 0
+                    <p className={`text-xs font-bold mb-1 uppercase ${balance.youLent > 0
                         ? 'text-green-700 dark:text-green-400'
                         : 'text-red-700 dark:text-red-400'
                         }`}>
                         {balance.youLent > 0 ? 'You lent' : 'You borrowed'}
                     </p>
-                    <p className={`text-4xl font-black ${balance.youLent > 0
+                    <p className={`text-2xl font-bold ${balance.youLent > 0
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-red-600 dark:text-red-400'
                         }`}>
@@ -119,25 +123,25 @@ export function ExpenseDetailModal({
                 </div>
             )}
 
-            {/* Participants */}
+            {/* Participants - Compact */}
             <div>
-                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">Split with</p>
-                <div className="space-y-2.5">
+                <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Split with</p>
+                <div className="space-y-1.5">
                     {expense.splits?.map((split) => (
-                        <div key={split.id} className="flex items-center justify-between py-3 px-4 bg-muted/20 rounded-xl border border-border/30">
-                            <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
-                                    <span className="text-sm font-bold text-primary">
+                        <div key={split.id} className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg">
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <span className="text-xs font-bold text-primary">
                                         {split.user?.firstName?.[0] || '?'}
                                     </span>
                                 </div>
-                                <span className="text-base font-semibold">
+                                <span className="text-sm font-medium">
                                     {split.userId === currentUserId
                                         ? 'You'
                                         : `${split.user?.firstName || 'Unknown'} ${split.user?.lastName || ''}`.trim()}
                                 </span>
                             </div>
-                            <span className="text-base font-bold">
+                            <span className="text-sm font-bold">
                                 {formatCurrency(Number(split.amountOwed), expense.currency as 'INR' | 'USD' | 'EUR')}
                             </span>
                         </div>
@@ -145,24 +149,24 @@ export function ExpenseDetailModal({
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-2">
+            {/* Actions - Compact */}
+            <div className="flex gap-2 pt-1">
                 <Button
                     variant="outline"
-                    size="lg"
-                    className="flex-1 h-14 text-base font-semibold rounded-xl"
+                    size="default"
+                    className="flex-1 h-10 text-sm font-medium"
                     onClick={handleEdit}
                 >
-                    <Pencil className="h-5 w-5 mr-2" />
+                    <Pencil className="h-4 w-4 mr-1.5" />
                     Edit
                 </Button>
                 <Button
                     variant="destructive"
-                    size="lg"
-                    className="flex-1 h-14 text-base font-semibold rounded-xl"
+                    size="default"
+                    className="flex-1 h-10 text-sm font-medium"
                     onClick={() => setShowDeleteDialog(true)}
                 >
-                    <Trash2 className="h-5 w-5 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-1.5" />
                     Delete
                 </Button>
             </div>
@@ -197,13 +201,13 @@ export function ExpenseDetailModal({
             <Sheet open={isOpen} onOpenChange={onClose}>
                 <SheetContent
                     side="bottom"
-                    className="h-[92vh] rounded-t-3xl px-6 pt-6 pb-safe"
+                    className="h-[85vh] rounded-t-3xl px-4 pt-4"
                 >
-                    <SheetHeader className="text-left mb-6">
-                        <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
+                    <SheetHeader className="text-left mb-4">
+                        <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-3" />
                         <SheetTitle className="sr-only">Expense Details</SheetTitle>
                     </SheetHeader>
-                    <div className="overflow-y-auto h-[calc(92vh-100px)] pb-6 -mx-6 px-6">
+                    <div className="overflow-y-auto h-[calc(85vh-80px)] pb-4 -mx-4 px-4">
                         {content}
                     </div>
                 </SheetContent>
@@ -214,7 +218,7 @@ export function ExpenseDetailModal({
     // Desktop: Use Dialog
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] rounded-2xl">
+            <DialogContent className="sm:max-w-[420px]">
                 <DialogHeader>
                     <DialogTitle className="sr-only">Expense Details</DialogTitle>
                 </DialogHeader>

@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Check, ChevronDown, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { getIconByName } from '@/lib/categorization/category-icons';
-import { useKeywordMatcher } from '@/lib/categorization/keyword-matcher';
+import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-matcher';
+import { CategorySelector } from '@/components/shared/category-selector';
 import type { SplitType, ParticipantInput } from '@/types/split';
 import {
     Dialog,
@@ -52,7 +53,7 @@ export default function AddExpensePage() {
     const { data: profile } = useProfile();
     const createExpense = useCreateGroupExpense();
     const updateExpense = useUpdateGroupExpense();
-    const { match: matchCategory } = useKeywordMatcher();
+    const { matchAll, isReady } = useKeywordMatcher();
 
     const currentUserId = profile?.id || '';
     const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
@@ -78,7 +79,9 @@ export default function AddExpensePage() {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [categoryId, setCategoryId] = useState<string>('');
-    const [isAutoDetected, setIsAutoDetected] = useState(false);
+    const [categoryMatches, setCategoryMatches] = useState<CategoryMatch[]>([]);
+    const [selectedMatchCategory, setSelectedMatchCategory] = useState<string | null>(null);
+    const [manuallySelected, setManuallySelected] = useState(false);
     const [paidBy, setPaidBy] = useState('');
     const [splitType, setSplitType] = useState<SplitType>('equal');
     const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
@@ -142,21 +145,44 @@ export default function AddExpensePage() {
         }
     }, [isEditMode, existingExpense]);
 
-    // Auto-detect category from description
+    // Auto-detect category from description with multi-match support
     useEffect(() => {
-        if (!description.trim() || isEditMode) return;
-
-        const detectedCategory = matchCategory(description);
-        if (detectedCategory) {
-            const category = expenseCategories.find(
-                c => c.name.toLowerCase() === detectedCategory.toLowerCase()
-            );
-            if (category && !categoryId) {
-                setCategoryId(category.id);
-                setIsAutoDetected(true);
+        const debounceTimer = setTimeout(() => {
+            // Don't auto-detect if:
+            // 1. In edit mode
+            // 2. User manually selected a category
+            // 3. Description is empty
+            // 4. Matcher not ready
+            if (!description.trim() || isEditMode || !isReady || manuallySelected) {
+                if (!manuallySelected) {
+                    setCategoryMatches([]);
+                }
+                return;
             }
-        }
-    }, [description, expenseCategories, matchCategory, isEditMode, categoryId]);
+
+            const matches = matchAll(description);
+            setCategoryMatches(matches);
+
+            if (matches.length === 1) {
+                // Single match - auto-select
+                const category = expenseCategories.find(
+                    c => c.name.toLowerCase() === matches[0].category.toLowerCase() ||
+                        c.name.toLowerCase().includes(matches[0].category.toLowerCase())
+                );
+                if (category) {
+                    setCategoryId(category.id);
+                    setSelectedMatchCategory(matches[0].category);
+                }
+            } else if (matches.length > 1) {
+                // Multiple matches - don't reset if user already selected one
+                if (!selectedMatchCategory || !matches.find(m => m.category === selectedMatchCategory)) {
+                    setSelectedMatchCategory(null);
+                }
+            }
+        }, 300);
+
+        return () => clearTimeout(debounceTimer);
+    }, [description, expenseCategories, matchAll, isEditMode, isReady, selectedMatchCategory, manuallySelected]);
 
     const handleSubmit = async () => {
         if (!description.trim()) {
@@ -330,7 +356,6 @@ export default function AddExpensePage() {
                     <div
                         onClick={() => {
                             setShowCategoryModal(true);
-                            setIsAutoDetected(false);
                         }}
                         className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-muted/80 transition-colors relative"
                     >
@@ -339,20 +364,45 @@ export default function AddExpensePage() {
                             const CategoryIcon = category?.icon ? getIconByName(category.icon) : getIconByName('Receipt');
                             return (
                                 <>
-                                    <CategoryIcon className="h-6 w-6 text-muted-foreground" />
-                                    {isAutoDetected && (
+                                    <CategoryIcon
+                                        className="h-6 w-6"
+                                        style={{ color: category?.color || 'currentColor' }}
+                                    />
+                                    {selectedMatchCategory && categoryMatches.length === 1 && (
                                         <Sparkles className="h-3 w-3 text-primary absolute -top-1 -right-1" />
                                     )}
                                 </>
                             );
                         })() : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
                     </div>
-                    <Input
-                        placeholder="Enter a description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-base"
-                    />
+                    <div className="flex-1">
+                        <Input
+                            placeholder="Enter a description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="border-0 border-b rounded-none px-0 focus-visible:ring-0 text-base"
+                        />
+                        {/* Multiple category matches selector */}
+                        {categoryMatches.length > 1 && description.length >= 3 && (
+                            <div className="mt-2">
+                                <CategorySelector
+                                    matches={categoryMatches}
+                                    selectedCategory={selectedMatchCategory || undefined}
+                                    onSelect={(category) => {
+                                        const matchingCategory = expenseCategories.find(c =>
+                                            c.name.toLowerCase() === category.toLowerCase() ||
+                                            c.name.toLowerCase().includes(category.toLowerCase())
+                                        );
+                                        if (matchingCategory) {
+                                            setCategoryId(matchingCategory.id);
+                                            setSelectedMatchCategory(category);
+                                        }
+                                    }}
+                                    categories={expenseCategories}
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Amount */}
@@ -646,13 +696,13 @@ export default function AddExpensePage() {
             {/* Category Modal - Mobile (Sheet) */}
             {isMobile ? (
                 <Sheet open={showCategoryModal} onOpenChange={setShowCategoryModal}>
-                    <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-6 pt-6">
-                        <SheetHeader className="text-left mb-6">
-                            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-4" />
-                            <SheetTitle className="text-2xl font-bold">Choose category</SheetTitle>
+                    <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl px-4 pt-4">
+                        <SheetHeader className="text-left mb-4">
+                            <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-3" />
+                            <SheetTitle className="text-xl font-bold">Choose category</SheetTitle>
                         </SheetHeader>
-                        <div className="overflow-y-auto h-[calc(85vh-120px)] pb-6 -mx-6 px-6">
-                            <div className="space-y-2">
+                        <div className="overflow-y-auto h-[calc(85vh-100px)] pb-4 -mx-4 px-4">
+                            <div className="space-y-1.5">
                                 {expenseCategories.map((category) => {
                                     const CategoryIcon = category.icon ? getIconByName(category.icon) : getIconByName('Receipt');
                                     const isSelected = categoryId === category.id;
@@ -661,25 +711,28 @@ export default function AddExpensePage() {
                                             key={category.id}
                                             onClick={() => {
                                                 setCategoryId(category.id);
-                                                setIsAutoDetected(false);
+                                                setSelectedMatchCategory(null);
+                                                setManuallySelected(true);
                                                 setShowCategoryModal(false);
                                             }}
-                                            className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all active:scale-[0.98] ${isSelected
-                                                ? 'bg-primary/10 border-2 border-primary shadow-sm'
-                                                : 'bg-muted/30 border-2 border-transparent hover:bg-muted/50'
+                                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all active:scale-[0.98] ${isSelected
+                                                ? 'bg-primary/10 border border-primary'
+                                                : 'bg-muted/30 hover:bg-muted/50'
                                                 }`}
                                         >
-                                            <div className={`h-14 w-14 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary/20' : 'bg-background'
+                                            <div className={`h-10 w-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-primary/20' : 'bg-background'
                                                 }`}>
-                                                <CategoryIcon className={`h-7 w-7 ${isSelected ? 'text-primary' : 'text-muted-foreground'
-                                                    }`} />
+                                                <CategoryIcon
+                                                    className="h-5 w-5"
+                                                    style={{ color: category.color || (isSelected ? 'hsl(var(--primary))' : 'currentColor') }}
+                                                />
                                             </div>
-                                            <span className={`text-lg font-semibold flex-1 ${isSelected ? 'text-primary' : 'text-foreground'
+                                            <span className={`text-base font-medium flex-1 ${isSelected ? 'text-primary' : 'text-foreground'
                                                 }`}>
                                                 {category.name}
                                             </span>
                                             {isSelected && (
-                                                <Check className="h-6 w-6 text-primary flex-shrink-0" />
+                                                <Check className="h-5 w-5 text-primary flex-shrink-0" />
                                             )}
                                         </div>
                                     );
@@ -692,9 +745,9 @@ export default function AddExpensePage() {
                 <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
                     <DialogContent className="sm:max-w-[600px]">
                         <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold">Choose category</DialogTitle>
+                            <DialogTitle className="text-xl font-bold">Choose category</DialogTitle>
                         </DialogHeader>
-                        <div className="grid grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto py-4">
+                        <div className="grid grid-cols-3 gap-2.5 max-h-[60vh] overflow-y-auto py-2">
                             {expenseCategories.map((category) => {
                                 const CategoryIcon = category.icon ? getIconByName(category.icon) : getIconByName('Receipt');
                                 const isSelected = categoryId === category.id;
@@ -703,20 +756,23 @@ export default function AddExpensePage() {
                                         key={category.id}
                                         onClick={() => {
                                             setCategoryId(category.id);
-                                            setIsAutoDetected(false);
+                                            setSelectedMatchCategory(null);
+                                            setManuallySelected(true);
                                             setShowCategoryModal(false);
                                         }}
-                                        className={`p-4 rounded-xl hover:bg-muted cursor-pointer transition-all flex flex-col items-center gap-3 ${isSelected
-                                            ? 'bg-primary/10 border-2 border-primary shadow-sm'
-                                            : 'border-2 border-border hover:border-primary/30'
+                                        className={`p-3 rounded-lg hover:bg-muted cursor-pointer transition-all flex flex-col items-center gap-2 ${isSelected
+                                            ? 'bg-primary/10 border-2 border-primary'
+                                            : 'border border-border hover:border-primary/30'
                                             }`}
                                     >
-                                        <div className={`h-12 w-12 rounded-lg flex items-center justify-center ${isSelected ? 'bg-primary/20' : 'bg-muted'
+                                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${isSelected ? 'bg-primary/20' : 'bg-muted'
                                             }`}>
-                                            <CategoryIcon className={`h-6 w-6 ${isSelected ? 'text-primary' : 'text-muted-foreground'
-                                                }`} />
+                                            <CategoryIcon
+                                                className="h-5 w-5"
+                                                style={{ color: category.color || (isSelected ? 'hsl(var(--primary))' : 'currentColor') }}
+                                            />
                                         </div>
-                                        <span className={`text-sm text-center font-medium ${isSelected ? 'text-primary' : 'text-foreground'
+                                        <span className={`text-xs text-center font-medium line-clamp-2 ${isSelected ? 'text-primary' : 'text-foreground'
                                             }`}>
                                             {category.name}
                                         </span>

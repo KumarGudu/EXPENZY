@@ -576,7 +576,7 @@ export class GroupsService {
       const expense = await tx.groupExpense.create({
         data: {
           groupId,
-          paidByUserId: userId,
+          paidByUserId: createExpenseDto.paidByUserId || userId,
           amount: createExpenseDto.amount,
           currency: createExpenseDto.currency || 'INR',
           description: createExpenseDto.description,
