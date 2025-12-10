@@ -13,7 +13,11 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AddGroupMemberDto } from './dto/add-group-member.dto';
 import { SplitCalculationService } from './services/split-calculation.service';
-import { BalanceCalculationService } from './services/balance-calculation.service';
+import {
+  BalanceCalculationService,
+  GroupExpenseWithSplits,
+} from './services/balance-calculation.service';
+import { DebtSettlementService } from './services/debt-settlement.service';
 import * as crypto from 'crypto';
 import {
   generateRandomSeed,
@@ -26,6 +30,7 @@ export class GroupsService {
     private prisma: PrismaService,
     private splitCalculationService: SplitCalculationService,
     private balanceCalculationService: BalanceCalculationService,
+    private debtSettlementService: DebtSettlementService,
   ) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
@@ -461,7 +466,9 @@ export class GroupsService {
     });
 
     const balanceService = this.balanceCalculationService;
-    const balances = balanceService.calculateGroupBalances(expenses as any);
+    const balances = balanceService.calculateGroupBalances(
+      expenses as unknown as GroupExpenseWithSplits[],
+    );
     const userBalance = balanceService.getUserBalance(balances, userId);
 
     // Negative balance means user owes money
@@ -895,7 +902,7 @@ export class GroupsService {
     });
 
     const balances = this.balanceCalculationService.calculateGroupBalances(
-      expenses as any,
+      expenses as unknown as GroupExpenseWithSplits[],
     );
 
     return Array.from(balances.values()).map((balance) => ({
@@ -925,7 +932,7 @@ export class GroupsService {
     });
 
     const balances = this.balanceCalculationService.calculateGroupBalances(
-      expenses as any,
+      expenses as unknown as GroupExpenseWithSplits[],
     );
     const userBalance = this.balanceCalculationService.getUserBalance(
       balances,
@@ -941,6 +948,7 @@ export class GroupsService {
 
   /**
    * Get simplified debts (debt simplification algorithm)
+   * Uses greedy algorithm to minimize number of transactions
    */
   async getSimplifiedDebts(groupId: string, userId: string) {
     await this.verifyGroupMembership(groupId, userId);
@@ -956,21 +964,15 @@ export class GroupsService {
       },
     });
 
-    console.log(
-      `[DEBUG] Found ${expenses.length} expenses for group ${groupId}`,
-    );
-    console.log(`[DEBUG] First expense:`, JSON.stringify(expenses[0], null, 2));
-
+    // Calculate balances for all group members
+    // Note: Using type assertion because Prisma returns Decimal type
+    // but balance calculation service handles both Decimal and number
     const balances = this.balanceCalculationService.calculateGroupBalances(
-      expenses as any,
+      expenses as unknown as GroupExpenseWithSplits[],
     );
 
-    console.log(`[DEBUG] Calculated balances:`, Array.from(balances.entries()));
-
-    const simplifiedDebts =
-      this.balanceCalculationService.simplifyDebts(balances);
-
-    console.log(`[DEBUG] Simplified debts:`, simplifiedDebts);
+    // Simplify debts using greedy algorithm
+    const simplifiedDebts = this.debtSettlementService.simplifyDebts(balances);
 
     // Fetch user data for each debt
     const debtsWithUsers = await Promise.all(

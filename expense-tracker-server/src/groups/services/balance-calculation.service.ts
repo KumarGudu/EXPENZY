@@ -102,18 +102,19 @@ export class BalanceCalculationService {
     const balances = new Map<string, MemberBalance>();
 
     expenses.forEach((expense) => {
+      // Convert Decimal to number - Prisma returns Decimal objects
       const amount =
         typeof expense.amount === 'string'
           ? parseFloat(expense.amount)
-          : expense.amount;
+          : Number(expense.amount); // Convert Decimal to number
 
       // Track payer
       if (expense.paidByUserId) {
         if (!balances.has(expense.paidByUserId)) {
           balances.set(expense.paidByUserId, {
             userId: expense.paidByUserId,
-            totalPaid: 0, // Initialize as number, not string
-            totalOwed: 0, // Initialize as number, not string
+            totalPaid: 0,
+            totalOwed: 0,
             balance: 0,
           });
         }
@@ -128,17 +129,18 @@ export class BalanceCalculationService {
         if (!balances.has(split.userId)) {
           balances.set(split.userId, {
             userId: split.userId,
-            totalPaid: 0, // Initialize as number, not string
-            totalOwed: 0, // Initialize as number, not string
+            totalPaid: 0,
+            totalOwed: 0,
             balance: 0,
           });
         }
 
         const memberBalance = balances.get(split.userId)!;
+        // Convert Decimal to number - Prisma returns Decimal objects
         const owedAmount =
           typeof split.amountOwed === 'string'
             ? parseFloat(split.amountOwed)
-            : split.amountOwed;
+            : Number(split.amountOwed); // Convert Decimal to number
 
         memberBalance.totalOwed += owedAmount; // Now properly adds numbers
       });

@@ -865,7 +865,7 @@ async function main() {
                             {
                                 userId: user1.id,
                                 amountOwed: splitAmount,
-                                amountPaid: paidBy === user1.id ? amount : 0,
+                                amountPaid: 0, // Everyone starts with 0, payer's contribution tracked by paidByUserId
                                 isRoundingAdjustment: false,
                                 calculatedAmount: splitAmount,
                                 adjustmentAmount: 0,
@@ -874,7 +874,7 @@ async function main() {
                             {
                                 userId: user2.id,
                                 amountOwed: splitAmount,
-                                amountPaid: paidBy === user2.id ? amount : 0,
+                                amountPaid: 0, // Everyone starts with 0, payer's contribution tracked by paidByUserId
                                 isRoundingAdjustment: false,
                                 calculatedAmount: splitAmount,
                                 adjustmentAmount: 0,
@@ -883,7 +883,7 @@ async function main() {
                             {
                                 userId: user3.id,
                                 amountOwed: splitAmount,
-                                amountPaid: paidBy === user3.id ? amount : 0,
+                                amountPaid: 0, // Everyone starts with 0, payer's contribution tracked by paidByUserId
                                 isRoundingAdjustment: false,
                                 calculatedAmount: splitAmount,
                                 adjustmentAmount: 0,
