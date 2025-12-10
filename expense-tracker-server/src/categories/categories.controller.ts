@@ -21,7 +21,7 @@ import { CategoryTypePipe } from './pipes/category-type.pipe';
 @Controller('categories')
 @UseGuards(JwtAuthGuard)
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) { }
+  constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
   create(
@@ -32,7 +32,10 @@ export class CategoriesController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload, @Query('type', CategoryTypePipe) type?: CategoryType) {
+  findAll(
+    @CurrentUser() user: JwtPayload,
+    @Query('type', CategoryTypePipe) type?: CategoryType,
+  ) {
     return this.categoriesService.findAll(user.userId, type);
   }
 

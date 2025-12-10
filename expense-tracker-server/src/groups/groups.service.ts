@@ -22,13 +22,14 @@ export class GroupsService {
     private prisma: PrismaService,
     private splitCalculationService: SplitCalculationService,
     private balanceCalculationService: BalanceCalculationService,
-  ) { }
+  ) {}
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
     const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
     const iconProvider =
-      createGroupDto.iconProvider && validateGroupIconProvider(createGroupDto.iconProvider)
+      createGroupDto.iconProvider &&
+      validateGroupIconProvider(createGroupDto.iconProvider)
         ? createGroupDto.iconProvider
         : 'jdenticon';
 
@@ -463,7 +464,7 @@ export class GroupsService {
     if (userBalance < -0.01) {
       throw new BadRequestException(
         `You cannot leave the group with outstanding debts. ` +
-        `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
+          `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
       );
     }
 
@@ -553,17 +554,23 @@ export class GroupsService {
     );
 
     // Validate splits
-    const validation = splitService.validateSplits(createExpenseDto.amount, splits);
+    const validation = splitService.validateSplits(
+      createExpenseDto.amount,
+      splits,
+    );
     if (!validation.isValid) {
       throw new BadRequestException(validation.message);
     }
 
     // Validate participants are group members
-    const memberIds = group.members.map((m) => m.userId).filter((id): id is string => id !== null);
-    const participantValidation = this.splitCalculationService.validateParticipants(
-      createExpenseDto.participants,
-      memberIds,
-    );
+    const memberIds = group.members
+      .map((m) => m.userId)
+      .filter((id): id is string => id !== null);
+    const participantValidation =
+      this.splitCalculationService.validateParticipants(
+        createExpenseDto.participants,
+        memberIds,
+      );
 
     if (!participantValidation.isValid) {
       throw new BadRequestException(
@@ -718,7 +725,9 @@ export class GroupsService {
     const isPayer = expense.paidByUserId === userId;
 
     if (!isPayer && !isAdmin) {
-      throw new ForbiddenException('Only the payer or admin can edit this expense');
+      throw new ForbiddenException(
+        'Only the payer or admin can edit this expense',
+      );
     }
 
     // Cannot edit if fully settled
@@ -727,7 +736,9 @@ export class GroupsService {
     }
 
     // Cannot edit if partial payments made
-    const hasPartialPayments = expense.splits.some((s) => Number(s.amountPaid) > 0);
+    const hasPartialPayments = expense.splits.some(
+      (s) => Number(s.amountPaid) > 0,
+    );
     if (hasPartialPayments) {
       throw new BadRequestException(
         'Cannot edit expense with partial payments. Please settle or cancel payments first.',
@@ -740,14 +751,16 @@ export class GroupsService {
 
       const newAmount = updateDto.amount || expense.amount;
       const newSplitType = updateDto.splitType || expense.splitType;
-      const newParticipants = updateDto.participants || expense.splits.map((s) => ({
-        userId: s.userId,
-        amount: s.amountOwed,
-      }));
+      const newParticipants =
+        updateDto.participants ||
+        expense.splits.map((s) => ({
+          userId: s.userId,
+          amount: s.amountOwed,
+        }));
 
       const newSplits = splitService.calculateSplits(
         Number(newAmount),
-        newSplitType as any,
+        newSplitType,
         newParticipants,
         expense.paidByUserId!,
       );
@@ -841,7 +854,9 @@ export class GroupsService {
     const isPayer = expense.paidByUserId === userId;
 
     if (!isPayer && !isAdmin) {
-      throw new ForbiddenException('Only the payer or admin can delete this expense');
+      throw new ForbiddenException(
+        'Only the payer or admin can delete this expense',
+      );
     }
 
     // Cannot delete if settled
@@ -875,7 +890,9 @@ export class GroupsService {
       },
     });
 
-    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
+    const balances = this.balanceCalculationService.calculateGroupBalances(
+      expenses as any,
+    );
 
     return Array.from(balances.values()).map((balance) => ({
       userId: balance.userId,
@@ -903,8 +920,13 @@ export class GroupsService {
       },
     });
 
-    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
-    const userBalance = this.balanceCalculationService.getUserBalance(balances, targetUserId);
+    const balances = this.balanceCalculationService.calculateGroupBalances(
+      expenses as any,
+    );
+    const userBalance = this.balanceCalculationService.getUserBalance(
+      balances,
+      targetUserId,
+    );
 
     return {
       userId: targetUserId,
@@ -930,8 +952,11 @@ export class GroupsService {
       },
     });
 
-    const balances = this.balanceCalculationService.calculateGroupBalances(expenses as any);
-    const simplifiedDebts = this.balanceCalculationService.simplifyDebts(balances);
+    const balances = this.balanceCalculationService.calculateGroupBalances(
+      expenses as any,
+    );
+    const simplifiedDebts =
+      this.balanceCalculationService.simplifyDebts(balances);
 
     return simplifiedDebts;
   }
@@ -972,7 +997,7 @@ export class GroupsService {
     if (settleDto.amount > remainingOwed + 0.01) {
       throw new BadRequestException(
         `Overpayment detected. Remaining owed: ₹${remainingOwed.toFixed(2)}, ` +
-        `Payment: ₹${settleDto.amount.toFixed(2)}`,
+          `Payment: ₹${settleDto.amount.toFixed(2)}`,
       );
     }
 
@@ -1045,6 +1070,176 @@ export class GroupsService {
         settledAt: 'desc',
       },
     });
+  }
+
+  // ==================== STATISTICS & ANALYTICS ====================
+
+  /**
+   * Get comprehensive group statistics
+   */
+  async getGroupStatistics(groupId: string, userId: string) {
+    await this.verifyGroupMembership(groupId, userId);
+
+    const expenses = await this.prisma.groupExpense.findMany({
+      where: { groupId },
+      include: {
+        splits: true,
+        category: true,
+      },
+    });
+
+    if (expenses.length === 0) {
+      return {
+        totalExpenses: 0,
+        totalSpending: 0,
+        yourTotalSpending: 0,
+        yourShare: 0,
+        averageExpense: 0,
+        expenseCount: 0,
+        categoryBreakdown: {},
+      };
+    }
+
+    // Calculate totals
+    const totalSpending = expenses.reduce(
+      (sum, exp) => sum + parseFloat(exp.amount.toString()),
+      0,
+    );
+
+    // Calculate user's total spending (what they paid)
+    const yourTotalSpending = expenses
+      .filter((exp) => exp.paidByUserId === userId)
+      .reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0);
+
+    // Calculate user's share (what they owe)
+    const yourShare = expenses.reduce((sum, exp) => {
+      const userSplit = exp.splits.find((s) => s.userId === userId);
+      return (
+        sum + (userSplit ? parseFloat(userSplit.amountOwed.toString()) : 0)
+      );
+    }, 0);
+
+    // Category breakdown
+    const categoryBreakdown: Record<string, number> = {};
+    expenses.forEach((exp) => {
+      const categoryName = exp.category?.name || 'Uncategorized';
+      const amount = parseFloat(exp.amount.toString());
+      categoryBreakdown[categoryName] =
+        (categoryBreakdown[categoryName] || 0) + amount;
+    });
+
+    return {
+      totalExpenses: expenses.length,
+      totalSpending: Math.round(totalSpending * 100) / 100,
+      yourTotalSpending: Math.round(yourTotalSpending * 100) / 100,
+      yourShare: Math.round(yourShare * 100) / 100,
+      averageExpense: Math.round((totalSpending / expenses.length) * 100) / 100,
+      expenseCount: expenses.length,
+      categoryBreakdown,
+    };
+  }
+
+  /**
+   * Get monthly analytics for the group
+   */
+  async getMonthlyAnalytics(
+    groupId: string,
+    userId: string,
+    months: number = 6,
+  ) {
+    await this.verifyGroupMembership(groupId, userId);
+
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - months);
+
+    const expenses = await this.prisma.groupExpense.findMany({
+      where: {
+        groupId,
+        expenseDate: {
+          gte: startDate,
+        },
+      },
+      include: {
+        splits: true,
+        category: true,
+      },
+      orderBy: {
+        expenseDate: 'asc',
+      },
+    });
+
+    // Group by month
+    const monthlyData: Record<
+      string,
+      {
+        totalSpending: number;
+        yourShare: number;
+        expenseCount: number;
+        categories: Record<string, number>;
+      }
+    > = {};
+
+    expenses.forEach((exp) => {
+      const date = new Date(exp.expenseDate);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = {
+          totalSpending: 0,
+          yourShare: 0,
+          expenseCount: 0,
+          categories: {},
+        };
+      }
+
+      const amount = parseFloat(exp.amount.toString());
+      monthlyData[monthKey].totalSpending += amount;
+      monthlyData[monthKey].expenseCount += 1;
+
+      // User's share
+      const userSplit = exp.splits.find((s) => s.userId === userId);
+      if (userSplit) {
+        monthlyData[monthKey].yourShare += parseFloat(
+          userSplit.amountOwed.toString(),
+        );
+      }
+
+      // Category breakdown
+      const categoryName = exp.category?.name || 'Uncategorized';
+      monthlyData[monthKey].categories[categoryName] =
+        (monthlyData[monthKey].categories[categoryName] || 0) + amount;
+    });
+
+    // Convert to array format
+    const monthlyArray = Object.entries(monthlyData)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, data]) => {
+        const [year, month] = key.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return {
+          month: date.toLocaleDateString('en-US', { month: 'short' }),
+          year: date.getFullYear(),
+          totalSpending: Math.round(data.totalSpending * 100) / 100,
+          yourShare: Math.round(data.yourShare * 100) / 100,
+          expenseCount: data.expenseCount,
+          categories: data.categories,
+        };
+      });
+
+    return {
+      months: monthlyArray,
+      summary: {
+        totalMonths: monthlyArray.length,
+        avgMonthlySpending:
+          monthlyArray.length > 0
+            ? Math.round(
+                (monthlyArray.reduce((sum, m) => sum + m.totalSpending, 0) /
+                  monthlyArray.length) *
+                  100,
+              ) / 100
+            : 0,
+      },
+    };
   }
 
   // ==================== HELPER METHODS ====================

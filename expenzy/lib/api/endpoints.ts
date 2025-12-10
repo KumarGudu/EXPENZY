@@ -104,6 +104,8 @@ export const API_ENDPOINTS = {
         SIMPLIFIED_DEBTS: (id: string) => `/groups/${id}/balances/simplified`,
         SETTLE_EXPENSE: (groupId: string, expenseId: string) => `/groups/${groupId}/expenses/${expenseId}/settle`,
         SETTLEMENTS: (id: string) => `/groups/${id}/settlements`,
+        STATISTICS: (id: string) => `/groups/${id}/statistics`,
+        MONTHLY_ANALYTICS: (id: string, months?: number) => `/groups/${id}/monthly-analytics${months ? `?months=${months}` : ''}`,
     },
 
     // Loans

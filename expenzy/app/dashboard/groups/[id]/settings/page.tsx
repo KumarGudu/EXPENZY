@@ -12,7 +12,6 @@ import { EditGroupModal } from '@/components/modals/edit-group-modal';
 import { ConfirmationModal } from '@/components/modals/confirmation-modal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GroupIcon } from '@/components/ui/group-icon';
-import { toast } from 'sonner';
 
 export default function GroupSettingsPage() {
     const params = useParams();
@@ -67,7 +66,7 @@ export default function GroupSettingsPage() {
         try {
             await deleteGroup.mutateAsync(groupId);
             router.push('/dashboard/groups');
-        } catch (_error) {
+        } catch {
             // Error toast is already shown by the hook
         } finally {
             setShowDeleteConfirm(false);
@@ -78,7 +77,7 @@ export default function GroupSettingsPage() {
         try {
             await leaveGroup.mutateAsync(groupId);
             router.push('/dashboard/groups');
-        } catch (_error) {
+        } catch {
             // Error toast is already shown by the hook
         } finally {
             setShowLeaveConfirm(false);

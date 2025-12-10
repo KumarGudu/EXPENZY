@@ -4,15 +4,17 @@ import { useMemo, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
 import { useSimplifiedDebts } from '@/lib/hooks/use-group-balances';
+import { useGroupStatistics } from '@/lib/hooks/use-group-statistics';
 import { useProfile } from '@/lib/hooks/use-profile';
 import { useLayout } from '@/contexts/layout-context';
 import { Plus, Receipt, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { GroupHeader } from '@/components/features/groups/group-header';
-import { SimplifiedBalanceView } from '@/components/features/groups/simplified-balance-view';
+import { SimplifiedDebtsCard } from '@/components/features/groups/simplified-debts-card';
+import { SettleUpBar } from '@/components/features/groups/settle-up-bar';
+import { GroupStatisticsModal } from '@/components/features/groups/group-statistics-modal';
 import { ExpenseDetailModal } from '@/components/features/groups/expense-detail-modal';
-import { GlassCard } from '@/components/shared/glass-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { VirtualList } from '@/components/shared/virtual-list';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -44,11 +46,13 @@ export default function GroupDetailPage() {
     const { data: group, isLoading: groupLoading } = useGroup(groupId);
     const { data: members = [] } = useGroupMembers(groupId);
     const { data: simplifiedDebts = [] } = useSimplifiedDebts(groupId);
+    const { data: statistics } = useGroupStatistics(groupId);
     const { data: profile } = useProfile();
 
     // Modal state
     const [selectedExpense, setSelectedExpense] = useState<GroupExpense | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
 
     // Hide mobile header on mount, restore on unmount (keep bottom nav)
     useEffect(() => {
@@ -244,15 +248,27 @@ export default function GroupDetailPage() {
                     memberCount={acceptedMembers.length}
                 />
 
-                {/* Balance Summary */}
-                {simplifiedDebts.length > 0 && (
-                    <GlassCard>
-                        <SimplifiedBalanceView
-                            simplifiedDebts={simplifiedDebts as any}
-                            currentUserId={currentUserId}
-                            currency={group.currency as 'INR' | 'USD' | 'EUR'}
-                        />
-                    </GlassCard>
+                {/* Simplified Debts Card */}
+                <SimplifiedDebtsCard
+                    debts={simplifiedDebts as unknown as Array<{ from: string; to: string; amount: number; fromUser?: { firstName: string; lastName: string }; toUser?: { firstName: string; lastName: string } }>}
+                    currentUserId={currentUserId}
+                    currency={group.currency as 'INR' | 'USD' | 'EUR'}
+                />
+
+                {/* Action Bar - Desktop */}
+                {!isMobile && (
+                    <SettleUpBar
+                        onSettleUp={() => {
+                            // TODO: Implement settle up flow
+                            console.log('Settle up clicked');
+                        }}
+                        onViewStatistics={() => setIsStatisticsModalOpen(true)}
+                        onExport={() => {
+                            // TODO: Implement export
+                            console.log('Export clicked');
+                        }}
+                        isMobile={false}
+                    />
                 )}
 
                 {/* Expenses List - Splitwise Style */}
@@ -323,6 +339,31 @@ export default function GroupDetailPage() {
                     groupId={groupId}
                     isMobile={isMobile}
                 />
+
+                {/* Statistics Modal */}
+                <GroupStatisticsModal
+                    isOpen={isStatisticsModalOpen}
+                    onClose={() => setIsStatisticsModalOpen(false)}
+                    statistics={statistics}
+                    isMobile={isMobile}
+                    currency={group.currency as 'INR' | 'USD' | 'EUR'}
+                />
+
+                {/* Mobile Action Bar - Sticky at bottom */}
+                {isMobile && (
+                    <SettleUpBar
+                        onSettleUp={() => {
+                            // TODO: Implement settle up flow
+                            console.log('Settle up clicked');
+                        }}
+                        onViewStatistics={() => setIsStatisticsModalOpen(true)}
+                        onExport={() => {
+                            // TODO: Implement export
+                            console.log('Export clicked');
+                        }}
+                        isMobile={true}
+                    />
+                )}
             </div>
         </PageWrapper>
     );

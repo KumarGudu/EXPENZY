@@ -6,8 +6,11 @@ import { BalanceCalculationService } from './services/balance-calculation.servic
 
 @Module({
   controllers: [GroupsController],
-  providers: [GroupsService, SplitCalculationService, BalanceCalculationService],
+  providers: [
+    GroupsService,
+    SplitCalculationService,
+    BalanceCalculationService,
+  ],
   exports: [GroupsService, SplitCalculationService, BalanceCalculationService],
 })
-export class GroupsModule { }
-
+export class GroupsModule {}

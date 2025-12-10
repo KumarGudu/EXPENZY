@@ -2,7 +2,12 @@
  * Avatar utility functions for generating and validating user avatars and group icons
  */
 
-const ALLOWED_USER_AVATAR_STYLES = new Set(['adventurer', 'adventurer-neutral', 'thumbs', 'fun-emoji']);
+const ALLOWED_USER_AVATAR_STYLES = new Set([
+  'adventurer',
+  'adventurer-neutral',
+  'thumbs',
+  'fun-emoji',
+]);
 const ALLOWED_GROUP_ICON_PROVIDERS = new Set(['jdenticon']);
 
 /**
@@ -12,8 +17,10 @@ const ALLOWED_GROUP_ICON_PROVIDERS = new Set(['jdenticon']);
  * @returns DiceBear CDN URL
  */
 export function generateDiceBearUrl(seed: string, style: string): string {
-    const validStyle = ALLOWED_USER_AVATAR_STYLES.has(style) ? style : 'adventurer';
-    return `https://api.dicebear.com/9.x/${validStyle}/svg?seed=${encodeURIComponent(seed)}`;
+  const validStyle = ALLOWED_USER_AVATAR_STYLES.has(style)
+    ? style
+    : 'adventurer';
+  return `https://api.dicebear.com/9.x/${validStyle}/svg?seed=${encodeURIComponent(seed)}`;
 }
 
 /**
@@ -22,7 +29,7 @@ export function generateDiceBearUrl(seed: string, style: string): string {
  * @returns true if valid, false otherwise
  */
 export function validateUserAvatarStyle(style: string): boolean {
-    return ALLOWED_USER_AVATAR_STYLES.has(style);
+  return ALLOWED_USER_AVATAR_STYLES.has(style);
 }
 
 /**
@@ -31,7 +38,7 @@ export function validateUserAvatarStyle(style: string): boolean {
  * @returns true if valid, false otherwise
  */
 export function validateGroupIconProvider(provider: string): boolean {
-    return ALLOWED_GROUP_ICON_PROVIDERS.has(provider);
+  return ALLOWED_GROUP_ICON_PROVIDERS.has(provider);
 }
 
 /**
@@ -39,5 +46,5 @@ export function validateGroupIconProvider(provider: string): boolean {
  * @returns Random UUID-like string
  */
 export function generateRandomSeed(): string {
-    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 }

@@ -25,7 +25,7 @@ interface GoogleProfile {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -33,7 +33,8 @@ export class UsersService {
     // Generate avatar data
     const avatarSeed = createUserDto.avatarSeed || generateRandomSeed();
     const avatarStyle =
-      createUserDto.avatarStyle && validateUserAvatarStyle(createUserDto.avatarStyle)
+      createUserDto.avatarStyle &&
+      validateUserAvatarStyle(createUserDto.avatarStyle)
         ? createUserDto.avatarStyle
         : 'adventurer';
     const avatarUrl = generateDiceBearUrl(avatarSeed, avatarStyle);
@@ -80,7 +81,8 @@ export class UsersService {
       const user = await this.prisma.user.findUnique({ where: { id } });
       const seed = updateUserDto.avatarSeed || user?.avatarSeed || id;
       const style =
-        updateUserDto.avatarStyle && validateUserAvatarStyle(updateUserDto.avatarStyle)
+        updateUserDto.avatarStyle &&
+        validateUserAvatarStyle(updateUserDto.avatarStyle)
           ? updateUserDto.avatarStyle
           : user?.avatarStyle || 'adventurer';
       avatarUrl = generateDiceBearUrl(seed, style);

@@ -23,7 +23,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) { }
+  constructor(private readonly groupsService: GroupsService) {}
 
   // ==================== GROUP CRUD ====================
 
@@ -100,7 +100,12 @@ export class GroupsController {
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
-    return this.groupsService.getGroupExpenses(id, user.userId, pageNum, limitNum);
+    return this.groupsService.getGroupExpenses(
+      id,
+      user.userId,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Post(':id/expenses')
@@ -109,7 +114,11 @@ export class GroupsController {
     @Body() createExpenseDto: CreateGroupExpenseDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.groupsService.createGroupExpense(id, createExpenseDto, user.userId);
+    return this.groupsService.createGroupExpense(
+      id,
+      createExpenseDto,
+      user.userId,
+    );
   }
 
   @Get(':id/expenses/:expenseId')
@@ -128,7 +137,12 @@ export class GroupsController {
     @Body() updateExpenseDto: UpdateGroupExpenseDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.groupsService.updateGroupExpense(id, expenseId, updateExpenseDto, user.userId);
+    return this.groupsService.updateGroupExpense(
+      id,
+      expenseId,
+      updateExpenseDto,
+      user.userId,
+    );
   }
 
   @Delete(':id/expenses/:expenseId')
@@ -143,10 +157,7 @@ export class GroupsController {
   // ==================== BALANCE & SETTLEMENTS ====================
 
   @Get(':id/balances')
-  getGroupBalances(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  getGroupBalances(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.groupsService.getGroupBalances(id, user.userId);
   }
 
@@ -160,10 +171,7 @@ export class GroupsController {
   }
 
   @Get(':id/balances/simplified')
-  getSimplifiedDebts(
-    @Param('id') id: string,
-    @CurrentUser() user: JwtPayload,
-  ) {
+  getSimplifiedDebts(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.groupsService.getSimplifiedDebts(id, user.userId);
   }
 
@@ -174,7 +182,12 @@ export class GroupsController {
     @Body() settleDto: SettleExpenseDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.groupsService.settleExpense(id, expenseId, settleDto, user.userId);
+    return this.groupsService.settleExpense(
+      id,
+      expenseId,
+      settleDto,
+      user.userId,
+    );
   }
 
   @Post(':id/settlements')
@@ -187,10 +200,24 @@ export class GroupsController {
   }
 
   @Get(':id/settlements')
-  getSettlements(
+  getSettlements(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.groupsService.getSettlements(id, user.userId);
+  }
+
+  // ==================== STATISTICS \u0026 ANALYTICS ====================
+
+  @Get(':id/statistics')
+  getGroupStatistics(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.groupsService.getGroupStatistics(id, user.userId);
+  }
+
+  @Get(':id/monthly-analytics')
+  getMonthlyAnalytics(
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
+    @Query('months') months?: string,
   ) {
-    return this.groupsService.getSettlements(id, user.userId);
+    const monthsNum = months ? parseInt(months, 10) : 6;
+    return this.groupsService.getMonthlyAnalytics(id, user.userId, monthsNum);
   }
 }
