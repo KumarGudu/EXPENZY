@@ -20,8 +20,9 @@ export function ProfileHeader({ user, onEditProfile }: ProfileHeaderProps) {
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
                 <UserAvatar
                     seed={user?.avatarSeed}
-                    style={user?.avatarStyle as 'adventurer' | 'adventurer-neutral' | 'thumbs' | 'fun-emoji' | undefined}
+                    style={user?.avatarStyle as string | undefined}
                     fallbackUrl={user?.avatar}
+                    fallbackName={displayName}
                     size={96}
                     className="ring-2 ring-primary/20"
                 />

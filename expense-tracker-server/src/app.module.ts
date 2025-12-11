@@ -24,6 +24,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { configuration } from './config/configuration';
 import { validationSchema } from './config/env.validation';
 import { SchedulerModule } from './scheduler/scheduler.module';
+import { AvatarModule } from './avatar/avatar.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { SchedulerModule } from './scheduler/scheduler.module';
     UserSettingsModule,
     AnalyticsModule,
     SchedulerModule,
+    AvatarModule,
   ],
   controllers: [AppController],
   providers: [

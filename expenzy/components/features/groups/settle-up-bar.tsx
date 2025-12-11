@@ -7,14 +7,12 @@ interface SettleUpBarProps {
     onSettleUp: () => void;
     onViewStatistics: () => void;
     onExport: () => void;
-    isMobile?: boolean;
 }
 
 export function SettleUpBar({
     onSettleUp,
     onViewStatistics,
     onExport,
-    isMobile = false,
 }: SettleUpBarProps) {
     return (
         <div className="flex gap-2 py-3 border-b border-border">

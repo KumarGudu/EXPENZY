@@ -17,17 +17,17 @@ export function generateRandomSeed(): string {
 }
 
 /**
- * Generate DiceBear avatar URL
+ * Generate avatar URL from backend API
  * @param seed - Unique seed for avatar generation
- * @param style - Avatar style (rings, shapes, initials)
- * @returns DiceBear CDN URL
+ * @returns Backend API URL for avatar
  */
-export function generateDiceBearUrl(seed: string, style: UserAvatarStyle = 'adventurer'): string {
-    return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
+export function generateAvatarUrl(seed: string): string {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    return `${apiUrl}/api/avatars/${encodeURIComponent(seed)}.svg`;
 }
 
 /**
- * Generate Jdenticon SVG string
+ * Generate Jdenticon SVG string for group icons
  * @param seed - Unique seed for icon generation
  * @param size - Size of the icon in pixels (default: 40)
  * @returns SVG string

@@ -1,237 +1,222 @@
-# Default Avatars for Users & Groups (DiceBear + Jdenticon)
+Nice, good choice 👌 Using the package will give you a lot more control.
 
-**Context:** This is a Splitwise-like expense app.  
-We don’t need real profile photos. We want small, aesthetic, deterministic placeholders that:  
-- auto-assign on create  
-- are lightweight (SVG)  
-- look consistent in lists  
-- optionally allow user choice (curated styles only)
+I’ll give you a practical architecture you can literally follow:
 
----
+0. High-level architecture
 
-## Why two different avatar types?
-In expense apps, screens show **people** and **groups** together (balances, expenses, members, etc).  
-If both look similar, it’s hard to scan.
+Next.js (frontend)
 
-**Best UX:**
-- **Users:** soft, friendly abstract avatars  
-- **Groups:** badge-style geometric icons  
-This makes “person vs group” instantly obvious.
+Shows avatars using <Image /> or <img />
 
----
+Calls your own API to get the avatar image.
 
-## Recommended Setup
+NestJS (backend)
 
-### Users → DiceBear (abstract styles)
-Curate a small set:
-- `rings` ✅ default (clean circular patterns)
-- `shapes` (soft blobs)
-- `initials` (letter badge)
+Uses DiceBear npm package to generate SVG on the fly.
 
-### Groups → Jdenticon (identicons)
-- badge-like, geometric style  
-- looks like a “group logo”, not a person  
-- deterministic + tiny SVG  
+Exposes an endpoint like:
+GET /avatars/:seed.svg
 
-> Rule: **Never use the same style family for both users and groups.**
+(Optional) Adds caching headers or CDN in front.
 
----
+Database (optional)
 
-## Deterministic Avatars (Seed-based)
-Avatars are generated from a **seed** (string).
+Store only userId and maybe avatarSeed.
 
-- **User seed:** `userId` (or email/temp UUID during preview)
-- **Group seed:** `groupId` (or group name/temp UUID during preview)
+You can also just use userId as the seed.
 
-**Result:**
-- same seed ⇒ same icon always  
-- consistent across devices  
-- no file storage required
+Flow:
 
----
+Next.js ➜ calls https://api.yourapp.com/avatars/USER_SEED.svg ➜ NestJS generates SVG using DiceBear ➜ returns SVG.
 
-## Implementation Strategy (Frontend First)
-1. **NextJS generates preview instantly**
-2. User/group creator sees immediate avatar icon
-3. Frontend sends **seed + style/provider** to backend
-4. **NestJS validates + recomputes avatar URL/SVG and stores**
+1. Install DiceBear in NestJS
 
-**Why preview in FE?** better UX  
-**Why recompute in BE?** don’t trust arbitrary styles from FE; BE is source-of-truth.
+In your NestJS project:
 
----
+npm install @dicebear/core @dicebear/fun-emoji
+# or
+yarn add @dicebear/core @dicebear/fun-emoji
 
-## What to Store in DB (Important)
 
-✅ **Store:**
-- seed
-- style/provider
-- optional cached URL
+You can swap fun-emoji with any style you like later.
 
-❌ **Do NOT store raw SVG text** unless you have a special reason.
+2. Create an AvatarService in NestJS
 
-### Why not store SVG?
-- SVG per row increases DB size  
-- seed+style is tiny and can regenerate anytime  
-- future-proof if provider changes later
+src/avatar/avatar.service.ts:
 
----
+import { Injectable } from '@nestjs/common';
+import { createAvatar } from '@dicebear/core';
+import { funEmoji } from '@dicebear/fun-emoji';
 
-## Prisma Schema (Users + Groups)
+@Injectable()
+export class AvatarService {
+  generateSvg(seed: string): string {
+    const avatar = createAvatar(funEmoji, {
+      seed,
+      // optional: more options, like backgroundColor, radius, etc
+      // backgroundColor: ['b6e3f4'],
+      // radius: 50,
+    });
 
-```prisma
-enum UserAvatarStyle {
-  rings
-  shapes
-  initials
+    return avatar.toString(); // SVG string
+  }
 }
 
-enum GroupIconProvider {
-  jdenticon
-  // If later you add dicebear for groups:
-  // dicebear_identicon
-}
+3. Create an AvatarController in NestJS
 
-model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  username      String   @unique
-  passwordHash  String?
-  firstName     String?
-  lastName      String?
-  phone         String?
+src/avatar/avatar.controller.ts:
 
-  // ✅ Avatar system
-  avatarSeed    String
-  avatarStyle   UserAvatarStyle @default(rings)
-  avatarUrl     String? // optional cache
+import { Controller, Get, Header, Param } from '@nestjs/common';
+import { AvatarService } from './avatar.service';
 
-  isDeleted     Boolean  @default(false)
-  deletedAt     DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
+@Controller('avatars')
+export class AvatarController {
+  constructor(private readonly avatarService: AvatarService) {}
 
-model Group {
-  id            String   @id @default(uuid())
-  name          String
-
-  // ✅ Group icon system
-  iconSeed      String
-  iconProvider  GroupIconProvider @default(jdenticon)
-  iconUrl       String? // optional cache
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  // GET /avatars/:seed.svg
+  @Get(':seed.svg')
+  @Header('Content-Type', 'image/svg+xml')
+  @Header('Cache-Control', 'public, max-age=31536000, immutable')
+  getAvatar(@Param('seed') seed: string) {
+    const safeSeed = seed || 'default'; // fallback
+    return this.avatarService.generateSvg(safeSeed);
+  }
 }
 
 
+Route example:
+https://api.yourapp.com/avatars/1765391758011-cffovjulvf9.svg
+
+Cache-Control lets browser/CDN cache it aggressively.
+
+4. Register AvatarModule in NestJS
+
+src/avatar/avatar.module.ts:
+
+import { Module } from '@nestjs/common';
+import { AvatarService } from './avatar.service';
+import { AvatarController } from './avatar.controller';
+
+@Module({
+  providers: [AvatarService],
+  controllers: [AvatarController],
+})
+export class AvatarModule {}
 
 
+Then import it in AppModule:
+
+// src/app.module.ts
+import { Module } from '@nestjs/common';
+import { AvatarModule } from './avatar/avatar.module';
+
+@Module({
+  imports: [AvatarModule],
+})
+export class AppModule {}
 
 
+Now your backend is ready 🎉
+
+5. Decide how to generate the seed
+
+Options:
+
+Simplest: use user.id as seed.
+
+Or store a random seed per user like you already have (1765391758011-cffovjulvf9).
+
+Example (pseudo DB schema):
+
+// User table
+id: string
+name: string
+avatarSeed: string // optional, if you want random
 
 
-export const USER_STYLES = ['rings', 'shapes', 'initials'] as const;
-// If you ever switch groups to DiceBear identicon:
-export const GROUP_STYLES = ['identicon'] as const;
+If avatarSeed is null, you can just default to id.
 
-export type UserAvatarStyle = (typeof USER_STYLES)[number];
-export type GroupAvatarStyle = (typeof GROUP_STYLES)[number];
+6. Use it in Next.js (frontend)
 
-export function dicebearUrl(style: string, seed: string) {
-  return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
-}
+Let’s say you have user object with avatarSeed or id.
 
+// components/Avatar.tsx
+import Image from "next/image";
 
+type AvatarProps = {
+  seed: string;
+  size?: number;
+};
 
-
-
-
-
-import { useState } from "react";
-import { USER_STYLES, dicebearUrl, UserAvatarStyle } from "@/utils/avatars";
-
-export function UserAvatarPicker({ seed }: { seed: string }) {
-  const [style, setStyle] = useState<UserAvatarStyle>("rings");
+export function Avatar({ seed, size = 64 }: AvatarProps) {
+  const url = `https://api.yourapp.com/avatars/${encodeURIComponent(seed)}.svg`;
 
   return (
-    <div>
-      <div className="flex gap-3 mb-4">
-        {USER_STYLES.map((s) => {
-          const url = dicebearUrl(s, seed);
-          return (
-            <button
-              key={s}
-              onClick={() => setStyle(s)}
-              className={`p-1 rounded-full border ${
-                style === s ? "border-black" : "border-gray-200"
-              }`}
-            >
-              <img src={url} className="h-10 w-10 rounded-full" />
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span>Selected:</span>
-        <img src={dicebearUrl(style, seed)} className="h-8 w-8 rounded-full" />
-      </div>
-
-      {/* On save, send: { avatarSeed: seed, avatarStyle: style, avatarType: "user" } */}
-    </div>
+    <Image
+      src={url}
+      alt="User avatar"
+      width={size}
+      height={size}
+    />
   );
 }
 
 
+Then:
+
+// somewhere in your UI
+<Avatar seed={user.avatarSeed ?? user.id} size={80} />
 
 
-import jdenticon from "jdenticon";
+If your NestJS API is on the same domain or via Next.js rewrites, you can even call /api/avatars/... instead of full URL.
 
-export function GroupIconPreview({ seed }: { seed: string }) {
-  const svg = jdenticon.toSvg(seed, 64);
-  return (
-    <div className="flex items-center gap-3">
-      <div dangerouslySetInnerHTML={{ __html: svg }} />
-      <span>Group icon preview</span>
-    </div>
-  );
+
+8. Extra nice-to-haves
+a) Default avatar
+
+If user has no seed:
+
+Backend: if seed empty ➜ use "default" or random.
+
+Frontend: pass a default like "guest".
+
+b) Support multiple styles
+
+Add a style query or param:
+
+// GET /avatars/:style/:seed.svg
+@Get(':style/:seed.svg')
+...
+getAvatar(@Param('style') style: string, @Param('seed') seed: string) {
+  const safeSeed = seed || 'default';
+
+  // choose sprite
+  const sprite = style === 'fun-emoji' ? funEmoji : funEmoji; // extend later
+
+  const avatar = createAvatar(sprite, { seed: safeSeed });
+  return avatar.toString();
 }
 
 
+Then on frontend: /avatars/fun-emoji/<seed>.svg.
 
-await fetch("/api/users", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    ...formValues,
-    avatarSeed: seed,
-    avatarStyle: selectedStyle,
-    avatarType: "user",
-  }),
-});
+c) Security
 
+Don’t accept crazy long seeds (limit length).
 
+Optionally rate-limit /avatars/* routes.
 
+TL;DR “recipe”
 
-await fetch("/api/groups", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    name,
-    iconSeed: seed,
-    iconProvider: "jdenticon",
-    iconType: "group",
-  }),
-});
+Install @dicebear/core + a style in Nest.
 
+Create AvatarService → generateSvg(seed).
 
+Add AvatarController → GET /avatars/:seed.svg returning SVG.
 
-const ALLOWED_USER_STYLES = new Set(["rings","shapes","initials"]);
-const ALLOWED_GROUP_PROVIDERS = new Set(["jdenticon"]);
+Use seed = user.id or stored in DB.
 
-function buildUserAvatar(seed: string, style: string) {
-  if (!ALLOWED_USER_STYLES.has(style)) style = "rings";
-  return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}`;
-}
+Next.js: <Image src="https://api.yourapp.com/avatars/{seed}.svg" />.
+
+Add caching and image config.
+

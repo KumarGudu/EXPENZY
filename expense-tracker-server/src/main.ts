@@ -19,10 +19,17 @@ async function bootstrap() {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'https:'],
+          imgSrc: [
+            "'self'",
+            'data:',
+            'https:',
+            'http://localhost:5000',
+            'http://localhost:3000',
+          ],
         },
       },
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
 

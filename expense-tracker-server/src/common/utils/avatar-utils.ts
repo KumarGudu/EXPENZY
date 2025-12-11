@@ -11,19 +11,6 @@ const ALLOWED_USER_AVATAR_STYLES = new Set([
 const ALLOWED_GROUP_ICON_PROVIDERS = new Set(['jdenticon']);
 
 /**
- * Generate DiceBear avatar URL
- * @param seed - Unique seed for avatar generation
- * @param style - Avatar style (rings, shapes, initials)
- * @returns DiceBear CDN URL
- */
-export function generateDiceBearUrl(seed: string, style: string): string {
-  const validStyle = ALLOWED_USER_AVATAR_STYLES.has(style)
-    ? style
-    : 'adventurer';
-  return `https://api.dicebear.com/9.x/${validStyle}/svg?seed=${encodeURIComponent(seed)}`;
-}
-
-/**
  * Validate user avatar style
  * @param style - Style to validate
  * @returns true if valid, false otherwise
@@ -47,4 +34,12 @@ export function validateGroupIconProvider(provider: string): boolean {
  */
 export function generateRandomSeed(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
+/**
+ * Get allowed avatar styles
+ * @returns Array of allowed styles
+ */
+export function getAllowedAvatarStyles(): string[] {
+  return Array.from(ALLOWED_USER_AVATAR_STYLES);
 }

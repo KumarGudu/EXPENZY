@@ -1,52 +1,56 @@
 'use client';
 
-import { generateDiceBearUrl, UserAvatarStyle } from '@/lib/utils/avatar-utils';
-import Image from 'next/image';
+import { LetterAvatar } from './letter-avatar';
+import { useAvatar } from '@/lib/hooks/use-avatar';
 
 interface UserAvatarProps {
     seed?: string;
-    style?: UserAvatarStyle;
+    style?: string;
     size?: number;
     fallbackUrl?: string | null;
+    fallbackName?: string;
     className?: string;
 }
 
 /**
- * UserAvatar component - displays DiceBear avatar with fallback support
+ * UserAvatar component - displays avatar from backend API with fallback support
+ * Uses React Query for caching and automatic deduplication
  */
 export function UserAvatar({
     seed,
-    style = 'adventurer',
+    style,
     size = 40,
     fallbackUrl,
+    fallbackName = 'User',
     className = '',
 }: UserAvatarProps) {
-    // Use fallback if no seed provided
-    const avatarUrl = seed ? generateDiceBearUrl(seed, style) : fallbackUrl;
+    const { data: avatarDataUrl, isLoading, isError } = useAvatar({
+        seed,
+        style,
+        enabled: !fallbackUrl, // Only fetch if no fallback URL
+    });
 
-    if (!avatarUrl) {
-        // Default fallback - use a placeholder
+    // Show letter avatar while loading, on error, or if no seed
+    if (isLoading || isError || (!avatarDataUrl && !fallbackUrl)) {
         return (
-            <div
-                className={`rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center ${className}`}
-                style={{ width: size, height: size }}
-            >
-                <span className="text-white font-semibold" style={{ fontSize: size / 2.5 }}>
-                    ?
-                </span>
-            </div>
+            <LetterAvatar
+                name={fallbackName}
+                size={size}
+                className={className}
+            />
         );
     }
 
+    const displayUrl = avatarDataUrl || fallbackUrl;
+
     return (
         <div className={`rounded-full overflow-hidden ${className}`} style={{ width: size, height: size }}>
-            <Image
-                src={avatarUrl}
-                alt="User avatar"
+            <img
+                src={displayUrl!}
+                alt={`${fallbackName}'s avatar`}
                 width={size}
                 height={size}
                 className="w-full h-full object-cover"
-                unoptimized // DiceBear SVGs don't need optimization
             />
         </div>
     );

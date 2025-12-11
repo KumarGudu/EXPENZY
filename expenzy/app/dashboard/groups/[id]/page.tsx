@@ -256,7 +256,6 @@ export default function GroupDetailPage() {
                         // TODO: Implement export
                         console.log('Export clicked');
                     }}
-                    isMobile={isMobile}
                 />
 
                 {/* Simplified Debts Card */}

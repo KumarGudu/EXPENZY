@@ -31,14 +31,14 @@ export class GroupsService {
     private splitCalculationService: SplitCalculationService,
     private balanceCalculationService: BalanceCalculationService,
     private debtSettlementService: DebtSettlementService,
-  ) { }
+  ) {}
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
     const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
     const iconProvider =
       createGroupDto.iconProvider &&
-        validateGroupIconProvider(createGroupDto.iconProvider)
+      validateGroupIconProvider(createGroupDto.iconProvider)
         ? createGroupDto.iconProvider
         : 'jdenticon';
 
@@ -475,7 +475,7 @@ export class GroupsService {
     if (userBalance < -0.01) {
       throw new BadRequestException(
         `You cannot leave the group with outstanding debts. ` +
-        `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
+          `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
       );
     }
 
@@ -1049,7 +1049,7 @@ export class GroupsService {
     if (settleDto.amount > remainingOwed + 0.01) {
       throw new BadRequestException(
         `Overpayment detected. Remaining owed: ₹${remainingOwed.toFixed(2)}, ` +
-        `Payment: ₹${settleDto.amount.toFixed(2)}`,
+          `Payment: ₹${settleDto.amount.toFixed(2)}`,
       );
     }
 
@@ -1285,10 +1285,10 @@ export class GroupsService {
         avgMonthlySpending:
           monthlyArray.length > 0
             ? Math.round(
-              (monthlyArray.reduce((sum, m) => sum + m.totalSpending, 0) /
-                monthlyArray.length) *
-              100,
-            ) / 100
+                (monthlyArray.reduce((sum, m) => sum + m.totalSpending, 0) /
+                  monthlyArray.length) *
+                  100,
+              ) / 100
             : 0,
       },
     };

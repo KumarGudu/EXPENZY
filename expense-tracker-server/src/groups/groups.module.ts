@@ -20,4 +20,4 @@ import { DebtSettlementService } from './services/debt-settlement.service';
     DebtSettlementService,
   ],
 })
-export class GroupsModule { }
+export class GroupsModule {}

@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { formatCurrency } from '@/lib/utils/currency';
 import type { GroupStatistics } from '@/lib/hooks/use-group-statistics';
 import type { SimplifiedDebt } from '@/types/split';
-import { TrendingUp, TrendingDown, Receipt, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Receipt } from 'lucide-react';
 
 interface GroupStatisticsModalProps {
     isOpen: boolean;

@@ -132,4 +132,13 @@ export const API_ENDPOINTS = {
         MARK_ALL_READ: '/notifications/read-all',
         SUMMARY: '/notifications/summary',
     },
+
+    // Avatars
+    AVATARS: {
+        BY_SEED: (seed: string) => `/avatars/${seed}`,
+        BY_STYLE_AND_SEED: (style: string, seed: string) => `/avatars/${style}/${seed}`,
+    },
+
+    // User Settings
+    USER_SETTINGS: '/user-settings',
 } as const;
