@@ -1,14 +1,22 @@
-export function generateExpenseReportHTML(data: {
+export function generateGroupReportHTML(data: {
   title: string;
   subtitle: string;
   dateRange: string;
   generatedDate: string;
   summaryCards: Array<{ label: string; value: string }>;
+  memberSpending: Array<{
+    name: string;
+    totalSpent: number;
+    totalOwed: number;
+    transactionCount: number;
+    color: string;
+  }>;
   transactions: Array<{
     index: number;
     date: string;
     category: string;
     description: string;
+    paidBy: string;
     amount: number;
   }>;
   categoryDistribution: Array<{
@@ -36,7 +44,7 @@ export function generateExpenseReportHTML(data: {
     }
     
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: white;
       color: #0a0a0a;
       line-height: 1.5;
@@ -52,7 +60,6 @@ export function generateExpenseReportHTML(data: {
       margin-top: 0;
     }
     
-    /* Header with Purple Luxury theme */
     .header {
       background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
       color: white;
@@ -61,7 +68,7 @@ export function generateExpenseReportHTML(data: {
     }
     
     .header h1 {
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 700;
       margin-bottom: 6px;
       letter-spacing: -0.5px;
@@ -69,10 +76,9 @@ export function generateExpenseReportHTML(data: {
     }
     
     .header .subtitle {
-      font-size: 15px;
+      font-size: 14px;
       opacity: 0.85;
       margin-bottom: 10px;
-      font-weight: 400;
     }
     
     .header .meta {
@@ -81,7 +87,6 @@ export function generateExpenseReportHTML(data: {
       font-size: 12px;
       opacity: 0.7;
       margin-top: 14px;
-      font-weight: 400;
     }
     
     .content {
@@ -96,7 +101,6 @@ export function generateExpenseReportHTML(data: {
       page-break-after: avoid;
     }
     
-    /* Summary Cards Grid */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -139,15 +143,63 @@ export function generateExpenseReportHTML(data: {
       font-weight: 700;
       color: #0a0a0a;
       line-height: 1.2;
-      word-break: break-word;
+    }
+    
+    /* Member Spending Section */
+    .member-spending {
+      margin-bottom: 32px;
+      page-break-inside: avoid;
+    }
+    
+    .member-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      gap: 16px;
+    }
+    
+    .member-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .member-name {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: #0a0a0a;
+    }
+    
+    .member-stats {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+    }
+    
+    .member-stat {
+      text-align: right;
+    }
+    
+    .member-stat-label {
+      font-size: 10px;
+      color: #737373;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    
+    .member-stat-value {
+      font-weight: 600;
+      color: #0a0a0a;
     }
     
     /* Transaction Table */
-    .table-container {
-      margin-bottom: 32px;
-      page-break-inside: auto;
-    }
-    
     table {
       width: 100%;
       border-collapse: collapse;
@@ -156,6 +208,7 @@ export function generateExpenseReportHTML(data: {
       border-radius: 6px;
       overflow: hidden;
       page-break-inside: auto;
+      margin-bottom: 32px;
     }
     
     thead {
@@ -173,31 +226,15 @@ export function generateExpenseReportHTML(data: {
       letter-spacing: 0.5px;
     }
     
-    th:first-child {
-      width: 50px;
-      text-align: center;
-    }
-    
-    th:nth-child(2) {
-      width: 90px;
-    }
-    
-    th:nth-child(3) {
-      width: 110px;
-    }
-    
-    th:last-child {
-      text-align: right;
-      width: 100px;
-    }
+    th:first-child { width: 40px; text-align: center; }
+    th:nth-child(2) { width: 80px; }
+    th:nth-child(3) { width: 100px; }
+    th:nth-child(5) { width: 100px; }
+    th:last-child { text-align: right; width: 90px; }
     
     tbody tr {
       border-bottom: 1px solid #e5e5e5;
       page-break-inside: avoid;
-    }
-    
-    tbody tr:last-child {
-      border-bottom: none;
     }
     
     tbody tr:nth-child(even) {
@@ -217,26 +254,10 @@ export function generateExpenseReportHTML(data: {
       font-size: 12px;
     }
     
-    td:nth-child(2) {
-      color: #404040;
-      font-weight: 400;
-    }
-    
-    td:nth-child(3) {
-      color: #404040;
-      font-weight: 500;
-    }
-    
-    td:nth-child(4) {
-      color: #0a0a0a;
-      font-weight: 400;
-    }
-    
     td:last-child {
       text-align: right;
       font-weight: 600;
       color: #10b981;
-      font-size: 13px;
     }
     
     /* Category Distribution */
@@ -274,13 +295,11 @@ export function generateExpenseReportHTML(data: {
       background: #fafafa;
       border-radius: 3px;
       overflow: hidden;
-      position: relative;
     }
     
     .category-bar {
       height: 100%;
       border-radius: 3px;
-      transition: width 0.3s ease;
     }
     
     .category-amount {
@@ -300,18 +319,13 @@ export function generateExpenseReportHTML(data: {
       flex-shrink: 0;
     }
     
-    /* Page break utilities */
     .page-break {
       page-break-before: always;
-    }
-    
-    .avoid-break {
-      page-break-inside: avoid;
     }
   </style>
 </head>
 <body>
-  <div class="header avoid-break">
+  <div class="header">
     <h1>${data.title}</h1>
     <div class="subtitle">${data.subtitle}</div>
     <div class="meta">
@@ -335,35 +349,63 @@ export function generateExpenseReportHTML(data: {
         .join('')}
     </div>
     
-    <h2 class="section-title">Transaction Details</h2>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>Category</th>
-            <th>Description</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.transactions
-            .map(
-              (tx) => `
-            <tr>
-              <td>${tx.index}</td>
-              <td>${tx.date}</td>
-              <td>${tx.category}</td>
-              <td>${tx.description}</td>
-              <td>Rs ${tx.amount.toFixed(1)}</td>
-            </tr>
-          `,
-            )
-            .join('')}
-        </tbody>
-      </table>
+    <h2 class="section-title">Member Spending</h2>
+    <div class="member-spending">
+      ${data.memberSpending
+        .map(
+          (member) => `
+        <div class="member-item">
+          <div class="member-color" style="background: ${member.color}"></div>
+          <div class="member-name">${member.name}</div>
+          <div class="member-stats">
+            <div class="member-stat">
+              <div class="member-stat-label">Spent</div>
+              <div class="member-stat-value">Rs ${member.totalSpent.toFixed(1)}</div>
+            </div>
+            <div class="member-stat">
+              <div class="member-stat-label">Owed</div>
+              <div class="member-stat-value">Rs ${member.totalOwed.toFixed(1)}</div>
+            </div>
+            <div class="member-stat">
+              <div class="member-stat-label">Transactions</div>
+              <div class="member-stat-value">${member.transactionCount}</div>
+            </div>
+          </div>
+        </div>
+      `,
+        )
+        .join('')}
     </div>
+    
+    <h2 class="section-title">Transaction Details</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Paid By</th>
+          <th>Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.transactions
+          .map(
+            (tx) => `
+          <tr>
+            <td>${tx.index}</td>
+            <td>${tx.date}</td>
+            <td>${tx.category}</td>
+            <td>${tx.description}</td>
+            <td>${tx.paidBy}</td>
+            <td>Rs ${tx.amount.toFixed(1)}</td>
+          </tr>
+        `,
+          )
+          .join('')}
+      </tbody>
+    </table>
     
     ${
       data.categoryDistribution.length > 0

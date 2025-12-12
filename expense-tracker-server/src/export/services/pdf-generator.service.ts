@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   GroupExportData,
   ExpenseExportData,
@@ -14,7 +15,7 @@ export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
   private readonly uploadsDir = path.join(process.cwd(), 'uploads', 'exports');
 
-  constructor() {
+  constructor(private readonly prisma: PrismaService) {
     // Ensure uploads directory exists
     if (!fs.existsSync(this.uploadsDir)) {
       fs.mkdirSync(this.uploadsDir, { recursive: true });
@@ -22,30 +23,41 @@ export class PdfGeneratorService {
   }
 
   /**
-   * Category colors matching the design
+   * Get category color from database
    */
-  private readonly categoryColors: Record<string, string> = {
-    fuel: '#f59e0b',
-    food: '#ef4444',
-    shopping: '#ec4899',
-    health: '#10b981',
-    transport: '#3b82f6',
-    entertainment: '#8b5cf6',
-    utilities: '#6366f1',
-    groceries: '#14b8a6',
-    beverages: '#f97316',
-    default: '#6b7280',
-  };
+  private async getCategoryColor(categoryName: string): Promise<string> {
+    try {
+      const category = await this.prisma.category.findFirst({
+        where: {
+          name: categoryName.toLowerCase().replace(/\s+/g, '_'),
+        },
+      });
 
-  private getCategoryColor(category: string): string {
-    const key = category.toLowerCase();
-    return this.categoryColors[key] || this.categoryColors.default;
+      if (category?.color) {
+        const { getTailwindColor } = await import('../utils/color-utils.js');
+        return getTailwindColor(category.color);
+      }
+
+      // Fallback to default gray
+      return '#6b7280';
+    } catch {
+      this.logger.warn(`Could not fetch color for category: ${categoryName}`);
+      return '#6b7280';
+    }
+  }
+
+  /**
+   * Format amount to 1 decimal place
+   */
+  private formatAmount(amount: number): string {
+    return amount.toFixed(1);
   }
 
   /**
    * Generate PDF for expense report with professional design
    */
   async generateExpenseReport(data: ExpenseExportData): Promise<string> {
+    const startTime = Date.now();
     const date = new Date().toISOString().split('T')[0];
     const filename = `expense-report-${date}-${Date.now()}.pdf`;
     const filepath = path.join(this.uploadsDir, filename);
@@ -62,14 +74,21 @@ export class PdfGeneratorService {
       });
 
       const totalAmount = data.summary.totalAmount;
-      const categoryDistribution = Array.from(categoryMap.entries())
+      const categoryEntries = Array.from(categoryMap.entries())
         .map(([category, amount]) => ({
           category,
           amount,
           percentage: (amount / totalAmount) * 100,
-          color: this.getCategoryColor(category),
         }))
         .sort((a, b) => b.amount - a.amount);
+
+      // Fetch colors for all categories
+      const categoryDistribution = await Promise.all(
+        categoryEntries.map(async (entry) => ({
+          ...entry,
+          color: await this.getCategoryColor(entry.category),
+        })),
+      );
 
       // Prepare data for template
       const templateData = {
@@ -77,7 +96,7 @@ export class PdfGeneratorService {
         subtitle: 'Monthly Report',
         dateRange:
           data.expenses.length > 0
-            ? `${new Date(data.expenses[data.expenses.length - 1].expenseDate).toLocaleDateString()} - ${new Date(data.expenses[0].expenseDate).toLocaleDateString()}`
+            ? `${new Date(data.expenses[data.expenses.length - 1].expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(data.expenses[0].expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
             : 'No data',
         generatedDate: new Date().toLocaleString('en-US', {
           month: 'short',
@@ -89,7 +108,7 @@ export class PdfGeneratorService {
         summaryCards: [
           {
             label: 'TOTAL SPENDING',
-            value: `Rs ${data.summary.totalAmount.toLocaleString()}`,
+            value: `Rs ${this.formatAmount(data.summary.totalAmount)}`,
           },
           {
             label: 'TRANSACTIONS',
@@ -97,7 +116,7 @@ export class PdfGeneratorService {
           },
           {
             label: 'AVERAGE PER DAY',
-            value: `Rs ${Math.round(data.summary.averageExpense).toLocaleString()}`,
+            value: `Rs ${this.formatAmount(data.summary.averageExpense)}`,
           },
           {
             label: 'TOP CATEGORY',
@@ -140,11 +159,13 @@ export class PdfGeneratorService {
           bottom: '0px',
           left: '0px',
         },
+        preferCSSPageSize: true,
       });
 
       await browser.close();
 
-      this.logger.log(`Generated expense report: ${filename}`);
+      const duration = Date.now() - startTime;
+      this.logger.log(`Generated expense report: ${filename} (${duration}ms)`);
       return filename;
     } catch (error) {
       const errorMessage =
@@ -160,6 +181,7 @@ export class PdfGeneratorService {
   async generateTransactionReport(
     data: TransactionExportData,
   ): Promise<string> {
+    const startTime = Date.now();
     const date = new Date().toISOString().split('T')[0];
     const filename = `transaction-report-${date}-${Date.now()}.pdf`;
     const filepath = path.join(this.uploadsDir, filename);
@@ -178,14 +200,21 @@ export class PdfGeneratorService {
         });
 
       const totalExpenses = data.summary.totalExpenses;
-      const categoryDistribution = Array.from(categoryMap.entries())
+      const categoryEntries = Array.from(categoryMap.entries())
         .map(([category, amount]) => ({
           category,
           amount,
-          percentage: (amount / totalExpenses) * 100,
-          color: this.getCategoryColor(category),
+          percentage: totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0,
         }))
         .sort((a, b) => b.amount - a.amount);
+
+      // Fetch colors for all categories
+      const categoryDistribution = await Promise.all(
+        categoryEntries.map(async (entry) => ({
+          ...entry,
+          color: await this.getCategoryColor(entry.category),
+        })),
+      );
 
       // Prepare data for template
       const templateData = {
@@ -193,7 +222,7 @@ export class PdfGeneratorService {
         subtitle: 'Income & Expenses',
         dateRange:
           data.transactions.length > 0
-            ? `${new Date(data.transactions[data.transactions.length - 1].date).toLocaleDateString()} - ${new Date(data.transactions[0].date).toLocaleDateString()}`
+            ? `${new Date(data.transactions[data.transactions.length - 1].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(data.transactions[0].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
             : 'No data',
         generatedDate: new Date().toLocaleString('en-US', {
           month: 'short',
@@ -205,15 +234,15 @@ export class PdfGeneratorService {
         summaryCards: [
           {
             label: 'TOTAL INCOME',
-            value: `Rs ${data.summary.totalIncome.toLocaleString()}`,
+            value: `Rs ${this.formatAmount(data.summary.totalIncome)}`,
           },
           {
             label: 'TOTAL EXPENSES',
-            value: `Rs ${data.summary.totalExpenses.toLocaleString()}`,
+            value: `Rs ${this.formatAmount(data.summary.totalExpenses)}`,
           },
           {
             label: 'NET SAVINGS',
-            value: `Rs ${data.summary.netSavings.toLocaleString()}`,
+            value: `Rs ${this.formatAmount(data.summary.netSavings)}`,
           },
           {
             label: 'TRANSACTIONS',
@@ -256,11 +285,15 @@ export class PdfGeneratorService {
           bottom: '0px',
           left: '0px',
         },
+        preferCSSPageSize: true,
       });
 
       await browser.close();
 
-      this.logger.log(`Generated transaction report: ${filename}`);
+      const duration = Date.now() - startTime;
+      this.logger.log(
+        `Generated transaction report: ${filename} (${duration}ms)`,
+      );
       return filename;
     } catch (error) {
       const errorMessage =
@@ -271,14 +304,63 @@ export class PdfGeneratorService {
   }
 
   /**
-   * Generate PDF for group report
+   * Generate PDF for group report with member spending breakdown
    */
   async generateGroupReport(data: GroupExportData): Promise<string> {
+    const startTime = Date.now();
     const date = new Date().toISOString().split('T')[0];
     const filename = `group-${data.group.name.replace(/\s+/g, '-')}-${date}-${Date.now()}.pdf`;
     const filepath = path.join(this.uploadsDir, filename);
 
     try {
+      // Calculate member spending
+      const memberMap = new Map<
+        string,
+        { totalSpent: number; totalOwed: number; count: number }
+      >();
+
+      data.expenses.forEach((exp) => {
+        const paidByName = exp.paidBy.name;
+        if (!memberMap.has(paidByName)) {
+          memberMap.set(paidByName, { totalSpent: 0, totalOwed: 0, count: 0 });
+        }
+        const member = memberMap.get(paidByName)!;
+        member.totalSpent += exp.amount;
+        member.count += 1;
+
+        // Calculate what others owe
+        exp.splits.forEach((split) => {
+          if (split.user.name !== paidByName) {
+            if (!memberMap.has(split.user.name)) {
+              memberMap.set(split.user.name, {
+                totalSpent: 0,
+                totalOwed: 0,
+                count: 0,
+              });
+            }
+            memberMap.get(split.user.name)!.totalOwed += split.amountOwed;
+          }
+        });
+      });
+
+      const memberColors = [
+        '#7c3aed',
+        '#10b981',
+        '#dc2626',
+        '#f59e0b',
+        '#ec4899',
+        '#8b5cf6',
+      ];
+      const memberSpending = Array.from(memberMap.entries())
+        .map(([name, stats], index) => ({
+          name,
+          totalSpent: stats.totalSpent,
+          totalOwed: stats.totalOwed,
+          transactionCount: stats.count,
+          color: memberColors[index % memberColors.length],
+        }))
+        .sort((a, b) => b.totalSpent - a.totalSpent);
+
       // Calculate category distribution
       const categoryMap = new Map<string, number>();
       data.expenses.forEach((exp) => {
@@ -290,22 +372,29 @@ export class PdfGeneratorService {
       });
 
       const totalAmount = data.statistics?.totalAmount || 0;
-      const categoryDistribution = Array.from(categoryMap.entries())
+      const categoryEntries = Array.from(categoryMap.entries())
         .map(([category, amount]) => ({
           category,
           amount,
-          percentage: (amount / totalAmount) * 100,
-          color: this.getCategoryColor(category),
+          percentage: totalAmount > 0 ? (amount / totalAmount) * 100 : 0,
         }))
         .sort((a, b) => b.amount - a.amount);
+
+      // Fetch colors for all categories
+      const categoryDistribution = await Promise.all(
+        categoryEntries.map(async (entry) => ({
+          ...entry,
+          color: await this.getCategoryColor(entry.category),
+        })),
+      );
 
       // Prepare data for template
       const templateData = {
         title: `${data.group.name.toUpperCase()} - GROUP REPORT`,
-        subtitle: `${data.group.memberCount} Members`,
+        subtitle: `${data.group.memberCount} Members • ${data.group.currency}`,
         dateRange:
           data.expenses.length > 0
-            ? `${new Date(data.expenses[data.expenses.length - 1].expenseDate).toLocaleDateString()} - ${new Date(data.expenses[0].expenseDate).toLocaleDateString()}`
+            ? `${new Date(data.expenses[data.expenses.length - 1].expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} - ${new Date(data.expenses[0].expenseDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`
             : 'No data',
         generatedDate: new Date().toLocaleString('en-US', {
           month: 'short',
@@ -317,7 +406,7 @@ export class PdfGeneratorService {
         summaryCards: [
           {
             label: 'TOTAL SPENDING',
-            value: `${data.group.currency} ${(data.statistics?.totalAmount || 0).toLocaleString()}`,
+            value: `${data.group.currency} ${this.formatAmount(data.statistics?.totalAmount || 0)}`,
           },
           {
             label: 'TOTAL EXPENSES',
@@ -325,13 +414,14 @@ export class PdfGeneratorService {
           },
           {
             label: 'AVERAGE EXPENSE',
-            value: `${data.group.currency} ${Math.round(data.statistics?.averageExpense || 0).toLocaleString()}`,
+            value: `${data.group.currency} ${this.formatAmount(data.statistics?.averageExpense || 0)}`,
           },
           {
-            label: 'TOP CATEGORY',
-            value: categoryDistribution[0]?.category || 'N/A',
+            label: 'TOP SPENDER',
+            value: memberSpending[0]?.name || 'N/A',
           },
         ],
+        memberSpending,
         transactions: data.expenses.map((exp, index) => ({
           index: index + 1,
           date: new Date(exp.expenseDate).toLocaleDateString('en-GB', {
@@ -340,14 +430,18 @@ export class PdfGeneratorService {
             year: '2-digit',
           }),
           category: exp.category?.name || 'Uncategorized',
-          description: `${exp.description} (by ${exp.paidBy.name})`,
+          description: exp.description,
+          paidBy: exp.paidBy.name,
           amount: exp.amount,
         })),
         categoryDistribution,
       };
 
-      // Generate HTML
-      const html = generateExpenseReportHTML(templateData);
+      // Generate HTML using group template
+      const { generateGroupReportHTML } = await import(
+        path.join(__dirname, '../templates/group-report.template.js')
+      );
+      const html = generateGroupReportHTML(templateData);
 
       // Launch puppeteer and generate PDF
       const browser = await puppeteer.launch({
@@ -368,11 +462,13 @@ export class PdfGeneratorService {
           bottom: '0px',
           left: '0px',
         },
+        preferCSSPageSize: true,
       });
 
       await browser.close();
 
-      this.logger.log(`Generated group report: ${filename}`);
+      const duration = Date.now() - startTime;
+      this.logger.log(`Generated group report: ${filename} (${duration}ms)`);
       return filename;
     } catch (error) {
       const errorMessage =
