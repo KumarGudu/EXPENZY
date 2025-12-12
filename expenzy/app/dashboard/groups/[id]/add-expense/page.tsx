@@ -9,12 +9,14 @@ import { useProfile } from '@/lib/hooks/use-profile';
 import { useLayout } from '@/contexts/layout-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Check, ChevronDown, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, Sparkles, CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-matcher';
 import { CategorySelector } from '@/components/shared/category-selector';
 import { useCalculatorInput } from '@/lib/hooks/use-calculator-input';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils/cn';
 import type { SplitType, ParticipantInput } from '@/types/split';
 import {
     Dialog,
@@ -28,6 +30,8 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MemberAvatar } from '@/components/features/groups/member-avatar';
 
 const SPLIT_TYPES: { value: SplitType; label: string; description: string }[] = [
@@ -97,6 +101,8 @@ export default function AddExpensePage() {
     const [percentages, setPercentages] = useState<Record<string, string>>({});
     // For shares
     const [shares, setShares] = useState<Record<string, string>>({});
+    // Expense date
+    const [expenseDate, setExpenseDate] = useState<Date>(() => new Date());
 
     // Set paidBy when currentUserId is available (only once)
     useEffect(() => {
@@ -142,6 +148,11 @@ export default function AddExpensePage() {
                     }
                 });
                 setShares(shrs);
+            }
+
+            // Set expense date if available
+            if (existingExpense.expenseDate) {
+                setExpenseDate(new Date(existingExpense.expenseDate));
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,6 +282,7 @@ export default function AddExpensePage() {
                         splitType,
                         participants,
                         categoryId: categoryId || undefined,
+                        expenseDate: expenseDate.toISOString().split('T')[0],
                     },
                 });
             } else {
@@ -282,7 +294,7 @@ export default function AddExpensePage() {
                         paidByUserId: paidBy,
                         splitType,
                         participants,
-                        expenseDate: new Date().toISOString(),
+                        expenseDate: expenseDate.toISOString().split('T')[0],
                         categoryId: categoryId || undefined,
                         currency: group?.currency || 'INR',
                     },
@@ -432,6 +444,37 @@ export default function AddExpensePage() {
                                 Invalid
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* Date */}
+                <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    className={cn(
+                                        'w-full justify-start text-left font-normal border-0 border-b rounded-none px-0 focus-visible:ring-0',
+                                        !expenseDate && 'text-muted-foreground'
+                                    )}
+                                >
+                                    {expenseDate ? format(expenseDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={expenseDate}
+                                    onSelect={(date) => date && setExpenseDate(date)}
+                                    disabled={(date) => date > new Date()}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 

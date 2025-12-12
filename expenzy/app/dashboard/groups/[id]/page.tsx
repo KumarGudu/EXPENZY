@@ -16,6 +16,7 @@ import { SimplifiedDebtsCard } from '@/components/features/groups/simplified-deb
 import { SettleUpBar } from '@/components/features/groups/settle-up-bar';
 import { GroupStatisticsModal } from '@/components/features/groups/group-statistics-modal';
 import { ExpenseDetailModal } from '@/components/features/groups/expense-detail-modal';
+import { GroupExportButton } from '@/components/features/groups/group-export-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/currency';
@@ -279,17 +280,34 @@ export default function GroupDetailPage() {
                 />
 
                 {/* Action Bar - Both Mobile and Desktop at top */}
-                <SettleUpBar
-                    onSettleUp={() => {
-                        // TODO: Implement settle up flow
-                        console.log('Settle up clicked');
-                    }}
-                    onViewStatistics={() => setIsStatisticsModalOpen(true)}
-                    onExport={() => {
-                        // TODO: Implement export
-                        console.log('Export clicked');
-                    }}
-                />
+                <div className="flex gap-2 py-3 border-b border-border">
+                    <Button
+                        onClick={() => {
+                            // TODO: Implement settle up flow
+                            console.log('Settle up clicked');
+                        }}
+                        size="sm"
+                        variant="default"
+                        className="h-9"
+                    >
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        Settle up
+                    </Button>
+                    <Button
+                        onClick={() => setIsStatisticsModalOpen(true)}
+                        variant="outline"
+                        size="sm"
+                        className="h-9"
+                    >
+                        <Receipt className="h-4 w-4 mr-1.5" />
+                        Statistics
+                    </Button>
+                    <GroupExportButton
+                        groupId={groupId}
+                        variant="outline"
+                        size="sm"
+                    />
+                </div>
 
                 {/* Simplified Debts Card */}
                 <SimplifiedDebtsCard
