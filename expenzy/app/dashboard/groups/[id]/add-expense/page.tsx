@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-matcher';
 import { CategorySelector } from '@/components/shared/category-selector';
+import { useCalculatorInput } from '@/lib/hooks/use-calculator-input';
 import type { SplitType, ParticipantInput } from '@/types/split';
 import {
     Dialog,
@@ -76,7 +77,7 @@ export default function AddExpensePage() {
     }, [setLayoutVisibility]);
 
     const [description, setDescription] = useState('');
-    const [amount, setAmount] = useState('');
+    const calculatorInput = useCalculatorInput('');
     const [categoryId, setCategoryId] = useState<string>('');
     const [categoryMatches, setCategoryMatches] = useState<CategoryMatch[]>([]);
     const [selectedMatchCategory, setSelectedMatchCategory] = useState<string | null>(null);
@@ -109,7 +110,7 @@ export default function AddExpensePage() {
     useEffect(() => {
         if (isEditMode && existingExpense) {
             setDescription(existingExpense.description);
-            setAmount(existingExpense.amount.toString());
+            calculatorInput.setValue(existingExpense.amount.toString());
             setCategoryId(existingExpense.category?.id || '');
             setPaidBy(existingExpense.paidByUserId);
             setSplitType(existingExpense.splitType as SplitType);
@@ -191,7 +192,8 @@ export default function AddExpensePage() {
             return;
         }
 
-        if (!amount || parseFloat(amount) <= 0) {
+        const finalAmount = calculatorInput.result.calculatedValue || parseFloat(calculatorInput.value);
+        if (!calculatorInput.value || isNaN(finalAmount) || finalAmount <= 0) {
             toast.error('Please enter a valid amount');
             return;
         }
@@ -212,8 +214,8 @@ export default function AddExpensePage() {
                 (sum, userId) => sum + (parseFloat(exactAmounts[userId] || '0')),
                 0
             );
-            if (Math.abs(total - parseFloat(amount)) > 0.01) {
-                toast.error(`Amounts must add up to ₹${amount}`);
+            if (Math.abs(total - finalAmount) > 0.01) {
+                toast.error(`Amounts must add up to ₹${finalAmount}`);
                 return;
             }
         } else if (splitType === 'percentage') {
@@ -231,7 +233,7 @@ export default function AddExpensePage() {
             let participants: ParticipantInput[] = [];
 
             if (splitType === 'equal') {
-                const perPerson = parseFloat(amount) / selectedParticipants.length;
+                const perPerson = finalAmount / selectedParticipants.length;
                 participants = selectedParticipants.map((userId) => ({
                     userId,
                     amount: perPerson,
@@ -244,7 +246,7 @@ export default function AddExpensePage() {
             } else if (splitType === 'percentage') {
                 participants = selectedParticipants.map((userId) => ({
                     userId,
-                    amount: (parseFloat(amount) * parseFloat(percentages[userId] || '0')) / 100,
+                    amount: (finalAmount * parseFloat(percentages[userId] || '0')) / 100,
                     percentage: parseFloat(percentages[userId] || '0'),
                 }));
             } else if (splitType === 'shares') {
@@ -254,7 +256,7 @@ export default function AddExpensePage() {
                 );
                 participants = selectedParticipants.map((userId) => ({
                     userId,
-                    amount: (parseFloat(amount) * parseFloat(shares[userId] || '1')) / totalShares,
+                    amount: (finalAmount * parseFloat(shares[userId] || '1')) / totalShares,
                     shares: parseFloat(shares[userId] || '1'),
                 }));
             }
@@ -265,7 +267,7 @@ export default function AddExpensePage() {
                     expenseId,
                     data: {
                         description: description.trim(),
-                        amount: parseFloat(amount),
+                        amount: finalAmount,
                         splitType,
                         participants,
                         categoryId: categoryId || undefined,
@@ -276,7 +278,7 @@ export default function AddExpensePage() {
                     groupId,
                     data: {
                         description: description.trim(),
-                        amount: parseFloat(amount),
+                        amount: finalAmount,
                         paidByUserId: paidBy,
                         splitType,
                         participants,
@@ -307,22 +309,23 @@ export default function AddExpensePage() {
     };
 
     const getCalculatedAmount = (userId: string) => {
-        if (!amount || !selectedParticipants.includes(userId)) return '0.00';
+        const finalAmount = calculatorInput.result.calculatedValue || parseFloat(calculatorInput.value);
+        if (!calculatorInput.value || isNaN(finalAmount) || !selectedParticipants.includes(userId)) return '0.00';
 
         if (splitType === 'equal') {
-            return (parseFloat(amount) / selectedParticipants.length).toFixed(2);
+            return (finalAmount / selectedParticipants.length).toFixed(2);
         } else if (splitType === 'exact') {
             return parseFloat(exactAmounts[userId] || '0').toFixed(2);
         } else if (splitType === 'percentage') {
             const pct = parseFloat(percentages[userId] || '0');
-            return ((parseFloat(amount) * pct) / 100).toFixed(2);
+            return ((finalAmount * pct) / 100).toFixed(2);
         } else if (splitType === 'shares') {
             const totalShares = selectedParticipants.reduce(
                 (sum, id) => sum + parseFloat(shares[id] || '1'),
                 0
             );
             const userShares = parseFloat(shares[userId] || '1');
-            return ((parseFloat(amount) * userShares) / totalShares).toFixed(2);
+            return ((finalAmount * userShares) / totalShares).toFixed(2);
         }
         return '0.00';
     };
@@ -411,13 +414,25 @@ export default function AddExpensePage() {
                     <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <span className="text-lg font-semibold text-muted-foreground">₹</span>
                     </div>
-                    <Input
-                        type="number"
-                        placeholder="0.00"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        className="flex-1 border-0 border-b rounded-none px-0 focus-visible:ring-0 text-2xl font-semibold"
-                    />
+                    <div className="flex-1 relative">
+                        <Input
+                            type="text"
+                            placeholder="0.00"
+                            value={calculatorInput.value}
+                            onChange={calculatorInput.handleChange}
+                            className="border-0 border-b rounded-none px-0 focus-visible:ring-0 text-2xl font-semibold pr-24"
+                        />
+                        {calculatorInput.result.isExpression && calculatorInput.result.calculatedValue !== null && (
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 text-lg font-semibold text-green-600 dark:text-green-400">
+                                = {calculatorInput.result.calculatedValue.toFixed(2)}
+                            </div>
+                        )}
+                        {calculatorInput.result.error && (
+                            <div className="absolute right-0 top-1/2 -translate-y-1/2 text-sm font-medium text-red-600 dark:text-red-400">
+                                Invalid
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Paid by & Split type */}
@@ -548,98 +563,102 @@ export default function AddExpensePage() {
                     </div>
 
                     {/* Summary */}
-                    {amount && selectedParticipants.length > 0 && (
-                        <div className="space-y-2">
-                            {/* Equal split summary */}
-                            {splitType === 'equal' && (
-                                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                    <span className="text-sm font-medium">
-                                        {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
-                                    </span>
-                                    <span className="text-sm font-medium">
-                                        ₹{(parseFloat(amount) / selectedParticipants.length).toFixed(2)}/person
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Exact amounts summary */}
-                            {splitType === 'exact' && (() => {
-                                const totalEntered = selectedParticipants.reduce(
-                                    (sum, userId) => sum + parseFloat(exactAmounts[userId] || '0'),
-                                    0
-                                );
-                                const remaining = parseFloat(amount) - totalEntered;
-                                const isValid = Math.abs(remaining) < 0.01;
-
-                                return (
-                                    <div className={`p-3 rounded-lg border-2 ${isValid
-                                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                                        : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
-                                        }`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium">Total entered</span>
-                                            <span className="text-sm font-semibold">₹{totalEntered.toFixed(2)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium">
-                                                {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Balanced'}
-                                            </span>
-                                            <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                                                }`}>
-                                                ₹{Math.abs(remaining).toFixed(2)}
-                                            </span>
-                                        </div>
+                    {calculatorInput.value && selectedParticipants.length > 0 && (() => {
+                        const finalAmount = calculatorInput.result.calculatedValue || parseFloat(calculatorInput.value);
+                        if (isNaN(finalAmount)) return null;
+                        return (
+                            <div className="space-y-2">
+                                {/* Equal split summary */}
+                                {splitType === 'equal' && (
+                                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                        <span className="text-sm font-medium">
+                                            {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
+                                        </span>
+                                        <span className="text-sm font-medium">
+                                            ₹{(finalAmount / selectedParticipants.length).toFixed(2)}/person
+                                        </span>
                                     </div>
-                                );
-                            })()}
+                                )}
 
-                            {/* Percentage summary */}
-                            {splitType === 'percentage' && (() => {
-                                const totalPercentage = selectedParticipants.reduce(
-                                    (sum, userId) => sum + parseFloat(percentages[userId] || '0'),
-                                    0
-                                );
-                                const remaining = 100 - totalPercentage;
-                                const isValid = Math.abs(remaining) < 0.01;
+                                {/* Exact amounts summary */}
+                                {splitType === 'exact' && (() => {
+                                    const totalEntered = selectedParticipants.reduce(
+                                        (sum, userId) => sum + parseFloat(exactAmounts[userId] || '0'),
+                                        0
+                                    );
+                                    const remaining = finalAmount - totalEntered;
+                                    const isValid = Math.abs(remaining) < 0.01;
 
-                                return (
-                                    <div className={`p-3 rounded-lg border-2 ${isValid
-                                        ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
-                                        : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
-                                        }`}>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-sm font-medium">Total percentage</span>
-                                            <span className="text-sm font-semibold">{totalPercentage.toFixed(1)}%</span>
+                                    return (
+                                        <div className={`p-3 rounded-lg border-2 ${isValid
+                                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                                            : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
+                                            }`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium">Total entered</span>
+                                                <span className="text-sm font-semibold">₹{totalEntered.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">
+                                                    {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Balanced'}
+                                                </span>
+                                                <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                                                    }`}>
+                                                    ₹{Math.abs(remaining).toFixed(2)}
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium">
-                                                {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Complete'}
-                                            </span>
-                                            <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                                                }`}>
-                                                {Math.abs(remaining).toFixed(1)}%
-                                            </span>
+                                    );
+                                })()}
+
+                                {/* Percentage summary */}
+                                {splitType === 'percentage' && (() => {
+                                    const totalPercentage = selectedParticipants.reduce(
+                                        (sum, userId) => sum + parseFloat(percentages[userId] || '0'),
+                                        0
+                                    );
+                                    const remaining = 100 - totalPercentage;
+                                    const isValid = Math.abs(remaining) < 0.01;
+
+                                    return (
+                                        <div className={`p-3 rounded-lg border-2 ${isValid
+                                            ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                                            : 'bg-orange-50 border-orange-200 dark:bg-orange-950/20 dark:border-orange-800'
+                                            }`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-sm font-medium">Total percentage</span>
+                                                <span className="text-sm font-semibold">{totalPercentage.toFixed(1)}%</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">
+                                                    {remaining > 0 ? 'Remaining' : remaining < 0 ? 'Over by' : 'Complete'}
+                                                </span>
+                                                <span className={`text-sm font-semibold ${isValid ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                                                    }`}>
+                                                    {Math.abs(remaining).toFixed(1)}%
+                                                </span>
+                                            </div>
                                         </div>
+                                    );
+                                })()}
+
+                                {/* Shares summary */}
+                                {splitType === 'shares' && (
+                                    <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                                        <span className="text-sm font-medium">
+                                            {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
+                                        </span>
+                                        <span className="text-sm font-medium">
+                                            Total: {selectedParticipants.reduce(
+                                                (sum, userId) => sum + parseFloat(shares[userId] || '1'),
+                                                0
+                                            ).toFixed(1)} shares
+                                        </span>
                                     </div>
-                                );
-                            })()}
-
-                            {/* Shares summary */}
-                            {splitType === 'shares' && (
-                                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                                    <span className="text-sm font-medium">
-                                        {selectedParticipants.length} {selectedParticipants.length === 1 ? 'person' : 'people'}
-                                    </span>
-                                    <span className="text-sm font-medium">
-                                        Total: {selectedParticipants.reduce(
-                                            (sum, userId) => sum + parseFloat(shares[userId] || '1'),
-                                            0
-                                        ).toFixed(1)} shares
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 

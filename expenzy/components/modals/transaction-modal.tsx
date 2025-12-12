@@ -8,6 +8,7 @@ import { useCreateIncome, useUpdateIncome } from '@/lib/hooks/use-income';
 import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-matcher';
 import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { CategorySelector } from '@/components/shared/category-selector';
+import { useCalculatorInput } from '@/lib/hooks/use-calculator-input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -69,6 +70,7 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
     const { matchAll, isReady } = useKeywordMatcher();
     const [categoryMatches, setCategoryMatches] = useState<CategoryMatch[]>([]);
     const [selectedMatchCategory, setSelectedMatchCategory] = useState<string | null>(null);
+    const calculatorInput = useCalculatorInput('');
 
     // Auto-detect categories based on description (min 3 chars) with debouncing
     useEffect(() => {
@@ -120,7 +122,7 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
 
             // Set all form values at once
             setValue('type', transaction.type);
-            setValue('amount', transaction.amount.toString());
+            calculatorInput.setValue(transaction.amount.toString());
             setValue('description', description);
             setValue('categoryId', transaction.categoryId);
             setValue('date', new Date(date));
@@ -136,21 +138,29 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
     const handleTypeChange = (type: 'income' | 'expense') => {
         setValue('type', type);
         setValue('categoryId', ''); // Reset category when type changes
+        calculatorInput.setValue(''); // Reset calculator
     };
 
     const onSubmit = async (data: TransactionFormData) => {
         try {
+            // Get the final calculated amount
+            const finalAmount = calculatorInput.result.calculatedValue || parseFloat(calculatorInput.value);
+
+            if (isNaN(finalAmount) || finalAmount <= 0) {
+                return; // Form validation will handle this
+            }
+
             if (mode === 'add') {
                 if (data.type === 'expense') {
                     await createExpense.mutateAsync({
-                        amount: Number(data.amount),
+                        amount: finalAmount,
                         description: data.description,
                         categoryId: data.categoryId,
                         expenseDate: data.date.toISOString(),
                     });
                 } else {
                     await createIncome.mutateAsync({
-                        amount: Number(data.amount),
+                        amount: finalAmount,
                         source: data.description,
                         categoryId: data.categoryId,
                         incomeDate: data.date.toISOString(),
@@ -164,7 +174,7 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                     await updateExpense.mutateAsync({
                         id: transaction.id,
                         data: {
-                            amount: Number(data.amount),
+                            amount: finalAmount,
                             description: data.description,
                             categoryId: data.categoryId,
                             expenseDate: data.date.toISOString(),
@@ -174,7 +184,7 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                     await updateIncome.mutateAsync({
                         id: transaction.id,
                         data: {
-                            amount: Number(data.amount),
+                            amount: finalAmount,
                             source: data.description,
                             categoryId: data.categoryId,
                             incomeDate: data.date.toISOString(),
@@ -245,15 +255,30 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                     {/* Amount */}
                     <div className="space-y-2">
                         <Label htmlFor="amount">Amount *</Label>
-                        <Input
-                            id="amount"
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            {...register('amount')}
-                            className={errors.amount ? 'border-destructive' : ''}
-                        />
-                        {errors.amount && (
+                        <div className="relative">
+                            <Input
+                                id="amount"
+                                type="text"
+                                placeholder="0.00"
+                                value={calculatorInput.value}
+                                onChange={calculatorInput.handleChange}
+                                className={calculatorInput.result.error ? 'border-destructive pr-20' : 'pr-20'}
+                            />
+                            {calculatorInput.result.isExpression && calculatorInput.result.calculatedValue !== null && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-green-600 dark:text-green-400">
+                                    = {calculatorInput.result.calculatedValue.toFixed(2)}
+                                </div>
+                            )}
+                            {calculatorInput.result.error && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-red-600 dark:text-red-400">
+                                    Invalid
+                                </div>
+                            )}
+                        </div>
+                        {calculatorInput.result.error && (
+                            <p className="text-sm text-destructive">{calculatorInput.result.error}</p>
+                        )}
+                        {!calculatorInput.result.error && !calculatorInput.value && errors.amount && (
                             <p className="text-sm text-destructive">{errors.amount.message}</p>
                         )}
                     </div>
