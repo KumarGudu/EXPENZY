@@ -24,7 +24,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(private readonly groupsService: GroupsService) { }
 
   // ==================== GROUP CRUD ====================
 
@@ -98,6 +98,7 @@ export class GroupsController {
     @CurrentUser() user: JwtPayload,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 50;
@@ -106,6 +107,7 @@ export class GroupsController {
       user.userId,
       pageNum,
       limitNum,
+      cursor,
     );
   }
 

@@ -381,6 +381,7 @@ export class GroupsService {
     userId: string,
     page: number = 1,
     limit: number = 50,
+    cursor?: string, // Cursor for cursor-based pagination
   ) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
@@ -397,50 +398,104 @@ export class GroupsService {
       throw new ForbiddenException('You are not a member of this group');
     }
 
-    const skip = (page - 1) * limit;
+    // Use cursor-based pagination if cursor is provided, otherwise fall back to offset
+    let expenses;
+    let nextCursor: string | null = null;
 
-    // Check expense count cache
-    let total: number;
-    const cached = this.cacheService.getCachedExpenseCount(groupId);
-
-    if (cached !== null) {
-      total = cached;
-    } else {
-      total = await this.prisma.groupExpense.count({
-        where: { groupId },
-      });
-      this.cacheService.setCachedExpenseCount(groupId, total);
-    }
-
-    const expenses = await this.prisma.groupExpense.findMany({
-      where: {
-        groupId,
-      },
-      include: {
-        paidBy: true,
-        category: true,
-        splits: {
-          include: {
-            user: true,
+    if (cursor) {
+      // Cursor-based pagination (more efficient)
+      expenses = await this.prisma.groupExpense.findMany({
+        where: {
+          groupId,
+        },
+        include: {
+          paidBy: true,
+          category: true,
+          splits: {
+            include: {
+              user: true,
+            },
           },
         },
-      },
-      orderBy: {
-        expenseDate: 'desc',
-      },
-      skip,
-      take: limit,
-    });
+        orderBy: [
+          { expenseDate: 'desc' },
+          { id: 'desc' }, // Secondary sort for consistent ordering
+        ],
+        cursor: {
+          id: cursor,
+        },
+        skip: 1, // Skip the cursor itself
+        take: limit,
+      });
+
+      // Set next cursor if there are more items
+      if (expenses.length === limit) {
+        nextCursor = expenses[expenses.length - 1].id;
+      }
+    } else {
+      // Offset-based pagination (backward compatibility)
+      const skip = (page - 1) * limit;
+
+      expenses = await this.prisma.groupExpense.findMany({
+        where: {
+          groupId,
+        },
+        include: {
+          paidBy: true,
+          category: true,
+          splits: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: [
+          { expenseDate: 'desc' },
+          { id: 'desc' },
+        ],
+        skip,
+        take: limit,
+      });
+
+      // Set next cursor for first page
+      if (expenses.length === limit) {
+        nextCursor = expenses[expenses.length - 1].id;
+      }
+    }
+
+    // Check expense count cache (only for offset pagination)
+    let total: number | undefined;
+    if (!cursor) {
+      const cached = this.cacheService.getCachedExpenseCount(groupId);
+
+      if (cached !== null) {
+        total = cached;
+      } else {
+        total = await this.prisma.groupExpense.count({
+          where: { groupId },
+        });
+        this.cacheService.setCachedExpenseCount(groupId, total);
+      }
+    }
 
     return {
       data: expenses,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasMore: page * limit < total,
-      },
+      pagination: cursor
+        ? {
+          // Cursor-based response
+          limit,
+          nextCursor,
+          hasMore: nextCursor !== null,
+        }
+        : {
+          // Offset-based response (backward compatibility)
+          page,
+          limit,
+          total: total!,
+          totalPages: Math.ceil(total! / limit),
+          hasMore: page * limit < total!,
+          nextCursor, // Include cursor for migration
+        },
     };
   }
 

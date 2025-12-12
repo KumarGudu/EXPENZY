@@ -1,10 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { toast } from 'sonner';
 import type { GroupExpense, CreateExpenseData, UpdateExpenseData } from '@/types/split';
 
-// Get all expenses for a group
+// Get all expenses for a group (legacy - fetches from group detail)
 export function useGroupExpenses(groupId: string) {
     return useQuery({
         queryKey: ['groups', groupId, 'expenses'],
@@ -15,6 +15,35 @@ export function useGroupExpenses(groupId: string) {
             // Extract groupExpenses from nested structure
             return response.data?.groupExpenses || [];
         },
+        enabled: !!groupId,
+    });
+}
+
+// Infinite scroll for group expenses with cursor-based pagination
+export function useInfiniteGroupExpenses(groupId: string) {
+    return useInfiniteQuery({
+        queryKey: ['groups', groupId, 'expenses', 'infinite'],
+        queryFn: async ({ pageParam }) => {
+            const params = new URLSearchParams({
+                limit: '50',
+                ...(pageParam ? { cursor: pageParam } : {}),
+            });
+
+            const response = await apiClient.get<{
+                data: GroupExpense[];
+                pagination: {
+                    nextCursor: string | null;
+                    hasMore: boolean;
+                    limit: number;
+                };
+            }>(`${API_ENDPOINTS.GROUPS.EXPENSES(groupId)}?${params}`);
+
+            return response;
+        },
+        getNextPageParam: (lastPage) => {
+            return lastPage.pagination.hasMore ? lastPage.pagination.nextCursor : undefined;
+        },
+        initialPageParam: undefined as string | undefined,
         enabled: !!groupId,
     });
 }

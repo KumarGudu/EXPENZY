@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useGroupMembers } from '@/lib/hooks/use-groups';
+import { useInfiniteGroupExpenses } from '@/lib/hooks/use-group-expenses';
 import { useSimplifiedDebts } from '@/lib/hooks/use-group-balances';
 import { useGroupStatistics } from '@/lib/hooks/use-group-statistics';
 import { useProfile } from '@/lib/hooks/use-profile';
@@ -16,7 +17,7 @@ import { SettleUpBar } from '@/components/features/groups/settle-up-bar';
 import { GroupStatisticsModal } from '@/components/features/groups/group-statistics-modal';
 import { ExpenseDetailModal } from '@/components/features/groups/expense-detail-modal';
 import { Skeleton } from '@/components/ui/skeleton';
-import { VirtualList } from '@/components/shared/virtual-list';
+import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils/currency';
 import { getIconByName } from '@/lib/categorization/category-icons';
 import { calculateUserExpenseBalance } from '@/lib/utils/balance-utils';
@@ -49,6 +50,39 @@ export default function GroupDetailPage() {
     const { data: statistics } = useGroupStatistics(groupId);
     const { data: profile } = useProfile();
 
+    // Infinite scroll for expenses
+    const {
+        data: expensesData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading: expensesLoading,
+    } = useInfiniteGroupExpenses(groupId);
+
+    // Intersection observer for infinite scroll
+    const loadMoreRef = useRef<HTMLDivElement>(null);
+
+    const handleObserver = useCallback(
+        (entries: IntersectionObserverEntry[]) => {
+            const [target] = entries;
+            if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        },
+        [fetchNextPage, hasNextPage, isFetchingNextPage]
+    );
+
+    useEffect(() => {
+        const element = loadMoreRef.current;
+        if (!element) return;
+
+        const option = { threshold: 0 };
+        const observer = new IntersectionObserver(handleObserver, option);
+        observer.observe(element);
+
+        return () => observer.disconnect();
+    }, [handleObserver]);
+
     // Modal state
     const [selectedExpense, setSelectedExpense] = useState<GroupExpense | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,20 +112,19 @@ export default function GroupDetailPage() {
 
     const acceptedMembers = members.filter((m) => m.inviteStatus === 'accepted');
 
-    // Group expenses by month
+    // Flatten and group expenses by month from infinite query
     const groupedExpenses = useMemo(() => {
-        if (!group?.groupExpenses) return [];
+        if (!expensesData?.pages) return [];
 
-        const expenses = [...group.groupExpenses].sort((a, b) =>
-            new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime()
-        );
+        // Flatten all pages
+        const allExpenses = expensesData.pages.flatMap((page) => page.data);
 
         type GroupedExpense = {
             monthName: string;
-            expenses: typeof group.groupExpenses;
+            expenses: typeof allExpenses;
         };
 
-        const grouped = expenses.reduce((acc, expense) => {
+        const grouped = allExpenses.reduce((acc, expense) => {
             const date = new Date(expense.expenseDate);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -107,7 +140,7 @@ export default function GroupDetailPage() {
         }, {} as Record<string, GroupedExpense>);
 
         return Object.values(grouped);
-    }, [group]);
+    }, [expensesData]);
 
     if (groupLoading) {
         return (
@@ -265,35 +298,37 @@ export default function GroupDetailPage() {
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
                 />
 
-                {/* Expenses List - Splitwise Style */}
-                <div className="pt-2">{!group.groupExpenses || group.groupExpenses.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                        <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p className="font-medium">No expenses yet</p>
-                        <p className="text-sm mt-1">Add an expense to get started</p>
-                    </div>
-                ) : (
-                    <VirtualList
-                        fetchData={async (page) => {
-                            // Since data is already loaded, just paginate locally
-                            const itemsPerPage = 20;
-                            const start = (page - 1) * itemsPerPage;
-                            const end = start + itemsPerPage;
-                            const paginatedData = groupedExpenses.slice(start, end);
+                {/* Expenses List - Infinite Scroll */}
+                <div className="pt-2">
+                    {expensesLoading ? (
+                        <div className="space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                                <Skeleton key={i} className="h-16 w-full" />
+                            ))}
+                        </div>
+                    ) : groupedExpenses.length === 0 ? (
+                        <div className="text-center py-16 text-muted-foreground">
+                            <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="font-medium">No expenses yet</p>
+                            <p className="text-sm mt-1">Add an expense to get started</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-0">
+                            {groupedExpenses.map((monthGroup) => renderExpenseItem(monthGroup))}
 
-                            return {
-                                data: paginatedData,
-                                hasMore: end < groupedExpenses.length,
-                                total: groupedExpenses.length,
-                            };
-                        }}
-                        renderItem={renderExpenseItem}
-                        getItemKey={(item) => item.monthName}
-                        itemsPerPage={20}
-                        enableDesktopPagination={false}
-                        dependencies={[groupedExpenses]}
-                    />
-                )}
+                            {/* Load more trigger */}
+                            {hasNextPage && (
+                                <div
+                                    ref={loadMoreRef}
+                                    className="flex justify-center py-4"
+                                >
+                                    {isFetchingNextPage && (
+                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Floating Add Expense Button (Mobile) */}
