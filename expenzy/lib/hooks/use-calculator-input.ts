@@ -1,94 +1,67 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 
-interface CalculatorInputResult {
+interface CalculatorResult {
     displayValue: string;
     calculatedValue: number | null;
     isExpression: boolean;
-    error: string | null;
 }
 
 export function useCalculatorInput(initialValue: string = ''): {
     value: string;
-    result: CalculatorInputResult;
+    result: CalculatorResult;
     setValue: (value: string) => void;
     handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 } {
     const [value, setValue] = useState(initialValue);
-    const [result, setResult] = useState<CalculatorInputResult>({
-        displayValue: initialValue,
-        calculatedValue: null,
-        isExpression: false,
-        error: null,
-    });
 
-    useEffect(() => {
+    // Calculate result using useMemo to avoid setState in effect
+    const result = useMemo<CalculatorResult>(() => {
         if (!value || value.trim() === '') {
-            setResult({
+            return {
                 displayValue: '',
                 calculatedValue: null,
                 isExpression: false,
-                error: null,
-            });
-            return;
+            };
         }
 
-        // Check if the value contains any mathematical operators
-        const hasOperators = /[+\-*/]/.test(value);
+        // Check if the input contains operators
+        const hasOperators = /[+\-*/()]/.test(value);
 
         if (!hasOperators) {
-            // Simple number
-            const num = parseFloat(value);
-            setResult({
+            // Simple number, no calculation needed
+            const numValue = parseFloat(value);
+            return {
                 displayValue: value,
-                calculatedValue: isNaN(num) ? null : num,
+                calculatedValue: isNaN(numValue) ? null : numValue,
                 isExpression: false,
-                error: isNaN(num) ? 'Invalid number' : null,
-            });
-            return;
+            };
         }
 
         // Try to evaluate the expression
         try {
-            // Remove any non-numeric and non-operator characters for safety
-            const sanitized = value.replace(/[^0-9+\-*/.() ]/g, '');
+            const func = new Function('return ' + value);
+            const calculated = func();
 
-            // Validate the expression (basic check)
-            if (sanitized !== value.replace(/ /g, '')) {
-                setResult({
+            if (typeof calculated === 'number' && !isNaN(calculated)) {
+                return {
                     displayValue: value,
-                    calculatedValue: null,
+                    calculatedValue: calculated,
                     isExpression: true,
-                    error: 'Invalid characters',
-                });
-                return;
-            }
-
-            // Evaluate using Function constructor (safer than eval)
-            // eslint-disable-next-line no-new-func
-            const calculated = new Function(`return ${sanitized}`)();
-
-            if (typeof calculated === 'number' && !isNaN(calculated) && isFinite(calculated)) {
-                setResult({
-                    displayValue: value,
-                    calculatedValue: Math.round(calculated * 100) / 100, // Round to 2 decimals
-                    isExpression: true,
-                    error: null,
-                });
+                };
             } else {
-                setResult({
+                return {
                     displayValue: value,
                     calculatedValue: null,
-                    isExpression: true,
-                    error: 'Invalid expression',
-                });
+                    isExpression: false,
+                };
             }
-        } catch (error) {
-            setResult({
+        } catch {
+            // Invalid expression
+            return {
                 displayValue: value,
                 calculatedValue: null,
-                isExpression: true,
-                error: 'Invalid expression',
-            });
+                isExpression: false,
+            };
         }
     }, [value]);
 

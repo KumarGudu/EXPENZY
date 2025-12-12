@@ -16,8 +16,10 @@ export interface ExportGroupOptions extends ExportOptions {
 
 export interface ExportExpenseOptions extends ExportOptions {
     // Additional options for personal expense export
+    userId?: string;
 }
 
 export interface ExportTransactionOptions extends ExportOptions {
     // Additional options for transaction export
+    accountId?: string;
 }

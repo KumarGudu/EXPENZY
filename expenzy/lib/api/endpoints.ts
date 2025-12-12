@@ -149,4 +149,25 @@ export const API_ENDPOINTS = {
         TRANSACTIONS: '/export/transactions',
         DOWNLOAD: (filename: string) => `/export/download/${filename}`,
     },
+
+    // Recurring Expenses
+    RECURRING_EXPENSES: {
+        BASE: '/expenses/recurring',
+        BY_ID: (id: string) => `/expenses/recurring/${id}`,
+    },
+
+    // Attachments
+    ATTACHMENTS: {
+        UPLOAD: '/attachments/upload',
+        BY_ENTITY: (entityType: string, entityId: string) => `/attachments/${entityType}/${entityId}`,
+        DOWNLOAD: (id: string) => `/attachments/file/${id}`,
+        DELETE: (id: string) => `/attachments/${id}`,
+    },
+
+    // Reminders
+    REMINDERS: {
+        BASE: '/reminders',
+        BY_ID: (id: string) => `/reminders/${id}`,
+        MARK_READ: (id: string) => `/reminders/${id}/read`,
+    },
 } as const;
