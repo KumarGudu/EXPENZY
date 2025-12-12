@@ -1,21 +1,21 @@
 # Phase 2: New Features Implementation
 
 ## Module 1: Recurring Expenses
-- [ ] Create database schema for RecurringExpense
-- [ ] Create RecurringExpenseService
-- [ ] Create RecurringExpenseController
-- [ ] Add CRUD endpoints
-- [ ] Implement cron job for auto-creation
+- [x] Create database schema for RecurringExpense
+- [x] Create RecurringExpenseService
+- [x] Create RecurringExpenseController
+- [x] Add CRUD endpoints
+- [x] Implement cron job for auto-creation
 - [ ] Add notification system
 - [ ] Frontend: Create UI for managing recurring expenses
 - [ ] Frontend: Add recurring expense list view
 
 ## Module 2: Expense Attachments
-- [ ] Create database schema for ExpenseAttachment
-- [ ] Create AttachmentService (reusable)
-- [ ] Integrate file upload (Multer)
+- [x] Create database schema for ExpenseAttachment
+- [x] Create AttachmentService (reusable)
+- [x] Integrate file upload (Multer)
 - [ ] Add cloud storage integration (optional)
-- [ ] Create attachment endpoints
+- [x] Create attachment endpoints
 - [ ] Frontend: Add file upload component
 - [ ] Frontend: Add image preview in expense detail
 
@@ -41,12 +41,12 @@
 - [ ] Frontend: Handle PDF download
 
 ## Module 4: Payment Reminders
-- [ ] Create database schema for Reminder
-- [ ] Create ReminderService
-- [ ] Create ReminderController
-- [ ] Implement reminder scheduling
+- [x] Create database schema for Reminder
+- [x] Create ReminderService
+- [x] Create ReminderController
+- [x] Implement reminder scheduling
 - [ ] Add email notification integration
-- [ ] Add in-app notification
+- [x] Add in-app notification
 - [ ] Frontend: Reminder settings UI
 
 ## Module 5: Expense Categories Analytics
@@ -80,7 +80,7 @@
 - [ ] Add activity tracking for all actions
 - [ ] Create activity feed endpoint
 - [ ] Frontend: Activity feed component
-- [ ] Frontend: Real-time updates (optional)
+
 
 ## Integration & Testing
 - [ ] Update API endpoints file

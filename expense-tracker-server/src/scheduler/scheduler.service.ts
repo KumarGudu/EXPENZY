@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecurringExpensesService } from '../expenses/recurring-expenses.service';
 
 @Injectable()
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private recurringExpensesService: RecurringExpensesService,
+  ) {}
 
   /**
    * Process recurring expenses - runs daily at 1:00 AM
@@ -17,57 +21,8 @@ export class SchedulerService {
     this.logger.log('Processing recurring expenses...');
 
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // Find all active recurring expenses
-      const recurringExpenses = await this.prisma.expense.findMany({
-        where: {
-          isRecurring: true,
-          deletedAt: null,
-          recurringPattern: {
-            isActive: true,
-            OR: [{ endDate: null }, { endDate: { gte: today } }],
-          },
-        },
-        include: {
-          recurringPattern: true,
-        },
-      });
-
-      let createdCount = 0;
-
-      for (const expense of recurringExpenses) {
-        if (!expense.recurringPattern) continue;
-
-        const pattern = expense.recurringPattern;
-        const shouldCreate = this.shouldCreateRecurringEntry(
-          pattern,
-          expense.expenseDate,
-          today,
-        );
-
-        if (shouldCreate) {
-          // Create new expense entry
-          await this.prisma.expense.create({
-            data: {
-              userId: expense.userId,
-              categoryId: expense.categoryId,
-              amount: expense.amount,
-              currency: expense.currency,
-              description: expense.description,
-              expenseDate: today,
-              paymentMethod: expense.paymentMethod,
-              isRecurring: true,
-              recurringPatternId: expense.recurringPatternId,
-              notes: `Auto-created from recurring pattern`,
-            },
-          });
-
-          createdCount++;
-        }
-      }
-
+      const createdCount =
+        await this.recurringExpensesService.processRecurringExpenses();
       this.logger.log(`Created ${createdCount} recurring expense entries`);
     } catch (error) {
       this.logger.error('Error processing recurring expenses:', error);

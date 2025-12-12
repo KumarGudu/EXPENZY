@@ -361,7 +361,9 @@ export function generateGroupReportHTML(data: {
     
     <h2 class="section-title">Member Balances</h2>
     <div class="balances-section">
-      ${data.memberBalances.map(member => `
+      ${data.memberBalances
+        .map(
+          (member) => `
         <div class="balance-item">
           <div class="balance-color" style="background: ${member.color}"></div>
           <div class="balance-name">${member.name}</div>
@@ -382,7 +384,9 @@ export function generateGroupReportHTML(data: {
             </div>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
     
     <h2 class="section-title">Transaction Details</h2>
@@ -398,7 +402,9 @@ export function generateGroupReportHTML(data: {
         </tr>
       </thead>
       <tbody>
-        ${data.transactions.map(tx => `
+        ${data.transactions
+          .map(
+            (tx) => `
           <tr>
             <td>${tx.index}</td>
             <td>${tx.date}</td>
@@ -407,15 +413,21 @@ export function generateGroupReportHTML(data: {
             <td>${tx.paidBy}</td>
             <td>Rs ${tx.amount.toFixed(1)}</td>
           </tr>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </tbody>
     </table>
     
-    ${data.categoryDistribution.length > 0 ? `
+    ${
+      data.categoryDistribution.length > 0
+        ? `
       <div class="page-break"></div>
       <h2 class="section-title">Category Distribution</h2>
       <div class="category-distribution">
-        ${data.categoryDistribution.map(cat => `
+        ${data.categoryDistribution
+          .map(
+            (cat) => `
           <div class="category-item">
             <div class="category-color" style="background: ${cat.color}"></div>
             <div class="category-name">${cat.category}</div>
@@ -425,9 +437,13 @@ export function generateGroupReportHTML(data: {
             <div class="category-amount">Rs ${cat.amount.toFixed(1)}</div>
             <div class="category-percentage">${cat.percentage.toFixed(1)}%</div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
-    ` : ''}
+    `
+        : ''
+    }
   </div>
 </body>
 </html>

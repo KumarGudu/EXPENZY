@@ -56,12 +56,12 @@ export default function GroupsPage() {
 
                 {/* Overall Balance Summary */}
                 {!isLoading && groups.length > 0 && (
-                    <div className="bg-gradient-to-br from-primary/5 via-background to-primary/5 rounded-xl p-6 border border-border">
+                    <div className="bg-gradient-to-br from-primary/5 via-background to-primary/5 rounded-xl p-4 sm:p-6 border border-border">
                         <div className="text-center">
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
                                 Total across all groups
                             </p>
-                            <p className="text-3xl font-bold">
+                            <p className="text-2xl sm:text-3xl font-bold break-words">
                                 {(() => {
                                     const totalBalance = groupsWithBalances.reduce(
                                         (sum, group) => sum + group.userBalance,
@@ -75,8 +75,8 @@ export default function GroupsPage() {
 
                                     return (
                                         <span className={totalBalance > 0 ? 'text-success' : 'text-destructive'}>
-                                            {totalBalance > 0 ? 'You get back ' : 'You owe '}
-                                            ₹{absAmount.toFixed(2)}
+                                            <span className="block sm:inline">{totalBalance > 0 ? 'You get back' : 'You owe'}</span>
+                                            <span className="block sm:inline sm:ml-1">₹{absAmount.toFixed(2)}</span>
                                         </span>
                                     );
                                 })()}

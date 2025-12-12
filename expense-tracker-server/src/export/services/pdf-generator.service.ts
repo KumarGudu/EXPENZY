@@ -15,9 +15,7 @@ export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
   private readonly uploadsDir = path.join(process.cwd(), 'uploads', 'exports');
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     // Ensure uploads directory exists
     if (!fs.existsSync(this.uploadsDir)) {
       fs.mkdirSync(this.uploadsDir, { recursive: true });
@@ -349,7 +347,10 @@ export class PdfGeneratorService {
       });
 
       // Calculate member balances
-      const balanceMap = new Map<string, { totalSpent: number; totalOwed: number }>();
+      const balanceMap = new Map<
+        string,
+        { totalSpent: number; totalOwed: number }
+      >();
 
       data.expenses.forEach((exp) => {
         // Track what each person paid
@@ -446,10 +447,10 @@ export class PdfGeneratorService {
       };
 
       // Generate HTML using group template
-      const { generateGroupReportHTML } = await import(
+      const groupTemplateModule = (await import(
         path.join(__dirname, '../templates/group-report.template.js')
-      );
-      const html = generateGroupReportHTML(templateData);
+      )) as { generateGroupReportHTML: (data: typeof templateData) => string };
+      const html = groupTemplateModule.generateGroupReportHTML(templateData);
 
       // Launch puppeteer and generate PDF
       const browser = await puppeteer.launch({

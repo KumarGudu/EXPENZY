@@ -26,6 +26,7 @@ import { validationSchema } from './config/env.validation';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { AvatarModule } from './avatar/avatar.module';
 import { ExportModule } from './export/export.module';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ExportModule } from './export/export.module';
       },
     ]),
     PrismaModule,
+    CommonModule,
     AuthModule,
     UsersModule,
     ExpensesModule,
