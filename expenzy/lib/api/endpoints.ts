@@ -141,4 +141,12 @@ export const API_ENDPOINTS = {
 
     // User Settings
     USER_SETTINGS: '/user-settings',
+
+    // Export
+    EXPORT: {
+        GROUP: (groupId: string) => `/export/group/${groupId}`,
+        EXPENSES: '/export/expenses',
+        TRANSACTIONS: '/export/transactions',
+        DOWNLOAD: (filename: string) => `/export/download/${filename}`,
+    },
 } as const;
