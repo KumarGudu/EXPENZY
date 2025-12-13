@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import type { Balance, SimplifiedDebt } from '@/types/split';
@@ -39,5 +39,38 @@ export function useSimplifiedDebts(groupId: string) {
             );
         },
         enabled: !!groupId,
+    });
+}
+
+// Settle a debt
+export function useSettleDebt() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (params: {
+            groupId: string;
+            fromUserId: string;
+            toUserId: string;
+            amount: number;
+            settledAt?: string;
+            notes?: string;
+        }) => {
+            return await apiClient.post(
+                API_ENDPOINTS.GROUPS.SETTLEMENTS(params.groupId),
+                {
+                    fromUserId: params.fromUserId,
+                    toUserId: params.toUserId,
+                    amount: params.amount,
+                    settledAt: params.settledAt,
+                    notes: params.notes,
+                }
+            );
+        },
+        onSuccess: (_, variables) => {
+            // Invalidate relevant queries
+            queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId, 'balances'] });
+            queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId, 'simplified-debts'] });
+            queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId, 'statistics'] });
+        },
     });
 }

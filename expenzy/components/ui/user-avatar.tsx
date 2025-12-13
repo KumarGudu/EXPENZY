@@ -46,11 +46,11 @@ export function UserAvatar({
     return (
         <div className={`rounded-full overflow-hidden ${className}`} style={{ width: size, height: size }}>
             <img
-                src={displayUrl!}
+                src={String(displayUrl!)}
                 alt={`${fallbackName}'s avatar`}
                 width={size}
                 height={size}
-                className="w-full h-full object-cover"
+                className="object-cover"
             />
         </div>
     );

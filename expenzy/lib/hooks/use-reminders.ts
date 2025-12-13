@@ -35,10 +35,9 @@ export function useReminders() {
     return useQuery({
         queryKey: ['reminders'],
         queryFn: async () => {
-            const response = await apiClient.get<Reminder[]>(
+            return await apiClient.get<Reminder[]>(
                 API_ENDPOINTS.REMINDERS.BASE
             );
-            return response.data;
         },
     });
 }
@@ -47,10 +46,9 @@ export function useReminder(id: string) {
     return useQuery({
         queryKey: ['reminder', id],
         queryFn: async () => {
-            const response = await apiClient.get<Reminder>(
+            return await apiClient.get<Reminder>(
                 API_ENDPOINTS.REMINDERS.BY_ID(id)
             );
-            return response.data;
         },
         enabled: !!id,
     });
@@ -61,11 +59,10 @@ export function useCreateReminder() {
 
     return useMutation({
         mutationFn: async (data: CreateReminderInput) => {
-            const response = await apiClient.post<Reminder>(
+            return await apiClient.post<Reminder>(
                 API_ENDPOINTS.REMINDERS.BASE,
                 data
             );
-            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reminders'] });
@@ -78,10 +75,9 @@ export function useMarkReminderAsRead() {
 
     return useMutation({
         mutationFn: async (id: string) => {
-            const response = await apiClient.patch<Reminder>(
+            return await apiClient.patch<Reminder>(
                 API_ENDPOINTS.REMINDERS.MARK_READ(id)
             );
-            return response.data;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['reminders'] });

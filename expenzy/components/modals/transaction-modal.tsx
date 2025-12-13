@@ -9,6 +9,7 @@ import { useKeywordMatcher, CategoryMatch } from '@/lib/categorization/keyword-m
 import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
 import { CategorySelector } from '@/components/shared/category-selector';
 import { FileUpload } from '@/components/shared/file-upload';
+import { useAttachments, type Attachment } from '@/lib/hooks/use-attachments';
 import { useCalculatorInput } from '@/lib/hooks/use-calculator-input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, FileText, Image as ImageIcon, File, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils/cn';
 import type { Expense } from '@/types/expense';
@@ -72,6 +73,10 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
     const [categoryMatches, setCategoryMatches] = useState<CategoryMatch[]>([]);
     const [selectedMatchCategory, setSelectedMatchCategory] = useState<string | null>(null);
     const calculatorInput = useCalculatorInput('');
+
+    // Fetch attachments for existing transaction
+    const entityType = selectedType === 'expense' ? 'expense' : 'income';
+    const { data: attachments = [] } = useAttachments(entityType, transaction?.id || '');
 
     // Auto-detect categories based on description (min 3 chars) with debouncing
     useEffect(() => {
@@ -263,23 +268,15 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                                 placeholder="0.00"
                                 value={calculatorInput.value}
                                 onChange={calculatorInput.handleChange}
-                                className={calculatorInput.result.error ? 'border-destructive pr-20' : 'pr-20'}
+                                className="pr-20"
                             />
                             {calculatorInput.result.isExpression && calculatorInput.result.calculatedValue !== null && (
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-green-600 dark:text-green-400">
                                     = {calculatorInput.result.calculatedValue.toFixed(2)}
                                 </div>
                             )}
-                            {calculatorInput.result.error && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-red-600 dark:text-red-400">
-                                    Invalid
-                                </div>
-                            )}
                         </div>
-                        {calculatorInput.result.error && (
-                            <p className="text-sm text-destructive">{calculatorInput.result.error}</p>
-                        )}
-                        {!calculatorInput.result.error && !calculatorInput.value && errors.amount && (
+                        {!calculatorInput.value && errors.amount && (
                             <p className="text-sm text-destructive">{errors.amount.message}</p>
                         )}
                     </div>
@@ -379,12 +376,52 @@ export function TransactionModal({ open, onClose, mode, transaction }: Transacti
                         </Popover>
                     </div>
 
-                    {/* File Attachments - Only show in edit mode when transaction exists */}
-                    {mode === 'edit' && transaction && (
+                    {/* Attachments Display - Read-only (when viewing existing transaction) */}
+                    {mode === 'edit' && transaction?.id && attachments.length > 0 && (
                         <div className="space-y-2 pt-4 border-t">
                             <Label className="text-sm font-medium">Attachments</Label>
+                            <div className="space-y-1.5">
+                                {attachments.map((attachment: Attachment) => {
+                                    const getFileIcon = () => {
+                                        const type = (attachment.mimeType || '').toLowerCase();
+                                        if (type.includes('image')) return ImageIcon;
+                                        if (type.includes('pdf')) return FileText;
+                                        return File;
+                                    };
+                                    const FileIcon = getFileIcon();
+
+                                    return (
+                                        <a
+                                            key={attachment.id}
+                                            href={attachment.fileUrl}
+                                            download={attachment.fileName}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg hover:bg-muted/40 transition-colors group"
+                                        >
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                <span className="text-sm font-medium truncate">
+                                                    {attachment.fileName}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground flex-shrink-0">
+                                                    ({((attachment.fileSize || 0) / 1024).toFixed(1)} KB)
+                                                </span>
+                                            </div>
+                                            <Download className="h-4 w-4 text-muted-foreground group-hover:text-foreground flex-shrink-0" />
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* File Upload - Only in edit mode */}
+                    {mode === 'edit' && transaction?.id && (
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Upload New Attachment</Label>
                             <FileUpload
-                                entityType={selectedType}
+                                entityType={selectedType === 'expense' ? 'expense' : 'income'}
                                 entityId={transaction.id}
                                 maxSize={10}
                             />

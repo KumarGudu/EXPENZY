@@ -43,7 +43,7 @@ export function useAvatar({ seed, style, enabled = true }: UseAvatarOptions) {
         },
         enabled: enabled && !!seed,
         staleTime: Infinity, // Avatars never change for the same seed
-        cacheTime: 1000 * 60 * 60 * 24, // Cache for 24 hours
+        gcTime: 1000 * 60 * 60 * 24, // Cache for 24 hours (formerly cacheTime)
         retry: 2,
     });
 }

@@ -16,6 +16,7 @@ import { SimplifiedDebtsCard } from '@/components/features/groups/simplified-deb
 import { SettleUpBar } from '@/components/features/groups/settle-up-bar';
 import { GroupStatisticsModal } from '@/components/features/groups/group-statistics-modal';
 import { ExpenseDetailModal } from '@/components/features/groups/expense-detail-modal';
+import { SettleUpModal } from '@/components/features/groups/settle-up-modal';
 import { GroupExportButton } from '@/components/features/groups/group-export-button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
@@ -88,6 +89,7 @@ export default function GroupDetailPage() {
     const [selectedExpense, setSelectedExpense] = useState<GroupExpense | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isStatisticsModalOpen, setIsStatisticsModalOpen] = useState(false);
+    const [isSettleUpModalOpen, setIsSettleUpModalOpen] = useState(false);
 
     // Hide mobile header on mount, restore on unmount (keep bottom nav)
     useEffect(() => {
@@ -282,10 +284,7 @@ export default function GroupDetailPage() {
                 {/* Action Bar - Both Mobile and Desktop at top */}
                 <div className="flex gap-2 py-3 border-b border-border">
                     <Button
-                        onClick={() => {
-                            // TODO: Implement settle up flow
-                            console.log('Settle up clicked');
-                        }}
+                        onClick={() => setIsSettleUpModalOpen(true)}
                         size="sm"
                         variant="default"
                         className="h-9"
@@ -391,6 +390,16 @@ export default function GroupDetailPage() {
                     currentUserId={currentUserId}
                     isMobile={isMobile}
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
+                />
+
+                {/* Settle Up Modal */}
+                <SettleUpModal
+                    isOpen={isSettleUpModalOpen}
+                    onClose={() => setIsSettleUpModalOpen(false)}
+                    groupId={groupId}
+                    debts={simplifiedDebts}
+                    currency={group.currency as 'INR' | 'USD' | 'EUR'}
+                    isMobile={isMobile}
                 />
 
 

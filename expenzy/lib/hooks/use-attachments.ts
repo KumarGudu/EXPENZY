@@ -20,10 +20,9 @@ export function useAttachments(entityType: string, entityId: string) {
     return useQuery({
         queryKey: ['attachments', entityType, entityId],
         queryFn: async () => {
-            const response = await apiClient.get<Attachment[]>(
+            return await apiClient.get<Attachment[]>(
                 API_ENDPOINTS.ATTACHMENTS.BY_ENTITY(entityType, entityId)
             );
-            return response.data;
         },
         enabled: !!entityType && !!entityId,
     });
@@ -54,7 +53,7 @@ export function useUploadAttachment() {
                     },
                 }
             );
-            return response.data;
+            return response;
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
