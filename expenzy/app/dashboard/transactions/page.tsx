@@ -14,7 +14,6 @@ import { PageHeader } from '@/components/layout/page-header';
 import { PageWrapper } from '@/components/layout/page-wrapper';
 import { TransactionExportButton } from '@/components/features/transaction-export-button';
 import { TransactionFiltersComponent, type TransactionFilters } from '@/components/features/transactions/transaction-filters';
-import { TransactionStats } from '@/components/features/transactions/transaction-stats';
 import { useCategories } from '@/lib/hooks/use-categories';
 import { useExpenses } from '@/lib/hooks/use-expenses';
 import { useIncome } from '@/lib/hooks/use-income';
@@ -64,7 +63,7 @@ export default function TransactionsPage() {
             sortOrder?: 'asc' | 'desc';
         } = {
             search: search.trim().length >= 2 ? search.trim() : undefined,
-            sortBy: filters.sortBy === 'date' ? 'expenseDate' : filters.sortBy as any,
+            sortBy: filters.sortBy === 'date' ? 'expenseDate' : (filters.sortBy as 'amount' | 'createdAt' | 'updatedAt'),
             sortOrder: filters.sortOrder,
         };
 
@@ -94,10 +93,10 @@ export default function TransactionsPage() {
 
     // Use infinite queries based on type with enabled option
     const expensesQuery = useInfiniteExpenses(
-        type === 'expense' ? (queryFilters as any) : {},
+        type === 'expense' ? (queryFilters as Record<string, unknown>) : {},
     );
     const incomeQuery = useInfiniteIncome(
-        type === 'income' ? (queryFilters as any) : {},
+        type === 'income' ? (queryFilters as Record<string, unknown>) : {},
     );
 
     const activeQuery = type === 'expense' ? expensesQuery : incomeQuery;
@@ -107,13 +106,13 @@ export default function TransactionsPage() {
         if (!activeQuery.data?.pages) return [];
 
         // Each page has structure: { data: [...], meta: { nextCursor, hasMore, limit } }
-        const items = activeQuery.data.pages.flatMap((page: any) => {
+        const items = activeQuery.data.pages.flatMap((page: { data?: unknown[]; meta?: unknown }) => {
             // Safely extract data array, handle both cursor and offset response formats
             const pageData = page?.data || page || [];
             return Array.isArray(pageData) ? pageData : [];
         });
 
-        return items.map(item => ({ ...item, type } as Transaction));
+        return items.map((item: unknown) => ({ ...(item as object), type } as Transaction));
     }, [activeQuery.data, type]);
 
     // Debug infinite scroll
@@ -124,7 +123,7 @@ export default function TransactionsPage() {
             isFetchingNextPage: activeQuery.isFetchingNextPage,
             pagesCount: activeQuery.data?.pages?.length,
             lastPageMeta: lastPage?.meta,
-            totalItems: activeQuery.data?.pages?.reduce((sum, page: any) => sum + (page?.data?.length || 0), 0),
+            totalItems: activeQuery.data?.pages?.reduce((sum: number, page: { data?: unknown[] }) => sum + (page?.data?.length || 0), 0),
         });
     }, [activeQuery.hasNextPage, activeQuery.isFetchingNextPage, activeQuery.data?.pages]);
 
@@ -305,12 +304,7 @@ export default function TransactionsPage() {
                     )}
                 </ConfirmationModal>
 
-                {/* Stats Widget */}
-                <TransactionStats
-                    expenses={allExpenses}
-                    incomes={allIncomes}
-                    currency="INR"
-                />
+
 
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-4">
