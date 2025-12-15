@@ -12,6 +12,12 @@ import { CreateLoanPaymentDto } from './dto/create-loan-payment.dto';
 import { LoanQueryDto, LoanRole } from './dto/loan-query.dto';
 import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
 import { QueryBuilder } from '../common/utils/query-builder.util';
+import {
+  ConsolidatedLoanResponseDto,
+  GroupLoanDto,
+  LoanStatisticsDto,
+  LoanWithRelations,
+} from './dto/consolidated-loan-response.dto';
 
 @Injectable()
 export class LoansService {
@@ -322,6 +328,301 @@ export class LoansService {
 
       return updatedLoan;
     });
+  }
+
+  /**
+   * Get consolidated view of all loans (direct + group-derived)
+   */
+  async getConsolidatedLoans(userId: string) {
+    // Get direct loans
+    const directLoans = (await this.prisma.loan.findMany({
+      where: {
+        OR: [{ lenderUserId: userId }, { borrowerUserId: userId }],
+        isDeleted: false,
+      },
+      include: {
+        lender: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        borrower: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            color: true,
+          },
+        },
+        _count: {
+          select: {
+            adjustments: true,
+            payments: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    })) as LoanWithRelations[];
+
+    // Get group-derived loans
+    const groupLoans = await this.getGroupDerivedLoans(userId);
+
+    // Calculate statistics
+    const statistics = await this.getLoanStatistics(userId);
+
+    const response = new ConsolidatedLoanResponseDto();
+    response.directLoans = directLoans;
+    response.groupLoans = groupLoans;
+    response.statistics = statistics;
+
+    return response;
+  }
+
+  /**
+   * Create a loan from a group balance
+   */
+  async createLoanFromGroupBalance(
+    groupId: string,
+    lenderUserId: string,
+    borrowerUserId: string,
+    amount: number,
+    description?: string,
+    dueDate?: string,
+  ) {
+    // Verify both users are group members
+    const [lenderMember, borrowerMember] = await Promise.all([
+      this.prisma.groupMember.findFirst({
+        where: { groupId, userId: lenderUserId, inviteStatus: 'accepted' },
+      }),
+      this.prisma.groupMember.findFirst({
+        where: { groupId, userId: borrowerUserId, inviteStatus: 'accepted' },
+      }),
+    ]);
+
+    if (!lenderMember || !borrowerMember) {
+      throw new BadRequestException('Both users must be members of the group');
+    }
+
+    // Get group details for currency
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+    });
+
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
+
+    // Create the loan
+    return this.prisma.loan.create({
+      data: {
+        lenderUserId,
+        borrowerUserId,
+        amount,
+        currency: group.currency,
+        description: description || `Loan from ${group.name} group balance`,
+        loanDate: new Date(),
+        dueDate: dueDate ? new Date(dueDate) : null,
+        amountRemaining: amount,
+        groupId,
+        sourceType: 'group_balance',
+        sourceId: groupId,
+      },
+      include: {
+        lender: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        borrower: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            color: true,
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Get loan statistics for a user
+   */
+  async getLoanStatistics(userId: string) {
+    const [loansLent, loansBorrowed] = await Promise.all([
+      this.prisma.loan.findMany({
+        where: { lenderUserId: userId, isDeleted: false },
+      }),
+      this.prisma.loan.findMany({
+        where: { borrowerUserId: userId, isDeleted: false },
+      }),
+    ]);
+
+    const stats: LoanStatisticsDto = {
+      totalLent: loansLent.reduce((sum, loan) => sum + Number(loan.amount), 0),
+      totalBorrowed: loansBorrowed.reduce(
+        (sum, loan) => sum + Number(loan.amount),
+        0,
+      ),
+      netPosition: 0,
+      totalLentOutstanding: loansLent.reduce(
+        (sum, loan) => sum + Number(loan.amountRemaining),
+        0,
+      ),
+      totalBorrowedOutstanding: loansBorrowed.reduce(
+        (sum, loan) => sum + Number(loan.amountRemaining),
+        0,
+      ),
+      overdueAmount: 0,
+      activeLoansCount: [...loansLent, ...loansBorrowed].filter(
+        (loan) => loan.status === 'active',
+      ).length,
+      groupDebtsCount: 0, // Will be calculated from group balances
+    };
+
+    stats.netPosition =
+      stats.totalLentOutstanding - stats.totalBorrowedOutstanding;
+
+    // Calculate overdue amount
+    const now = new Date();
+    stats.overdueAmount = [...loansLent, ...loansBorrowed]
+      .filter(
+        (loan) =>
+          loan.status === 'active' && loan.dueDate && loan.dueDate < now,
+      )
+      .reduce((sum, loan) => sum + Number(loan.amountRemaining), 0);
+
+    return stats;
+  }
+
+  /**
+   * Get group-derived loans (balances from groups)
+   */
+  async getGroupDerivedLoans(userId: string) {
+    // Get all groups user is a member of
+    const groupMemberships = await this.prisma.groupMember.findMany({
+      where: {
+        userId,
+        inviteStatus: 'accepted',
+      },
+      include: {
+        group: {
+          include: {
+            groupExpenses: {
+              include: {
+                splits: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                        avatarUrl: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const groupLoans: GroupLoanDto[] = [];
+
+    // For each group, calculate balances
+    for (const membership of groupMemberships) {
+      const group = membership.group;
+
+      // Calculate balances using simplified debt algorithm
+      const balances = new Map<string, number>();
+
+      for (const expense of group.groupExpenses) {
+        if (expense.isSettled) continue;
+
+        for (const split of expense.splits) {
+          if (!split.userId) continue;
+
+          const owedAmount =
+            Number(split.amountOwed) - Number(split.amountPaid);
+
+          if (split.userId === userId) {
+            // This user owes money
+            if (expense.paidByUserId && expense.paidByUserId !== userId) {
+              const currentBalance = balances.get(expense.paidByUserId) || 0;
+              balances.set(expense.paidByUserId, currentBalance - owedAmount);
+            }
+          } else if (expense.paidByUserId === userId) {
+            // This user is owed money
+            const currentBalance = balances.get(split.userId) || 0;
+            balances.set(split.userId, currentBalance + owedAmount);
+          }
+        }
+      }
+
+      // Convert balances to GroupLoanDto
+      for (const [otherUserId, balance] of balances.entries()) {
+        if (Math.abs(balance) < 0.01) continue; // Skip negligible balances
+
+        const otherUser = await this.prisma.user.findUnique({
+          where: { id: otherUserId },
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        });
+
+        if (!otherUser) continue;
+
+        groupLoans.push({
+          groupId: group.id,
+          groupName: group.name,
+          groupIcon: group.icon || undefined,
+          groupColor: group.color || undefined,
+          otherUserId: otherUser.id,
+          otherUserName: otherUser.username,
+          otherUserAvatar: otherUser.avatarUrl || otherUser.avatar || undefined,
+          amount: Math.abs(balance),
+          currency: group.currency,
+          type: balance > 0 ? 'owed_to_me' : 'i_owe',
+          canConvertToLoan: true,
+          lastExpenseDate: group.groupExpenses[0]?.expenseDate,
+        });
+      }
+    }
+
+    return groupLoans;
   }
 
   // Note: Invite functionality removed due to schema limitations

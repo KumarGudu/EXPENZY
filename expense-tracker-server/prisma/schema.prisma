@@ -89,6 +89,7 @@ model User {
   groupExpenseHistories             GroupExpenseHistory[]              @relation("GroupExpenseHistoryModifier")
   recurringGroupExpensesCreated     RecurringGroupExpense[]            @relation("RecurringGroupExpenseCreator")
   recurringGroupExpenseParticipants RecurringGroupExpenseParticipant[] @relation("RecurringGroupExpenseParticipant")
+  loanAdjustments                   LoanAdjustment[]                   @relation("LoanAdjustmentCreator")
 
   @@index([email])
   @@index([googleId])
@@ -246,24 +247,41 @@ model SplitParticipant {
 }
 
 model Loan {
-  id              String        @id @default(uuid())
-  lenderUserId    String        @map("lender_user_id")
-  borrowerUserId  String        @map("borrower_user_id")
-  amount          Decimal       @db.Decimal(15, 2)
-  currency        String        @default("USD")
-  interestRate    Decimal?      @default(0) @map("interest_rate") @db.Decimal(5, 2)
+  id              String    @id @default(uuid())
+  lenderUserId    String    @map("lender_user_id")
+  borrowerUserId  String    @map("borrower_user_id")
+  amount          Decimal   @db.Decimal(15, 2)
+  currency        String    @default("USD")
+  interestRate    Decimal?  @default(0) @map("interest_rate") @db.Decimal(5, 2)
   description     String?
-  loanDate        DateTime      @map("loan_date") @db.Date
-  dueDate         DateTime?     @map("due_date") @db.Date
-  status          String        @default("active")
-  amountPaid      Decimal       @default(0) @map("amount_paid") @db.Decimal(15, 2)
-  amountRemaining Decimal       @map("amount_remaining") @db.Decimal(15, 2)
-  paymentTerms    String?       @map("payment_terms")
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-  payments        LoanPayment[]
-  borrower        User          @relation("Borrower", fields: [borrowerUserId], references: [id])
-  lender          User          @relation("Lender", fields: [lenderUserId], references: [id])
+  loanDate        DateTime  @map("loan_date") @db.Date
+  dueDate         DateTime? @map("due_date") @db.Date
+  status          String    @default("active")
+  amountPaid      Decimal   @default(0) @map("amount_paid") @db.Decimal(15, 2)
+  amountRemaining Decimal   @map("amount_remaining") @db.Decimal(15, 2)
+  paymentTerms    String?   @map("payment_terms")
+
+  // Group integration
+  groupId    String? @map("group_id")
+  sourceType String  @default("direct") @map("source_type") // 'direct', 'group_balance', 'settlement'
+  sourceId   String? @map("source_id") // ID of source entity
+
+  // Enhanced payment tracking
+  lastPaymentDate DateTime? @map("last_payment_date")
+
+  // Soft delete
+  isDeleted Boolean   @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payments    LoanPayment[]
+  adjustments LoanAdjustment[]
+  settlements Settlement[]
+  group       Group?           @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  borrower    User             @relation("Borrower", fields: [borrowerUserId], references: [id])
+  lender      User             @relation("Lender", fields: [lenderUserId], references: [id])
 
   @@index([lenderUserId, status])
   @@index([borrowerUserId, status])
@@ -272,6 +290,10 @@ model Loan {
   @@index([lenderUserId, dueDate])
   @@index([borrowerUserId, dueDate])
   @@index([loanDate])
+  @@index([groupId])
+  @@index([sourceType])
+  @@index([lenderUserId, isDeleted])
+  @@index([borrowerUserId, isDeleted])
   @@map("loans")
 }
 
@@ -291,6 +313,28 @@ model LoanPayment {
   @@index([paymentDate(sort: Desc)])
   @@index([loanId, paymentDate(sort: Desc)])
   @@map("loan_payments")
+}
+
+model LoanAdjustment {
+  id             String    @id @default(uuid())
+  loanId         String    @map("loan_id")
+  adjustmentType String    @map("adjustment_type") // 'payment', 'increase', 'decrease', 'waive'
+  amount         Decimal   @db.Decimal(15, 2)
+  currency       String    @default("INR")
+  reason         String?
+  notes          String?
+  paymentMethod  String?   @map("payment_method") // For payment type adjustments
+  paymentDate    DateTime? @map("payment_date") @db.Date // For payment type adjustments
+  createdBy      String    @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  loan    Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  creator User @relation("LoanAdjustmentCreator", fields: [createdBy], references: [id])
+
+  @@index([loanId, createdAt(sort: Desc)])
+  @@index([adjustmentType])
+  @@index([createdBy])
+  @@map("loan_adjustments")
 }
 
 model Budget {
@@ -475,6 +519,7 @@ model Group {
   groupExpenses          GroupExpense[]
   settlements            Settlement[]
   recurringGroupExpenses RecurringGroupExpense[]
+  loans                  Loan[]
 
   @@index([createdByUserId])
   @@index([isActive])
@@ -869,6 +914,9 @@ model Settlement {
   resolvedAt      DateTime? @map("resolved_at")
   resolutionNotes String?   @map("resolution_notes")
 
+  // Loan tracking
+  loanId String? @map("loan_id")
+
   createdAt DateTime @default(now()) @map("created_at")
 
   group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -876,12 +924,14 @@ model Settlement {
   toUser   User  @relation("SettlementTo", fields: [toUserId], references: [id])
   disputer User? @relation("SettlementDisputer", fields: [disputedBy], references: [id])
   resolver User? @relation("SettlementResolver", fields: [resolvedBy], references: [id])
+  loan     Loan? @relation(fields: [loanId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([fromUserId])
   @@index([toUserId])
   @@index([settledAt])
   @@index([status])
+  @@index([loanId])
   @@map("settlements")
 }
 
