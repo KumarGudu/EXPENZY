@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProfile, useChangePassword, useUpdateProfile } from '@/lib/hooks/use-profile';
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings';
 import { useAuth } from '@/contexts/auth-context';
-import { useLayout } from '@/contexts/layout-context';
-import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EditProfileModal } from '@/components/modals/edit-profile-modal';
 import { DeleteAccountModal } from '@/components/modals/delete-account-modal';
@@ -24,7 +22,7 @@ import { PageWrapper } from '@/components/layout/page-wrapper';
 
 export default function ProfilePage() {
     const { logout } = useAuth();
-    const { setLayoutVisibility } = useLayout();
+    // const { setLayoutVisibility } = useLayout(); // Removed
     const { data: user, isLoading: userLoading } = useProfile();
     const { data: settings, isLoading: settingsLoading } = useSettings();
     const updateSettings = useUpdateSettings();
@@ -35,14 +33,6 @@ export default function ProfilePage() {
     const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
-    // Hide mobile navigation on mount, restore on unmount
-    useEffect(() => {
-        setLayoutVisibility({ showMobileHeader: false, showBottomNav: false });
-        return () => {
-            setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
-        };
-    }, [setLayoutVisibility]);
-
     const handleSettingChange = async (key: string, value: string) => {
         await updateSettings.mutateAsync({ [key]: value });
     };
@@ -50,6 +40,7 @@ export default function ProfilePage() {
     const handleToggle = async (key: string, value: boolean) => {
         await updateSettings.mutateAsync({ [key]: value });
     };
+    // ... (rest of handlers unchanged)
 
     const handleCurrencyChange = (currency: string) => {
         updateProfile.mutate({ defaultCurrency: currency as 'USD' | 'EUR' | 'INR' });
@@ -77,25 +68,10 @@ export default function ProfilePage() {
     return (
         <PageWrapper>
             <div className="space-y-6">
-                {/* Mobile Header with Back Button */}
-                <div className="md:hidden sticky top-0 z-10 bg-background border-b px-4 -mx-4">
-                    <div className="flex items-center gap-3 py-4">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.history.back()}
-                            className="h-10 w-10"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                        </Button>
-                        <h1 className="text-lg font-semibold">Profile & Settings</h1>
-                    </div>
-                </div>
-
-                {/* Desktop Header */}
-                <div className="hidden md:block mb-6">
-                    <h1 className="text-3xl md:text-4xl font-bold">Profile & Settings</h1>
-                    <p className="text-muted-foreground mt-1">Manage your account and preferences</p>
+                {/* Responsive Header */}
+                <div className="mb-6">
+                    <h1 className="text-2xl md:text-4xl font-bold">Profile & Settings</h1>
+                    <p className="text-sm md:text-base text-muted-foreground mt-1">Manage your account and preferences</p>
                 </div>
 
                 {/* Profile Header */}
