@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDashboardSummary } from '@/lib/hooks/use-analytics';
 import { useSavingsGoals } from '@/lib/hooks/use-savings';
-import { useUpcomingSubscriptions } from '@/lib/hooks/use-subscriptions';
 import { EmptyState } from '@/components/shared/empty-state';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { GlassCard } from '@/components/shared/glass-card';
@@ -15,7 +14,6 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Target,
-    Calendar,
     Plus,
     TrendingUp,
     ChevronRight,
@@ -28,6 +26,9 @@ import { Progress } from '@/components/ui/progress';
 import { ROUTES } from '@/lib/routes';
 import { TransactionModal } from '@/components/modals/transaction-modal';
 import { PageWrapper } from '@/components/layout/page-wrapper';
+// ... rest of imports
+
+// ... interfaces
 
 // Reusable Stat Card Component
 interface StatCardProps {
@@ -91,7 +92,6 @@ export default function DashboardPage() {
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const { data: dashboard, isLoading: dashboardLoading } = useDashboardSummary({ period: 'month' });
     const { data: savingsGoals = [], isLoading: savingsLoading } = useSavingsGoals();
-    const { data: upcomingSubscriptions = [], isLoading: subscriptionsLoading } = useUpcomingSubscriptions();
 
     if (dashboardLoading) {
         return (
@@ -215,52 +215,6 @@ export default function DashboardPage() {
                                         </div>
                                     );
                                 })}
-                            </div>
-                        )}
-                    </GlassCard>
-
-                    {/* Upcoming Subscriptions Widget */}
-                    <GlassCard padding="md">
-                        <SectionHeader
-                            icon={Calendar}
-                            title="Upcoming Subscriptions"
-                            actionLabel="View All"
-                            onAction={() => router.push(ROUTES.SUBSCRIPTIONS)}
-                        />
-
-                        {subscriptionsLoading ? (
-                            <LoadingSkeleton count={2} />
-                        ) : upcomingSubscriptions.length === 0 ? (
-                            <EmptyState
-                                icon={Calendar}
-                                title="No subscriptions"
-                                description="Add subscriptions to track payments"
-                                action={{
-                                    label: 'Add Subscription',
-                                    onClick: () => { },
-                                }}
-                            />
-                        ) : (
-                            <div className="space-y-2">
-                                {upcomingSubscriptions.slice(0, 5).map((sub) => (
-                                    <div
-                                        key={sub.id}
-                                        className="flex items-center justify-between p-3 lg:p-4 rounded-lg lg:rounded-xl hover:bg-muted/70 backdrop-blur-sm transition-all cursor-pointer group/item"
-                                    >
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                            <div className="w-8 lg:w-10 h-8 lg:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-primary/10">
-                                                <Calendar className="w-4 lg:w-5 h-4 lg:h-5 text-primary" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm lg:text-base font-semibold truncate group-hover/item:text-primary transition-colors">
-                                                    {sub.name}
-                                                </p>
-                                                <p className="text-xs lg:text-sm text-muted-foreground">{formatDate(sub.nextBillingDate)}</p>
-                                            </div>
-                                        </div>
-                                        <p className="font-bold text-sm lg:text-lg ml-2">{formatCurrency(sub.amount)}</p>
-                                    </div>
-                                ))}
                             </div>
                         )}
                     </GlassCard>

@@ -48,7 +48,7 @@ async function main() {
             firstName: 'John',
             lastName: 'Doe',
             phone: '+1234567890',
-            defaultCurrency: 'USD',
+            defaultCurrency: 'INR',
             timezone: 'America/New_York',
             isActive: true,
             isVerified: true,
@@ -66,7 +66,7 @@ async function main() {
             firstName: 'Jane',
             lastName: 'Smith',
             phone: '+1234567891',
-            defaultCurrency: 'USD',
+            defaultCurrency: 'INR',
             timezone: 'America/Los_Angeles',
             isActive: true,
             isVerified: true,
@@ -190,12 +190,13 @@ async function main() {
     // Create Expenses
     console.log('💸 Creating expenses...');
     const expenses = await Promise.all([
+        // Food & Dining
         prisma.expense.create({
             data: {
                 userId: user1.id,
-                categoryId: createdSystemCategories[0].id,
-                amount: 45.5,
-                currency: 'USD',
+                categoryId: createdSystemCategories[0].id, // food
+                amount: 450,
+                currency: 'INR',
                 description: 'Lunch at Italian Restaurant',
                 expenseDate: new Date('2025-11-25'),
                 paymentMethod: 'credit_card',
@@ -204,9 +205,32 @@ async function main() {
         prisma.expense.create({
             data: {
                 userId: user1.id,
-                categoryId: createdSystemCategories[1].id,
-                amount: 25.0,
-                currency: 'USD',
+                categoryId: createdSystemCategories[28].id, // dining_out
+                amount: 850,
+                currency: 'INR',
+                description: 'Dinner with friends',
+                expenseDate: new Date('2025-11-28'),
+                paymentMethod: 'upi',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[2].id, // groceries
+                amount: 2500,
+                currency: 'INR',
+                description: 'Weekly groceries',
+                expenseDate: new Date('2025-11-20'),
+                paymentMethod: 'debit_card',
+            },
+        }),
+        // Transportation
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[25].id, // transport
+                amount: 250,
+                currency: 'INR',
                 description: 'Uber to office',
                 expenseDate: new Date('2025-11-26'),
                 paymentMethod: 'debit_card',
@@ -215,14 +239,152 @@ async function main() {
         prisma.expense.create({
             data: {
                 userId: user1.id,
-                categoryId: createdSystemCategories[4].id,
-                amount: 120.0,
-                currency: 'USD',
+                categoryId: createdSystemCategories[12].id, // fuel
+                amount: 3000,
+                currency: 'INR',
+                description: 'Petrol for car',
+                expenseDate: new Date('2025-11-15'),
+                paymentMethod: 'cash',
+            },
+        }),
+        // Bills & Utilities (Recurring)
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[4].id, // bills
+                amount: 1200,
+                currency: 'INR',
                 description: 'Monthly electricity bill',
                 expenseDate: new Date('2025-11-01'),
                 paymentMethod: 'bank_transfer',
                 isRecurring: true,
                 recurringPatternId: recurringPattern1.id,
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[27].id, // utilities
+                amount: 800,
+                currency: 'INR',
+                description: 'Water bill',
+                expenseDate: new Date('2025-11-05'),
+                paymentMethod: 'upi',
+            },
+        }),
+        // Entertainment & Shopping
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[5].id, // entertainment
+                amount: 600,
+                currency: 'INR',
+                description: 'Movie tickets',
+                expenseDate: new Date('2025-11-22'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[6].id, // shopping
+                amount: 4500,
+                currency: 'INR',
+                description: 'New clothes',
+                expenseDate: new Date('2025-11-18'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[18].id, // electronics
+                amount: 15000,
+                currency: 'INR',
+                description: 'Wireless headphones',
+                expenseDate: new Date('2025-11-10'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        // Health & Fitness
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[7].id, // health
+                amount: 1500,
+                currency: 'INR',
+                description: 'Doctor consultation',
+                expenseDate: new Date('2025-11-12'),
+                paymentMethod: 'cash',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[20].id, // fitness_sports
+                amount: 3000,
+                currency: 'INR',
+                description: 'Gym membership',
+                expenseDate: new Date('2025-11-01'),
+                paymentMethod: 'upi',
+            },
+        }),
+        // Subscriptions & Online Services
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[17].id, // subscriptions
+                amount: 199,
+                currency: 'INR',
+                description: 'Netflix subscription',
+                expenseDate: new Date('2025-11-01'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[29].id, // online_services
+                amount: 299,
+                currency: 'INR',
+                description: 'Spotify Premium',
+                expenseDate: new Date('2025-11-01'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        // Other
+        prisma.expense.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[23].id, // gifts
+                amount: 2000,
+                currency: 'INR',
+                description: 'Birthday gift for friend',
+                expenseDate: new Date('2025-11-16'),
+                paymentMethod: 'upi',
+            },
+        }),
+        // Jane's expenses
+        prisma.expense.create({
+            data: {
+                userId: user2.id,
+                categoryId: createdSystemCategories[0].id, // food
+                amount: 350,
+                currency: 'INR',
+                description: 'Breakfast at cafe',
+                expenseDate: new Date('2025-11-27'),
+                paymentMethod: 'credit_card',
+            },
+        }),
+        prisma.expense.create({
+            data: {
+                userId: user2.id,
+                categoryId: createdSystemCategories[6].id, // shopping
+                amount: 5500,
+                currency: 'INR',
+                description: 'New shoes',
+                expenseDate: new Date('2025-11-19'),
+                paymentMethod: 'debit_card',
             },
         }),
     ]);
@@ -235,7 +397,7 @@ async function main() {
         data: {
             expenseId: expenses[0].id,
             totalAmount: 120.0,
-            currency: 'USD',
+            currency: 'INR',
             splitType: 'equal',
             paidByUserId: user1.id,
             description: 'Team lunch split',
@@ -275,29 +437,62 @@ async function main() {
         data: {
             lenderUserId: user1.id,
             borrowerUserId: user2.id,
-            amount: 500.0,
-            currency: 'USD',
+            amount: 10000,
+            currency: 'INR',
             description: 'Emergency loan',
             loanDate: new Date('2025-11-01'),
             dueDate: new Date('2025-12-31'),
             status: 'active',
-            amountPaid: 200.0,
-            amountRemaining: 300.0,
+            amountPaid: 4000,
+            amountRemaining: 6000,
             interestRate: 0,
         },
     });
 
-    console.log(`✅ Created 1 loan`);
+    const loan2 = await prisma.loan.create({
+        data: {
+            lenderUserId: user2.id,
+            borrowerUserId: user1.id,
+            amount: 5000,
+            currency: 'INR',
+            description: 'Laptop purchase loan',
+            loanDate: new Date('2025-10-15'),
+            dueDate: new Date('2025-12-15'),
+            status: 'paid',
+            amountPaid: 5000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan3 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 15000,
+            currency: 'INR',
+            description: 'Business investment',
+            loanDate: new Date('2025-11-20'),
+            dueDate: new Date('2026-02-20'),
+            status: 'active',
+            amountPaid: 0,
+            amountRemaining: 15000,
+            interestRate: 5,
+        },
+    });
+
+    console.log(`✅ Created 3 loans`);
 
     // Create Loan Adjustments (replaces LoanPayment)
     console.log('💳 Creating loan adjustments...');
     await Promise.all([
+        // Loan 1 adjustments (John lent to Jane)
         prisma.loanAdjustment.create({
             data: {
                 loanId: loan1.id,
                 adjustmentType: 'payment',
-                amount: 100.0,
-                currency: 'USD',
+                amount: 2000,
+                currency: 'INR',
                 paymentDate: new Date('2025-11-10'),
                 paymentMethod: 'bank_transfer',
                 notes: 'First installment',
@@ -308,17 +503,43 @@ async function main() {
             data: {
                 loanId: loan1.id,
                 adjustmentType: 'payment',
-                amount: 100.0,
-                currency: 'USD',
+                amount: 2000,
+                currency: 'INR',
                 paymentDate: new Date('2025-11-20'),
-                paymentMethod: 'cash',
+                paymentMethod: 'upi',
                 notes: 'Second installment',
                 createdBy: user2.id,
             },
         }),
+        // Loan 2 adjustments (Jane lent to John - fully paid)
+        prisma.loanAdjustment.create({
+            data: {
+                loanId: loan2.id,
+                adjustmentType: 'payment',
+                amount: 2500,
+                currency: 'INR',
+                paymentDate: new Date('2025-10-25'),
+                paymentMethod: 'cash',
+                notes: 'First payment',
+                createdBy: user1.id,
+            },
+        }),
+        prisma.loanAdjustment.create({
+            data: {
+                loanId: loan2.id,
+                adjustmentType: 'payment',
+                amount: 2500,
+                currency: 'INR',
+                paymentDate: new Date('2025-11-05'),
+                paymentMethod: 'upi',
+                notes: 'Final payment',
+                createdBy: user1.id,
+            },
+        }),
+        // Loan 3 has no payments yet (new loan)
     ]);
 
-    console.log(`✅ Created 2 loan adjustments`);
+    console.log(`✅ Created 4 loan adjustments`);
 
     // Create Groups
     console.log('👥 Creating groups...');
@@ -455,9 +676,57 @@ async function main() {
         prisma.income.create({
             data: {
                 userId: user1.id,
-                categoryId: createdSystemCategories[9].id, // salary
-                amount: 5000.0,
-                currency: 'USD',
+                categoryId: createdSystemCategories[32].id, // salary
+                amount: 75000,
+                currency: 'INR',
+                source: 'Monthly Salary',
+                description: 'November salary',
+                incomeDate: new Date('2025-11-01'),
+                paymentMethod: 'bank_transfer',
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[32].id, // salary
+                amount: 75000,
+                currency: 'INR',
+                source: 'Monthly Salary',
+                description: 'December salary',
+                incomeDate: new Date('2025-12-01'),
+                paymentMethod: 'bank_transfer',
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[33].id, // freelance
+                amount: 25000,
+                currency: 'INR',
+                source: 'Freelance Project',
+                description: 'Website development project',
+                incomeDate: new Date('2025-11-15'),
+                paymentMethod: 'upi',
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[35].id, // investment
+                amount: 5000,
+                currency: 'INR',
+                source: 'Dividend',
+                description: 'Stock dividend payout',
+                incomeDate: new Date('2025-11-20'),
+                paymentMethod: 'bank_transfer',
+            },
+        }),
+        prisma.income.create({
+            data: {
+                userId: user2.id,
+                categoryId: createdSystemCategories[32].id, // salary
+                amount: 65000,
+                currency: 'INR',
                 source: 'Monthly Salary',
                 description: 'November salary',
                 incomeDate: new Date('2025-11-01'),
@@ -474,18 +743,54 @@ async function main() {
         prisma.budget.create({
             data: {
                 userId: user1.id,
-                categoryId: createdSystemCategories[0].id,
-                amount: 500.0,
-                currency: 'USD',
+                categoryId: createdSystemCategories[0].id, // food
+                amount: 5000,
+                currency: 'INR',
                 periodType: 'monthly',
                 startDate: new Date('2025-11-01'),
                 endDate: new Date('2025-11-30'),
-                spentAmount: 45.5,
+                spentAmount: 1300, // 26% - on track
+            },
+        }),
+        prisma.budget.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[5].id, // entertainment
+                amount: 2000,
+                currency: 'INR',
+                periodType: 'monthly',
+                startDate: new Date('2025-11-01'),
+                endDate: new Date('2025-11-30'),
+                spentAmount: 600, // 30% - on track
+            },
+        }),
+        prisma.budget.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[6].id, // shopping
+                amount: 5000,
+                currency: 'INR',
+                periodType: 'monthly',
+                startDate: new Date('2025-11-01'),
+                endDate: new Date('2025-11-30'),
+                spentAmount: 10000, // 200% - exceeded!
+            },
+        }),
+        prisma.budget.create({
+            data: {
+                userId: user1.id,
+                categoryId: createdSystemCategories[25].id, // transport
+                amount: 4000,
+                currency: 'INR',
+                periodType: 'monthly',
+                startDate: new Date('2025-11-01'),
+                endDate: new Date('2025-11-30'),
+                spentAmount: 3250, // 81% - warning
             },
         }),
     ]);
 
-    console.log(`✅ Created 1 budget`);
+    console.log(`✅ Created 4 budgets`);
 
     // Create Savings Goals
     console.log('🎯 Creating savings goals...');
@@ -497,7 +802,7 @@ async function main() {
                 description: 'Build 6 months emergency fund',
                 targetAmount: 10000.0,
                 currentAmount: 2500.0,
-                currency: 'USD',
+                currency: 'INR',
                 targetDate: new Date('2026-06-01'),
                 priority: 'high',
             },
@@ -513,7 +818,7 @@ async function main() {
             data: {
                 savingsGoalId: savingsGoals[0].id,
                 amount: 500.0,
-                currency: 'USD',
+                currency: 'INR',
                 contributionDate: new Date('2025-11-01'),
                 notes: 'Monthly contribution',
             },

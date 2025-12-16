@@ -69,13 +69,13 @@ export const API_ENDPOINTS = {
         PROGRESS: '/savings/goals/progress',
     },
 
-    // Subscriptions
-    SUBSCRIPTIONS: {
-        BASE: '/subscriptions',
-        BY_ID: (id: string) => `/subscriptions/${id}`,
-        UPCOMING: '/subscriptions/upcoming',
-        SUMMARY: '/subscriptions/summary',
-    },
+    // Subscriptions - REMOVED
+    // SUBSCRIPTIONS: {
+    //     BASE: '/subscriptions',
+    //     BY_ID: (id: string) => `/subscriptions/${id}`,
+    //     UPCOMING: '/subscriptions/upcoming',
+    //     SUMMARY: '/subscriptions/summary',
+    // },
 
     // Tags
     TAGS: {

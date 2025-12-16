@@ -12,8 +12,7 @@ const tabs = [
     { name: 'Loans', route: ROUTES.LOANS, icon: HandCoins },
     // { name: 'Budget', route: ROUTES.BUDGET, icon: Wallet },
     // { name: 'Subscriptions', route: ROUTES.SUBSCRIPTIONS, icon: Calendar },
-
-    { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 },
+    // { name: 'Analytics', route: ROUTES.ANALYTICS, icon: BarChart3 }, // Removed as per request
 ];
 
 interface BottomNavProps {
