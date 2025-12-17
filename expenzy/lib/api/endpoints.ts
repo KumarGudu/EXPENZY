@@ -162,14 +162,6 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) => `/expenses/recurring/${id}`,
     },
 
-    // Attachments
-    ATTACHMENTS: {
-        UPLOAD: '/attachments/upload',
-        BY_ENTITY: (entityType: string, entityId: string) => `/attachments/${entityType}/${entityId}`,
-        DOWNLOAD: (id: string) => `/attachments/file/${id}`,
-        DELETE: (id: string) => `/attachments/${id}`,
-    },
-
     // Reminders
     REMINDERS: {
         BASE: '/reminders',
