@@ -28,7 +28,7 @@ export class LoansService {
   constructor(
     private prisma: PrismaService,
     private balanceCalculationService: BalanceCalculationService,
-  ) {}
+  ) { }
 
   async create(createLoanDto: CreateLoanDto) {
     // Validation: Both lender and borrower user IDs must be provided
@@ -611,8 +611,6 @@ export class LoansService {
 
           // Existing fields
           loanIds: data.loans.map((l) => l.id),
-          activeCount: data.loans.filter((l) => l.status === 'active').length,
-          paidCount: data.loans.filter((l) => l.status === 'paid').length,
           lastLoanDate: data.loans[0]?.loanDate || new Date(),
         };
       })

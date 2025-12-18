@@ -94,8 +94,6 @@ export interface PersonLoanSummary {
 
     // Existing fields
     loanIds: string[];
-    activeCount: number;
-    paidCount: number;
     lastLoanDate: string;
 }
 

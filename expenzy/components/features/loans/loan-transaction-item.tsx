@@ -10,7 +10,6 @@ interface LoanTransactionItemProps {
     amount: number;
     currency: 'INR' | 'USD' | 'EUR';
     isLent: boolean;
-    status?: string;
 }
 
 export function LoanTransactionItem({
@@ -19,7 +18,6 @@ export function LoanTransactionItem({
     amount,
     currency,
     isLent,
-    status,
 }: LoanTransactionItemProps) {
     const loanDate = new Date(date);
     const dayMonth = loanDate.toLocaleDateString('en-US', {
@@ -28,13 +26,13 @@ export function LoanTransactionItem({
     });
 
     return (
-        <div className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-4 px-4 transition-colors border-b border-border/50 last:border-0">
+        <div className="flex items-center gap-3 py-3 px-4 hover:bg-muted/30 transition-colors border-b border-border/40 last:border-0">
             {/* Date */}
-            <div className="flex flex-col items-center w-10 flex-shrink-0">
-                <span className="text-xs text-muted-foreground">
+            <div className="flex flex-col items-center w-12 flex-shrink-0">
+                <span className="text-xs text-muted-foreground font-medium">
                     {dayMonth.split(' ')[0]}
                 </span>
-                <span className="text-base font-semibold">
+                <span className="text-lg font-bold">
                     {dayMonth.split(' ')[1]}
                 </span>
             </div>
@@ -42,33 +40,32 @@ export function LoanTransactionItem({
             {/* Icon */}
             <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                 </div>
             </div>
 
-            {/* Description */}
+            {/* Description & Amount */}
             <div className="flex-1 min-w-0">
-                <p className="font-medium truncate text-sm">
-                    {description || (isLent ? 'Loan given' : 'Loan received')}
-                </p>
-                {status && (
-                    <p className="text-xs text-muted-foreground">
-                        {status === 'active' ? 'Active' : 'Paid'} • {currency}
-                    </p>
-                )}
-            </div>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm">
+                            {description || (isLent ? 'Loan given' : 'Loan received')}
+                        </p>
+                    </div>
 
-            {/* Amount */}
-            <div className="text-right flex-shrink-0">
-                <p className="text-xs text-muted-foreground mb-0.5">
-                    {isLent ? 'you lent' : 'you borrowed'}
-                </p>
-                <p className={cn(
-                    'text-sm font-semibold',
-                    isLent ? 'text-green-600' : 'text-red-600'
-                )}>
-                    {formatCurrency(amount, currency)}
-                </p>
+                    {/* Amount */}
+                    <div className="text-right flex-shrink-0">
+                        <p className={cn(
+                            'text-base font-bold whitespace-nowrap',
+                            isLent ? 'text-green-600' : 'text-red-600'
+                        )}>
+                            {formatCurrency(amount, currency)}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            {isLent ? 'you lent' : 'borrowed'}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );

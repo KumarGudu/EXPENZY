@@ -77,7 +77,7 @@ export default function PersonLoansPage() {
     const personSummary = consolidatedData?.personSummaries?.find(p => p.personId === personId);
 
     // Flatten all pages of loans
-    const allLoans = loansData?.pages.flatMap(page => page.data) || [];
+    const allLoans = loansData?.pages?.flatMap((page: any) => page.data) || [];
     const currentUserId = profile?.id || '';
 
     if (!personSummary && allLoans.length === 0) {
@@ -108,114 +108,124 @@ export default function PersonLoansPage() {
 
     return (
         <PageWrapper>
-            <div className="space-y-4 pb-20">
+            <div className="pb-20">
                 {/* Mobile Back Button */}
-                <div className="md:hidden -mx-4 px-4 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+                <div className="md:hidden -mx-4 px-4 py-3 border-b bg-background sticky top-0 z-10">
                     <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => router.back()}
-                        className="gap-2"
+                        className="gap-2 -ml-2"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back
                     </Button>
                 </div>
 
-                {/* Person Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-12 w-12">
+                {/* Person Header - Mobile Optimized */}
+                <div className="px-4 md:px-0 py-4 space-y-4">
+                    <div className="flex items-start gap-3">
+                        <Avatar className="h-14 w-14 flex-shrink-0">
                             <AvatarImage src={person.avatarUrl || undefined} />
-                            <AvatarFallback>
+                            <AvatarFallback className="text-lg">
                                 {person.username?.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
-                        <div>
-                            <h1 className="text-xl font-bold">{person.username}</h1>
-                            <p className="text-sm text-muted-foreground">
-                                {personSummary?.activeCount || 0} active • {personSummary?.paidCount || 0} paid
-                            </p>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xs text-muted-foreground mb-1">
-                            {isLent ? 'They owe you' : 'You owe them'}
-                        </p>
-                        <p className={cn(
-                            'text-2xl font-bold',
-                            isLent ? 'text-foreground' : 'text-foreground'
-                        )}>
-                            {formatCurrency(Math.abs(netAmount), 'INR')}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Breakdown Card */}
-                {personSummary && (directAmount !== 0 || groupAmount !== 0) && (
-                    <Card className="p-4">
-                        <h3 className="text-sm font-semibold mb-3">Breakdown</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <p className="text-xs text-muted-foreground mb-1">Direct Loans</p>
-                                <p className="text-lg font-semibold">
-                                    {formatCurrency(Math.abs(directAmount), 'INR')}
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-xl font-bold truncate">{person.username}</h1>
+                            <div className="mt-2">
+                                <p className="text-xs text-muted-foreground">
+                                    {isLent ? 'They owe you' : 'You owe them'}
                                 </p>
-                            </div>
-                            <div>
-                                <p className="text-xs text-muted-foreground mb-1">Group Balances</p>
-                                <p className="text-lg font-semibold">
-                                    {formatCurrency(Math.abs(groupAmount), 'INR')}
+                                <p className="text-2xl font-bold mt-0.5">
+                                    {formatCurrency(Math.abs(netAmount), 'INR')}
                                 </p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Group Details */}
-                        {personSummary.groupDetails && personSummary.groupDetails.length > 0 && (
-                            <div className="mt-4 pt-4 border-t">
-                                <p className="text-xs text-muted-foreground mb-2">From Groups:</p>
-                                <div className="space-y-1">
+                    {/* Breakdown - Simplified for Mobile */}
+                    {personSummary && (directAmount !== 0 || groupAmount !== 0) && (
+                        <div className="space-y-2">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Breakdown</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Direct</p>
+                                    <p className="text-base font-semibold">
+                                        {formatCurrency(Math.abs(directAmount), 'INR')}
+                                    </p>
+                                </div>
+                                <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Groups</p>
+                                    <p className="text-base font-semibold">
+                                        {formatCurrency(Math.abs(groupAmount), 'INR')}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Group Details - Compact */}
+                            {personSummary.groupDetails && personSummary.groupDetails.length > 0 && (
+                                <div className="pt-2 space-y-1.5">
                                     {personSummary.groupDetails.map((group) => (
-                                        <div key={group.groupId} className="flex justify-between text-sm">
-                                            <span className="text-muted-foreground">{group.groupName}</span>
-                                            <span className="font-medium">
+                                        <div key={group.groupId} className="flex items-center justify-between text-sm py-1">
+                                            <span className="text-muted-foreground text-xs">{group.groupName}</span>
+                                            <span className="font-medium text-sm">
                                                 {formatCurrency(Math.abs(group.amount), 'INR')}
                                             </span>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </Card>
-                )}
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* All Transactions */}
-                <div className="space-y-0">
-                    <h3 className="text-base font-semibold mb-3 px-4 md:px-0">All Transactions</h3>
+                <div className="mt-2">
+                    <h3 className="text-sm font-semibold mb-2 px-4 md:px-0 text-muted-foreground uppercase tracking-wide">All Transactions</h3>
 
                     {allLoans.length === 0 ? (
-                        <div className="text-center py-12 text-muted-foreground">
+                        <div className="text-center py-12 text-muted-foreground px-4">
                             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <p className="font-medium">No transactions yet</p>
                         </div>
                     ) : (
                         <div className="space-y-0">
-                            {allLoans.map((loan) => {
+                            {allLoans.reduce((acc: React.ReactElement[], loan, index) => {
                                 const isLender = loan.lenderUserId === currentUserId;
                                 const amount = parseFloat(loan.amount);
+                                const loanDate = new Date(loan.loanDate);
+                                const year = loanDate.getFullYear();
 
-                                return (
+                                // Check if we need to add a year header
+                                const prevLoan = index > 0 ? allLoans[index - 1] : null;
+                                const prevYear = prevLoan ? new Date(prevLoan.loanDate).getFullYear() : null;
+
+                                if (year !== prevYear) {
+                                    // Add year header
+                                    acc.push(
+                                        <div key={`year-${year}`} className="px-4 py-3 bg-muted/20 border-y border-border/40">
+                                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                {year}
+                                            </p>
+                                        </div>
+                                    );
+                                }
+
+                                // Add transaction
+                                acc.push(
                                     <LoanTransactionItem
                                         key={loan.id}
-                                        date={new Date(loan.loanDate)}
+                                        date={loanDate}
                                         description={loan.description || ''}
                                         amount={amount}
                                         currency={loan.currency as 'INR' | 'USD' | 'EUR'}
                                         isLent={isLender}
-                                        status={loan.status}
                                     />
                                 );
-                            })}
+
+                                return acc;
+                            }, [])}
 
                             {/* Infinite scroll trigger */}
                             <div ref={observerTarget} className="h-4" />

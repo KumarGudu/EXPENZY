@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 
 interface PersonLoan {
     id: string;
@@ -38,19 +38,20 @@ interface PersonLoansResponse {
 export function usePersonLoans(personId: string) {
     return useInfiniteQuery<PersonLoansResponse>({
         queryKey: ['person-loans', personId],
-        queryFn: async ({ pageParam }) => {
+        queryFn: async ({ pageParam }): Promise<PersonLoansResponse> => {
             const params = new URLSearchParams();
             params.append('limit', '50');
             if (pageParam) {
                 params.append('cursor', pageParam as string);
             }
 
-            const response = await api.get<PersonLoansResponse>(
+            // Use getRaw to get the full response object
+            const response = await apiClient.getRaw<PersonLoansResponse>(
                 `/loans/person/${personId}?${params.toString()}`
             );
-            return response.data;
+            return response;
         },
-        getNextPageParam: (lastPage) => lastPage.meta.nextCursor,
+        getNextPageParam: (lastPage) => lastPage.meta?.nextCursor ?? null,
         initialPageParam: undefined,
     });
 }
