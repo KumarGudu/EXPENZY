@@ -2,7 +2,9 @@
 
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useConsolidatedLoans } from '@/lib/hooks/use-loans';
+import { useLayout } from '@/contexts/layout-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { PageWrapper } from '@/components/layout/page-wrapper';
@@ -19,6 +21,15 @@ export default function PersonLoansPage() {
     const params = useParams();
     const personId = params.personId as string;
     const { data, isLoading } = useConsolidatedLoans();
+    const { setLayoutVisibility } = useLayout();
+
+    // Hide mobile header on mount, restore on unmount (keep bottom nav)
+    useEffect(() => {
+        setLayoutVisibility({ showMobileHeader: false, showBottomNav: true });
+        return () => {
+            setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
+        };
+    }, [setLayoutVisibility]);
 
     if (isLoading) {
         return (
@@ -28,6 +39,9 @@ export default function PersonLoansPage() {
         );
     }
 
+    // Get person summary from consolidated data
+    const personSummary = data?.personSummaries?.find(p => p.personId === personId);
+
     // Get all loans for this person
     const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '';
     const personLoans = data?.directLoans?.filter(
@@ -36,7 +50,7 @@ export default function PersonLoansPage() {
             (loan.borrowerUserId === personId && loan.lenderUserId === currentUserId)
     ) || [];
 
-    if (personLoans.length === 0) {
+    if (!personSummary && personLoans.length === 0) {
         return (
             <PageWrapper>
                 <EmptyState
@@ -52,156 +66,179 @@ export default function PersonLoansPage() {
         );
     }
 
-    // Get person info from first loan
-    const firstLoan = personLoans[0];
-    const person = firstLoan.lenderUserId === personId ? firstLoan.lender : firstLoan.borrower;
+    // Get person info from summary or first loan
+    const person = personSummary
+        ? { username: personSummary.personName, avatarUrl: personSummary.personAvatar, avatar: null }
+        : (personLoans[0]?.lenderUserId === personId ? personLoans[0].lender : personLoans[0].borrower);
 
-    // Calculate summary
-    let totalLent = 0;
-    let totalBorrowed = 0;
-    let activeCount = 0;
-    let paidCount = 0;
-
-    personLoans.forEach((loan) => {
-        if (loan.status === 'active') activeCount++;
-        if (loan.status === 'paid') paidCount++;
-
-        const isLender = loan.lenderUserId === currentUserId;
-        const remaining = parseFloat(loan.amountRemaining);
-
-        if (isLender) {
-            totalLent += remaining;
-        } else {
-            totalBorrowed += remaining;
-        }
-    });
-
-    const netAmount = totalLent - totalBorrowed;
-    const isLent = netAmount >= 0;
+    const netAmount = personSummary?.totalAmount || 0;
+    const isLent = personSummary?.loanType === 'lent';
+    const directAmount = personSummary?.directLoanAmount || 0;
+    const groupAmount = personSummary?.groupBalanceAmount || 0;
 
     return (
         <PageWrapper>
             <div className="space-y-6">
-                {/* Back Button */}
+                {/* Back Button - Hidden on mobile */}
                 <Button
                     variant="ghost"
                     onClick={() => router.back()}
-                    className="mb-4"
+                    className="mb-4 hidden lg:flex"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back to Loans
                 </Button>
 
-                {/* Person Header */}
-                <Card className="p-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <Avatar className="h-16 w-16">
+                {/* Person Header with Breakdown */}
+                <Card className="p-4 md:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3 md:gap-4">
+                            <Avatar className="h-12 w-12 md:h-16 md:w-16">
                                 <AvatarImage
                                     src={person.avatarUrl || person.avatar || undefined}
                                     alt={person.username}
                                 />
-                                <AvatarFallback className="text-lg">
+                                <AvatarFallback className="text-base md:text-lg">
                                     {person.username.slice(0, 2).toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                             <div>
-                                <h2 className="text-2xl font-bold">{person.username}</h2>
-                                <p className="text-sm text-muted-foreground">
-                                    {activeCount} active • {paidCount} paid
+                                <h2 className="text-xl md:text-2xl font-bold">{person.username}</h2>
+                                <p className="text-xs md:text-sm text-muted-foreground">
+                                    {personSummary?.activeCount || 0} active • {personSummary?.paidCount || 0} paid
                                 </p>
                             </div>
                         </div>
                         <div className="text-right">
                             <p className={cn(
-                                'text-3xl font-bold',
+                                'text-2xl md:text-3xl font-bold',
                                 isLent ? 'text-green-600' : 'text-red-600'
                             )}>
                                 {formatCurrency(Math.abs(netAmount))}
                             </p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs md:text-sm text-muted-foreground">
                                 {isLent ? 'They owe you' : 'You owe them'}
                             </p>
                         </div>
                     </div>
+
+                    {/* Breakdown */}
+                    {personSummary && (directAmount !== 0 || groupAmount !== 0) && (
+                        <div className="pt-4 border-t border-border">
+                            <p className="text-xs text-muted-foreground mb-2">Breakdown</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Direct Loans</p>
+                                    <p className={cn(
+                                        "text-base font-semibold",
+                                        directAmount >= 0 ? 'text-green-600' : 'text-red-600'
+                                    )}>
+                                        {formatCurrency(Math.abs(directAmount))}
+                                    </p>
+                                </div>
+                                <div className="bg-muted/30 rounded-lg p-3">
+                                    <p className="text-xs text-muted-foreground mb-1">Group Balances</p>
+                                    <p className={cn(
+                                        "text-base font-semibold",
+                                        groupAmount >= 0 ? 'text-green-600' : 'text-red-600'
+                                    )}>
+                                        {formatCurrency(Math.abs(groupAmount))}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Group Details */}
+                            {personSummary.groupDetails && personSummary.groupDetails.length > 0 && (
+                                <div className="mt-3">
+                                    <p className="text-xs text-muted-foreground mb-2">From Groups:</p>
+                                    <div className="space-y-1">
+                                        {personSummary.groupDetails.map((group) => (
+                                            <div key={group.groupId} className="flex justify-between text-sm">
+                                                <span className="text-muted-foreground">{group.groupName}</span>
+                                                <span className={cn(
+                                                    "font-medium",
+                                                    group.amount >= 0 ? 'text-green-600' : 'text-red-600'
+                                                )}>
+                                                    {formatCurrency(Math.abs(group.amount))}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </Card>
 
-                {/* Individual Loans */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">All Loans</h3>
-                    {personLoans.map((loan) => {
-                        const isLender = loan.lenderUserId === currentUserId;
-                        const amount = parseFloat(loan.amount);
-                        const remaining = parseFloat(loan.amountRemaining);
-                        const loanDate = new Date(loan.loanDate).toLocaleDateString();
+                {/* All Transactions */}
+                <div className="space-y-0">
+                    <h3 className="text-base font-semibold mb-3 px-4 md:px-0">All Transactions</h3>
 
-                        return (
-                            <Card
-                                key={loan.id}
-                                className={cn(
-                                    'p-4 border-l-4',
-                                    isLender ? 'border-l-green-500' : 'border-l-red-500'
-                                )}
-                            >
-                                <div className="space-y-3">
-                                    {/* Header */}
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            {loan.description && (
-                                                <p className="font-semibold text-base mb-1">
-                                                    {loan.description}
-                                                </p>
-                                            )}
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{loanDate}</span>
+                    {personLoans.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p className="font-medium">No transactions yet</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-0">
+                            {personLoans.map((loan) => {
+                                const isLender = loan.lenderUserId === currentUserId;
+                                const amount = parseFloat(loan.amount);
+                                const loanDate = new Date(loan.loanDate);
+                                const dayMonth = loanDate.toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: '2-digit'
+                                });
+
+                                return (
+                                    <div
+                                        key={loan.id}
+                                        className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-4 px-4 transition-colors border-b border-border/50 last:border-0"
+                                    >
+                                        {/* Date */}
+                                        <div className="flex flex-col items-center w-10 flex-shrink-0">
+                                            <span className="text-xs text-muted-foreground">
+                                                {dayMonth.split(' ')[0]}
+                                            </span>
+                                            <span className="text-base font-semibold">
+                                                {dayMonth.split(' ')[1]}
+                                            </span>
+                                        </div>
+
+                                        {/* Icon */}
+                                        <div className="flex-shrink-0">
+                                            <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center">
+                                                <Calendar className="h-5 w-5 text-muted-foreground" />
                                             </div>
                                         </div>
-                                        <Badge
-                                            className={cn(
-                                                loan.status === 'active' && 'bg-yellow-500',
-                                                loan.status === 'paid' && 'bg-green-500'
-                                            )}
-                                        >
-                                            {loan.status === 'active' ? 'Active' : 'Paid'}
-                                        </Badge>
-                                    </div>
 
-                                    {/* Amount */}
-                                    <div className="flex items-baseline justify-between">
-                                        <div>
+                                        {/* Description */}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate text-sm">
+                                                {loan.description || (isLender ? 'Loan given' : 'Loan received')}
+                                            </p>
                                             <p className="text-xs text-muted-foreground">
-                                                {isLender ? 'You lent' : 'You borrowed'}
+                                                {loan.status === 'active' ? 'Active' : 'Paid'} • {loan.currency}
+                                            </p>
+                                        </div>
+
+                                        {/* Amount */}
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                {isLender ? 'you lent' : 'you borrowed'}
                                             </p>
                                             <p className={cn(
-                                                'text-xl font-bold',
+                                                'text-sm font-semibold',
                                                 isLender ? 'text-green-600' : 'text-red-600'
                                             )}>
                                                 {formatCurrency(amount, loan.currency as 'INR' | 'USD' | 'EUR')}
                                             </p>
                                         </div>
-                                        {loan.status === 'active' && remaining > 0 && (
-                                            <div className="text-right">
-                                                <p className="text-xs text-muted-foreground">Remaining</p>
-                                                <p className="text-lg font-semibold">
-                                                    {formatCurrency(remaining, loan.currency as 'INR' | 'USD' | 'EUR')}
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
-
-                                    {/* Group Badge */}
-                                    {loan.group && (
-                                        <div className="pt-2 border-t">
-                                            <Badge variant="outline" className="text-xs">
-                                                {loan.group.icon} {loan.group.name}
-                                            </Badge>
-                                        </div>
-                                    )}
-                                </div>
-                            </Card>
-                        );
-                    })}
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </PageWrapper>

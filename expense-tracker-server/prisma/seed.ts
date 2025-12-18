@@ -714,8 +714,10 @@ async function main() {
 
     console.log(`✅ Created 2 split participants`);
 
-    // Create Loans
+    // Create Loans - Multiple transactions per person
     console.log('💵 Creating loans...');
+
+    // Loans with Jane Smith (user2) - 6 transactions
     const loan1 = await prisma.loan.create({
         data: {
             lenderUserId: user1.id,
@@ -751,6 +753,71 @@ async function main() {
     const loan3 = await prisma.loan.create({
         data: {
             lenderUserId: user1.id,
+            borrowerUserId: user2.id,
+            amount: 3000,
+            currency: 'INR',
+            description: 'Phone purchase',
+            loanDate: new Date('2025-08-20'),
+            dueDate: new Date('2025-10-20'),
+            status: 'paid',
+            amountPaid: 3000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan4 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user2.id,
+            amount: 7500,
+            currency: 'INR',
+            description: 'Vacation advance',
+            loanDate: new Date('2025-07-10'),
+            dueDate: new Date('2025-12-10'),
+            status: 'active',
+            amountPaid: 3500,
+            amountRemaining: 4000,
+            interestRate: 0,
+        },
+    });
+
+    const loan5 = await prisma.loan.create({
+        data: {
+            lenderUserId: user2.id,
+            borrowerUserId: user1.id,
+            amount: 2000,
+            currency: 'INR',
+            description: 'Dinner split',
+            loanDate: new Date('2025-09-05'),
+            dueDate: new Date('2025-11-05'),
+            status: 'paid',
+            amountPaid: 2000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan6 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user2.id,
+            amount: 4500,
+            currency: 'INR',
+            description: 'Bike repair',
+            loanDate: new Date('2025-06-15'),
+            dueDate: new Date('2025-09-15'),
+            status: 'paid',
+            amountPaid: 4500,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    // Loans with Bob Wilson (user3) - 9 transactions
+    const loan7 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
             borrowerUserId: user3.id,
             amount: 15000,
             currency: 'INR',
@@ -764,7 +831,135 @@ async function main() {
         },
     });
 
-    console.log(`✅ Created 3 loans`);
+    const loan8 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 5000,
+            currency: 'INR',
+            description: 'Car repair help',
+            loanDate: new Date('2025-10-05'),
+            dueDate: new Date('2025-12-05'),
+            status: 'active',
+            amountPaid: 2000,
+            amountRemaining: 3000,
+            interestRate: 0,
+        },
+    });
+
+    const loan9 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 8000,
+            currency: 'INR',
+            description: 'Medical expenses',
+            loanDate: new Date('2025-09-15'),
+            dueDate: new Date('2025-11-15'),
+            status: 'paid',
+            amountPaid: 8000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan10 = await prisma.loan.create({
+        data: {
+            lenderUserId: user3.id,
+            borrowerUserId: user1.id,
+            amount: 3500,
+            currency: 'INR',
+            description: 'Concert tickets',
+            loanDate: new Date('2025-08-10'),
+            dueDate: new Date('2025-10-10'),
+            status: 'paid',
+            amountPaid: 3500,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan11 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 6000,
+            currency: 'INR',
+            description: 'Laptop upgrade',
+            loanDate: new Date('2025-07-20'),
+            dueDate: new Date('2025-10-20'),
+            status: 'paid',
+            amountPaid: 6000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan12 = await prisma.loan.create({
+        data: {
+            lenderUserId: user3.id,
+            borrowerUserId: user1.id,
+            amount: 2500,
+            currency: 'INR',
+            description: 'Gym membership',
+            loanDate: new Date('2025-06-25'),
+            dueDate: new Date('2025-09-25'),
+            status: 'paid',
+            amountPaid: 2500,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan13 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 4000,
+            currency: 'INR',
+            description: 'Furniture purchase',
+            loanDate: new Date('2025-05-15'),
+            dueDate: new Date('2025-08-15'),
+            status: 'paid',
+            amountPaid: 4000,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    const loan14 = await prisma.loan.create({
+        data: {
+            lenderUserId: user1.id,
+            borrowerUserId: user3.id,
+            amount: 9000,
+            currency: 'INR',
+            description: 'House deposit',
+            loanDate: new Date('2025-04-10'),
+            dueDate: new Date('2025-12-10'),
+            status: 'active',
+            amountPaid: 4000,
+            amountRemaining: 5000,
+            interestRate: 0,
+        },
+    });
+
+    const loan15 = await prisma.loan.create({
+        data: {
+            lenderUserId: user3.id,
+            borrowerUserId: user1.id,
+            amount: 1500,
+            currency: 'INR',
+            description: 'Book purchase',
+            loanDate: new Date('2025-03-20'),
+            dueDate: new Date('2025-06-20'),
+            status: 'paid',
+            amountPaid: 1500,
+            amountRemaining: 0,
+            interestRate: 0,
+        },
+    });
+
+    console.log(`✅ Created 15 loans`);
 
     // Create Loan Adjustments (replaces LoanPayment)
     console.log('💳 Creating loan adjustments...');
