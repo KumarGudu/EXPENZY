@@ -2,8 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useConsolidatedLoans } from '@/lib/hooks/use-loans';
+import { usePersonLoans } from '@/lib/hooks/use-person-loans';
+import { useProfile } from '@/lib/hooks/use-profile';
 import { useLayout } from '@/contexts/layout-context';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,17 +13,26 @@ import { PageWrapper } from '@/components/layout/page-wrapper';
 import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { LoanTransactionItem } from '@/components/features/loans/loan-transaction-item';
 import { formatCurrency } from '@/lib/utils/format';
-import { ArrowLeft, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function PersonLoansPage() {
     const router = useRouter();
     const params = useParams();
     const personId = params.personId as string;
-    const { data, isLoading } = useConsolidatedLoans();
+    const { data: consolidatedData } = useConsolidatedLoans();
+    const { data: profile } = useProfile();
+    const {
+        data: loansData,
+        isLoading,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage
+    } = usePersonLoans(personId);
     const { setLayoutVisibility } = useLayout();
+    const observerTarget = useRef<HTMLDivElement>(null);
 
     // Hide mobile header on mount, restore on unmount (keep bottom nav)
     useEffect(() => {
@@ -30,6 +41,29 @@ export default function PersonLoansPage() {
             setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
         };
     }, [setLayoutVisibility]);
+
+    // Infinite scroll observer
+    const handleObserver = useCallback(
+        (entries: IntersectionObserverEntry[]) => {
+            const [target] = entries;
+            if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+            }
+        },
+        [fetchNextPage, hasNextPage, isFetchingNextPage]
+    );
+
+    useEffect(() => {
+        const element = observerTarget.current;
+        if (!element) return;
+
+        const observer = new IntersectionObserver(handleObserver, {
+            threshold: 0.1,
+        });
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [handleObserver]);
 
     if (isLoading) {
         return (
@@ -40,17 +74,13 @@ export default function PersonLoansPage() {
     }
 
     // Get person summary from consolidated data
-    const personSummary = data?.personSummaries?.find(p => p.personId === personId);
+    const personSummary = consolidatedData?.personSummaries?.find(p => p.personId === personId);
 
-    // Get all loans for this person
-    const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || '' : '';
-    const personLoans = data?.directLoans?.filter(
-        (loan) =>
-            (loan.lenderUserId === personId && loan.borrowerUserId === currentUserId) ||
-            (loan.borrowerUserId === personId && loan.lenderUserId === currentUserId)
-    ) || [];
+    // Flatten all pages of loans
+    const allLoans = loansData?.pages.flatMap(page => page.data) || [];
+    const currentUserId = profile?.id || '';
 
-    if (!personSummary && personLoans.length === 0) {
+    if (!personSummary && allLoans.length === 0) {
         return (
             <PageWrapper>
                 <EmptyState
@@ -69,7 +99,7 @@ export default function PersonLoansPage() {
     // Get person info from summary or first loan
     const person = personSummary
         ? { username: personSummary.personName, avatarUrl: personSummary.personAvatar, avatar: null }
-        : (personLoans[0]?.lenderUserId === personId ? personLoans[0].lender : personLoans[0].borrower);
+        : (allLoans[0]?.lenderUserId === personId ? allLoans[0].lender : allLoans[0].borrower);
 
     const netAmount = personSummary?.totalAmount || 0;
     const isLent = personSummary?.loanType === 'lent';
@@ -78,165 +108,124 @@ export default function PersonLoansPage() {
 
     return (
         <PageWrapper>
-            <div className="space-y-6">
-                {/* Back Button - Hidden on mobile */}
-                <Button
-                    variant="ghost"
-                    onClick={() => router.back()}
-                    className="mb-4 hidden lg:flex"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Loans
-                </Button>
+            <div className="space-y-4 pb-20">
+                {/* Mobile Back Button */}
+                <div className="md:hidden -mx-4 px-4 py-3 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.back()}
+                        className="gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        Back
+                    </Button>
+                </div>
 
-                {/* Person Header with Breakdown */}
-                <Card className="p-4 md:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3 md:gap-4">
-                            <Avatar className="h-12 w-12 md:h-16 md:w-16">
-                                <AvatarImage
-                                    src={person.avatarUrl || person.avatar || undefined}
-                                    alt={person.username}
-                                />
-                                <AvatarFallback className="text-base md:text-lg">
-                                    {person.username.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <h2 className="text-xl md:text-2xl font-bold">{person.username}</h2>
-                                <p className="text-xs md:text-sm text-muted-foreground">
-                                    {personSummary?.activeCount || 0} active • {personSummary?.paidCount || 0} paid
-                                </p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p className={cn(
-                                'text-2xl md:text-3xl font-bold',
-                                isLent ? 'text-green-600' : 'text-red-600'
-                            )}>
-                                {formatCurrency(Math.abs(netAmount))}
-                            </p>
-                            <p className="text-xs md:text-sm text-muted-foreground">
-                                {isLent ? 'They owe you' : 'You owe them'}
+                {/* Person Header */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={person.avatarUrl || undefined} />
+                            <AvatarFallback>
+                                {person.username?.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <h1 className="text-xl font-bold">{person.username}</h1>
+                            <p className="text-sm text-muted-foreground">
+                                {personSummary?.activeCount || 0} active • {personSummary?.paidCount || 0} paid
                             </p>
                         </div>
                     </div>
+                    <div className="text-right">
+                        <p className="text-xs text-muted-foreground mb-1">
+                            {isLent ? 'They owe you' : 'You owe them'}
+                        </p>
+                        <p className={cn(
+                            'text-2xl font-bold',
+                            isLent ? 'text-foreground' : 'text-foreground'
+                        )}>
+                            {formatCurrency(Math.abs(netAmount), 'INR')}
+                        </p>
+                    </div>
+                </div>
 
-                    {/* Breakdown */}
-                    {personSummary && (directAmount !== 0 || groupAmount !== 0) && (
-                        <div className="pt-4 border-t border-border">
-                            <p className="text-xs text-muted-foreground mb-2">Breakdown</p>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="bg-muted/30 rounded-lg p-3">
-                                    <p className="text-xs text-muted-foreground mb-1">Direct Loans</p>
-                                    <p className={cn(
-                                        "text-base font-semibold",
-                                        directAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                                    )}>
-                                        {formatCurrency(Math.abs(directAmount))}
-                                    </p>
-                                </div>
-                                <div className="bg-muted/30 rounded-lg p-3">
-                                    <p className="text-xs text-muted-foreground mb-1">Group Balances</p>
-                                    <p className={cn(
-                                        "text-base font-semibold",
-                                        groupAmount >= 0 ? 'text-green-600' : 'text-red-600'
-                                    )}>
-                                        {formatCurrency(Math.abs(groupAmount))}
-                                    </p>
+                {/* Breakdown Card */}
+                {personSummary && (directAmount !== 0 || groupAmount !== 0) && (
+                    <Card className="p-4">
+                        <h3 className="text-sm font-semibold mb-3">Breakdown</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs text-muted-foreground mb-1">Direct Loans</p>
+                                <p className="text-lg font-semibold">
+                                    {formatCurrency(Math.abs(directAmount), 'INR')}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground mb-1">Group Balances</p>
+                                <p className="text-lg font-semibold">
+                                    {formatCurrency(Math.abs(groupAmount), 'INR')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Group Details */}
+                        {personSummary.groupDetails && personSummary.groupDetails.length > 0 && (
+                            <div className="mt-4 pt-4 border-t">
+                                <p className="text-xs text-muted-foreground mb-2">From Groups:</p>
+                                <div className="space-y-1">
+                                    {personSummary.groupDetails.map((group) => (
+                                        <div key={group.groupId} className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">{group.groupName}</span>
+                                            <span className="font-medium">
+                                                {formatCurrency(Math.abs(group.amount), 'INR')}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-
-                            {/* Group Details */}
-                            {personSummary.groupDetails && personSummary.groupDetails.length > 0 && (
-                                <div className="mt-3">
-                                    <p className="text-xs text-muted-foreground mb-2">From Groups:</p>
-                                    <div className="space-y-1">
-                                        {personSummary.groupDetails.map((group) => (
-                                            <div key={group.groupId} className="flex justify-between text-sm">
-                                                <span className="text-muted-foreground">{group.groupName}</span>
-                                                <span className={cn(
-                                                    "font-medium",
-                                                    group.amount >= 0 ? 'text-green-600' : 'text-red-600'
-                                                )}>
-                                                    {formatCurrency(Math.abs(group.amount))}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </Card>
+                        )}
+                    </Card>
+                )}
 
                 {/* All Transactions */}
                 <div className="space-y-0">
                     <h3 className="text-base font-semibold mb-3 px-4 md:px-0">All Transactions</h3>
 
-                    {personLoans.length === 0 ? (
+                    {allLoans.length === 0 ? (
                         <div className="text-center py-12 text-muted-foreground">
                             <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                             <p className="font-medium">No transactions yet</p>
                         </div>
                     ) : (
                         <div className="space-y-0">
-                            {personLoans.map((loan) => {
+                            {allLoans.map((loan) => {
                                 const isLender = loan.lenderUserId === currentUserId;
                                 const amount = parseFloat(loan.amount);
-                                const loanDate = new Date(loan.loanDate);
-                                const dayMonth = loanDate.toLocaleDateString('en-US', {
-                                    month: 'short',
-                                    day: '2-digit'
-                                });
 
                                 return (
-                                    <div
+                                    <LoanTransactionItem
                                         key={loan.id}
-                                        className="flex items-center gap-3 py-2.5 hover:bg-muted/30 -mx-4 px-4 transition-colors border-b border-border/50 last:border-0"
-                                    >
-                                        {/* Date */}
-                                        <div className="flex flex-col items-center w-10 flex-shrink-0">
-                                            <span className="text-xs text-muted-foreground">
-                                                {dayMonth.split(' ')[0]}
-                                            </span>
-                                            <span className="text-base font-semibold">
-                                                {dayMonth.split(' ')[1]}
-                                            </span>
-                                        </div>
-
-                                        {/* Icon */}
-                                        <div className="flex-shrink-0">
-                                            <div className="h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center">
-                                                <Calendar className="h-5 w-5 text-muted-foreground" />
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate text-sm">
-                                                {loan.description || (isLender ? 'Loan given' : 'Loan received')}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {loan.status === 'active' ? 'Active' : 'Paid'} • {loan.currency}
-                                            </p>
-                                        </div>
-
-                                        {/* Amount */}
-                                        <div className="text-right flex-shrink-0">
-                                            <p className="text-xs text-muted-foreground mb-0.5">
-                                                {isLender ? 'you lent' : 'you borrowed'}
-                                            </p>
-                                            <p className={cn(
-                                                'text-sm font-semibold',
-                                                isLender ? 'text-green-600' : 'text-red-600'
-                                            )}>
-                                                {formatCurrency(amount, loan.currency as 'INR' | 'USD' | 'EUR')}
-                                            </p>
-                                        </div>
-                                    </div>
+                                        date={new Date(loan.loanDate)}
+                                        description={loan.description || ''}
+                                        amount={amount}
+                                        currency={loan.currency as 'INR' | 'USD' | 'EUR'}
+                                        isLent={isLender}
+                                        status={loan.status}
+                                    />
                                 );
                             })}
+
+                            {/* Infinite scroll trigger */}
+                            <div ref={observerTarget} className="h-4" />
+
+                            {/* Loading indicator */}
+                            {isFetchingNextPage && (
+                                <div className="py-4 text-center">
+                                    <LoadingSkeleton count={3} />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

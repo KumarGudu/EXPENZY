@@ -28,7 +28,7 @@ export class LoansService {
   constructor(
     private prisma: PrismaService,
     private balanceCalculationService: BalanceCalculationService,
-  ) { }
+  ) {}
 
   async create(createLoanDto: CreateLoanDto) {
     // Validation: Both lender and borrower user IDs must be provided
@@ -858,6 +858,94 @@ export class LoansService {
   /**
    * Get all transactions between two users (loans, adjustments, payments)
    */
+  /**
+   * Get paginated loans between current user and a specific person
+   */
+  async getPersonLoansPaginated(
+    userId: string,
+    personId: string,
+    cursor?: string,
+    limit: number = 50,
+  ) {
+    const where: Prisma.LoanWhereInput = {
+      OR: [
+        {
+          lenderUserId: userId,
+          borrowerUserId: personId,
+        },
+        {
+          lenderUserId: personId,
+          borrowerUserId: userId,
+        },
+      ],
+      isDeleted: false,
+    };
+
+    // Build cursor-based pagination
+    const queryOptions: Prisma.LoanFindManyArgs = {
+      where,
+      take: limit + 1, // Fetch one extra to determine if there are more
+      orderBy: {
+        loanDate: 'desc',
+      },
+      include: {
+        lender: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        borrower: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+          },
+        },
+        _count: {
+          select: {
+            adjustments: true,
+          },
+        },
+      },
+    };
+
+    if (cursor) {
+      queryOptions.cursor = {
+        id: cursor,
+      };
+      queryOptions.skip = 1; // Skip the cursor itself
+    }
+
+    const loans = await this.prisma.loan.findMany(queryOptions);
+
+    // Check if there are more results
+    const hasMore = loans.length > limit;
+    const data = hasMore ? loans.slice(0, limit) : loans;
+    const nextCursor = hasMore ? data[data.length - 1].id : null;
+
+    return {
+      data,
+      meta: {
+        nextCursor,
+        hasMore,
+        limit,
+      },
+    };
+  }
+
   async getTransactionsBetweenUsers(userId: string, otherUserId: string) {
     // Get all loans between these two users (in both directions)
     const loans = await this.prisma.loan.findMany({

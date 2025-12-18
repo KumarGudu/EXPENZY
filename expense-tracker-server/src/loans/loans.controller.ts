@@ -51,6 +51,24 @@ export class LoansController {
     return this.loansService.getGroupDerivedLoans(user.userId);
   }
 
+  @Get('person/:personId')
+  @ApiOperation({
+    summary: 'Get paginated loans with a specific person',
+  })
+  getPersonLoans(
+    @Param('personId') personId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.loansService.getPersonLoansPaginated(
+      user.userId,
+      personId,
+      cursor,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
   @Get('transactions/:otherUserId')
   @ApiOperation({
     summary: 'Get all transactions between current user and another user',
