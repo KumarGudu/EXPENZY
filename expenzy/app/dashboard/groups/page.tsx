@@ -38,12 +38,6 @@ export default function GroupsPage() {
                 <PageHeader
                     title="Groups"
                     description="Split expenses with friends and family"
-                    action={
-                        <Button onClick={() => setIsModalOpen(true)}>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create Group
-                        </Button>
-                    }
                 />
 
                 <AddGroupModal open={isModalOpen} onClose={() => setIsModalOpen(false)} />
@@ -131,6 +125,15 @@ export default function GroupsPage() {
                         ))
                     )}
                 </div>
+
+                {/* Floating Action Button (Mobile) */}
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+                    aria-label="Create group"
+                >
+                    <Plus className="h-6 w-6" />
+                </button>
             </div>
         </PageWrapper>
     );

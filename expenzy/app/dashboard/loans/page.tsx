@@ -72,12 +72,6 @@ export default function LoansPage() {
                 <PageHeader
                     title="Loans"
                     description="Track money you've lent and borrowed"
-                    action={
-                        <Button onClick={() => setIsModalOpen(true)} size="sm" className="md:size-default">
-                            <Plus className="w-4 h-4 md:mr-2" />
-                            <span className="hidden md:inline">Add Loan</span>
-                        </Button>
-                    }
                 />
 
                 {/* Statistics */}
@@ -218,6 +212,15 @@ export default function LoansPage() {
 
                 {/* Add Loan Modal */}
                 <AddLoanModal open={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+                {/* Floating Action Button (Mobile) */}
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="md:hidden fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all flex items-center justify-center"
+                    aria-label="Add loan"
+                >
+                    <Plus className="h-6 w-6" />
+                </button>
             </div>
         </PageWrapper>
     );
