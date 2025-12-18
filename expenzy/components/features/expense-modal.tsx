@@ -113,17 +113,6 @@ export function ExpenseModal({ open, onClose, expense }: ExpenseModalProps) {
                         />
                     </div>
 
-                    {/* File Attachments - Only show in edit mode */}
-                    {expense && (
-                        <div className="space-y-2 pt-4 border-t">
-                            <Label className="text-sm font-medium">Attachments</Label>
-                            <FileUpload
-                                entityType="expense"
-                                entityId={expense.id}
-                                maxSize={10}
-                            />
-                        </div>
-                    )}
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onClose}>
