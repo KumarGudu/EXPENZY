@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { useConsolidatedLoans } from '@/lib/hooks/use-loans';
 import { usePersonLoans } from '@/lib/hooks/use-person-loans';
 import { useProfile } from '@/lib/hooks/use-profile';
@@ -14,8 +14,9 @@ import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LoanTransactionItem } from '@/components/features/loans/loan-transaction-item';
+import { AddLoanModal } from '@/components/modals/add-loan-modal';
 import { formatCurrency } from '@/lib/utils/format';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function PersonLoansPage() {
@@ -33,6 +34,10 @@ export default function PersonLoansPage() {
     } = usePersonLoans(personId);
     const { setLayoutVisibility } = useLayout();
     const observerTarget = useRef<HTMLDivElement>(null);
+
+    // Modal state
+    const [showLoanModal, setShowLoanModal] = useState(false);
+    const [modalLoanType, setModalLoanType] = useState<'LENT' | 'BORROWED'>('LENT');
 
     // Hide mobile header on mount, restore on unmount (keep bottom nav)
     useEffect(() => {
@@ -239,6 +244,32 @@ export default function PersonLoansPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Action Button */}
+                <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50">
+                    <Button
+                        size="lg"
+                        onClick={() => {
+                            setModalLoanType('LENT');
+                            setShowLoanModal(true);
+                        }}
+                        className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+                    >
+                        <Plus className="h-6 w-6" />
+                    </Button>
+                </div>
+
+                {/* Add Loan Modal */}
+                <AddLoanModal
+                    open={showLoanModal}
+                    onClose={() => setShowLoanModal(false)}
+                    prefilledPerson={{
+                        id: personId,
+                        name: person.username,
+                    }}
+                    defaultLoanType={modalLoanType}
+                    currentBalance={netAmount}
+                />
             </div>
         </PageWrapper>
     );
