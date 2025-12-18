@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FileUpload } from '@/components/shared/file-upload';
 import { useCreateExpense, useUpdateExpense } from '@/lib/hooks/use-expenses';
 import { useCategories } from '@/lib/hooks/use-categories';
 import type { Expense, CreateExpenseDto } from '@/types';
