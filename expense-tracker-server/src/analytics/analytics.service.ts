@@ -4,7 +4,7 @@ import { AnalyticsQueryDto, AnalyticsPeriod } from './dto/analytics-query.dto';
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private getDateRange(
     period: AnalyticsPeriod,
@@ -29,7 +29,8 @@ export class AnalyticsService {
           start = new Date(now.setMonth(now.getMonth() - 3));
           break;
         case AnalyticsPeriod.YEAR:
-          start = new Date(now.setFullYear(now.getFullYear() - 1));
+          // Use start of current year (Jan 1) instead of 1 year ago
+          start = new Date(now.getFullYear(), 0, 1); // Jan 1 of current year
           break;
         default:
           start = new Date(now.setMonth(now.getMonth() - 1));
@@ -422,7 +423,7 @@ export class AnalyticsService {
         averageUtilization:
           performance.length > 0
             ? performance.reduce((sum, b) => sum + b.utilization, 0) /
-              performance.length
+            performance.length
             : 0,
         onTrackCount: performance.filter((b) => b.status === 'on_track').length,
         warningCount: performance.filter((b) => b.status === 'warning').length,
