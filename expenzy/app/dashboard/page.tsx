@@ -7,7 +7,6 @@ import { useSavingsGoals } from '@/lib/hooks/use-savings';
 import { EmptyState } from '@/components/shared/empty-state';
 import { formatCurrency, formatPercentage, formatDate } from '@/lib/utils/format';
 import {
-    Wallet,
     PiggyBank,
     ArrowUpRight,
     ArrowDownRight,
@@ -16,6 +15,7 @@ import {
     TrendingUp,
     ChevronRight,
     Sparkles,
+    HandCoins,
     LucideIcon
 } from 'lucide-react';
 import { CategoryIcon, formatCategoryName } from '@/lib/categorization/category-icons';
@@ -134,10 +134,14 @@ export default function DashboardPage() {
         totalExpenses: 0,
         netSavings: 0,
         savingsRate: 0,
+        loanSummary: {
+            totalLent: 0,
+            totalBorrowed: 0,
+            netPosition: 0,
+            type: 'lent' as const,
+            amount: 0,
+        },
     };
-
-    // Calculate total balance as net savings (income - expenses)
-    const totalBalance = summary.netSavings;
 
     return (
         <PageWrapper>
@@ -177,10 +181,10 @@ export default function DashboardPage() {
                 {/* Summary Cards - Mobile First */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4">
                     <StatCard
-                        title="Total Balance"
-                        value={formatCurrency(totalBalance)}
-                        icon={Wallet}
-                        variant="primary"
+                        title={summary.loanSummary?.type === 'lent' ? 'Total Lent' : 'Total Borrowed'}
+                        value={formatCurrency(summary.loanSummary?.amount || 0)}
+                        icon={HandCoins}
+                        variant={summary.loanSummary?.type === 'lent' ? 'success' : 'destructive'}
                     />
                     <StatCard
                         title="Income"

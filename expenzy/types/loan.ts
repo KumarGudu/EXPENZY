@@ -36,6 +36,8 @@ export interface LoanUser {
     email: string;
     avatar: string | null;
     avatarUrl: string | null;
+    avatarSeed?: string | null;
+    avatarStyle?: string | null;
 }
 
 export interface LoanGroup {
@@ -79,12 +81,23 @@ export interface PersonLoanSummary {
     personId: string;
     personName: string;
     personAvatar?: string | null;
+    personAvatarSeed?: string | null;
+    personAvatarStyle?: string | null;
     totalAmount: number;
     currency: string;
     loanType: 'lent' | 'borrowed';
+
+    // Breakdown
+    directLoanAmount: number;
+    groupBalanceAmount: number;
+    groupDetails: Array<{
+        groupId: string;
+        groupName: string;
+        amount: number;
+    }>;
+
+    // Existing fields
     loanIds: string[];
-    activeCount: number;
-    paidCount: number;
     lastLoanDate: string;
 }
 
