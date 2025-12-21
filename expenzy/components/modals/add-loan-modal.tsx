@@ -50,7 +50,6 @@ export function AddLoanModal({ open, onClose, prefilledPerson, defaultLoanType, 
         },
     });
 
-    const dueDate = useWatch({ control, name: 'dueDate' });
     const amount = watch('amount');
 
     // Calculate new balance - fix NaN issue

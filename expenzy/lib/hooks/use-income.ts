@@ -73,15 +73,6 @@ export function useDeleteIncome() {
     });
 }
 
-interface CursorResponse<T> {
-    data: T[];
-    meta: {
-        nextCursor: string | null;
-        hasMore: boolean;
-        limit: number;
-    };
-}
-
 interface OffsetResponse<T> {
     data: T[];
     total: number;

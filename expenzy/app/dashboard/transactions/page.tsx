@@ -41,11 +41,6 @@ export default function TransactionsPage() {
 
     const { data: categories = [] } = useCategories();
 
-    // For stats widget - fetch all data
-    const { data: expensesData } = useExpenses();
-    const { data: incomesData } = useIncome();
-
-
     const deleteExpense = useDeleteExpense();
     const deleteIncome = useDeleteIncome();
 

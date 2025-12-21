@@ -15,11 +15,6 @@ interface PersonLoanCardProps {
 
 export function PersonLoanCard({ person, onClick, className }: PersonLoanCardProps) {
     const isLent = person.loanType === 'lent';
-    const lastUpdated = new Date(person.lastLoanDate).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    });
 
     return (
         <Card

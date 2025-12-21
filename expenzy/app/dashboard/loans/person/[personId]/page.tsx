@@ -1,23 +1,18 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useParams } from 'next/navigation';
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LoanTransactionItem } from '@/components/features/loans/loan-transaction-item';
 import { useConsolidatedLoans } from '@/lib/hooks/use-loans';
 import { usePersonLoans } from '@/lib/hooks/use-person-loans';
-import { useProfile } from '@/lib/hooks/use-profile';
-import { useLayout } from '@/contexts/layout-context';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { PageWrapper } from '@/components/layout/page-wrapper';
-import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
-import { EmptyState } from '@/components/shared/empty-state';
-import { UserAvatar } from '@/components/ui/user-avatar';
-import { LoanTransactionItem } from '@/components/features/loans/loan-transaction-item';
 import { AddLoanModal } from '@/components/modals/add-loan-modal';
-import { formatCurrency } from '@/lib/utils/format';
-import { ArrowLeft, FileText, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { PageWrapper } from '@/components/layout/page-wrapper';
+import { useLayout } from '@/contexts/layout-context';
+import { useProfile } from '@/lib/hooks/use-profile';
+import { formatCurrency } from '@/lib/utils/currency';
+import { UserAvatar } from '@/components/ui/user-avatar';
 
 export default function PersonLoansPage() {
     const router = useRouter();
@@ -39,41 +34,52 @@ export default function PersonLoansPage() {
     const [showLoanModal, setShowLoanModal] = useState(false);
     const [modalLoanType, setModalLoanType] = useState<'LENT' | 'BORROWED'>('LENT');
 
-    // Hide mobile header on mount, restore on unmount (keep bottom nav)
+    // Hide mobile header on mount, restore on unmount
     useEffect(() => {
-        setLayoutVisibility({ showMobileHeader: false, showBottomNav: true });
+        setLayoutVisibility({
+            showMobileHeader: false,
+            showBottomNav: true,
+        });
+
         return () => {
-            setLayoutVisibility({ showMobileHeader: true, showBottomNav: true });
+            setLayoutVisibility({
+                showMobileHeader: true,
+                showBottomNav: true,
+            });
         };
     }, [setLayoutVisibility]);
 
     // Infinite scroll observer
-    const handleObserver = useCallback(
-        (entries: IntersectionObserverEntry[]) => {
-            const [target] = entries;
-            if (target.isIntersecting && hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-            }
-        },
-        [fetchNextPage, hasNextPage, isFetchingNextPage]
-    );
-
     useEffect(() => {
-        const element = observerTarget.current;
-        if (!element) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+                    fetchNextPage();
+                }
+            },
+            { threshold: 0.1 }
+        );
 
-        const observer = new IntersectionObserver(handleObserver, {
-            threshold: 0.1,
-        });
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
 
-        observer.observe(element);
-        return () => observer.disconnect();
-    }, [handleObserver]);
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
+            }
+        };
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
     if (isLoading) {
         return (
             <PageWrapper>
-                <LoadingSkeleton count={5} />
+                <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                    ))}
+                </div>
             </PageWrapper>
         );
     }
@@ -82,21 +88,18 @@ export default function PersonLoansPage() {
     const personSummary = consolidatedData?.personSummaries?.find(p => p.personId === personId);
 
     // Flatten all pages of loans
-    const allLoans = loansData?.pages?.flatMap((page: any) => page.data) || [];
+    const allLoans = loansData?.pages?.flatMap((page) => page.data) || [];
     const currentUserId = profile?.id || '';
 
     if (!personSummary && allLoans.length === 0) {
         return (
             <PageWrapper>
-                <EmptyState
-                    icon={FileText}
-                    title="No loans found"
-                    description="No loans found with this person"
-                    action={{
-                        label: 'Go Back',
-                        onClick: () => router.back(),
-                    }}
-                />
+                <div className="text-center py-12">
+                    <p className="text-muted-foreground mb-4">No loans found with this person</p>
+                    <Button onClick={() => router.back()}>
+                        Go Back
+                    </Button>
+                </div>
             </PageWrapper>
         );
     }
@@ -204,10 +207,11 @@ export default function PersonLoansPage() {
                             </div>
                         ) : (
                             <>
-                                {allLoans.reduce((acc: React.ReactElement[], loan, index) => {
-                                    const isLender = loan.lenderUserId === currentUserId;
-                                    const amount = parseFloat(loan.amount);
-                                    const loanDate = new Date(loan.loanDate);
+                                {allLoans.reduce((acc: React.ReactElement[], loan: unknown, index: number) => {
+                                    const loanData = loan as { lenderUserId: string; borrowerUserId: string; amount: string; loanDate: string; description?: string; currency: string; id: string };
+                                    const isLender = loanData.lenderUserId === currentUserId;
+                                    const amount = parseFloat(loanData.amount);
+                                    const loanDate = new Date(loanData.loanDate);
                                     const year = loanDate.getFullYear();
 
                                     // Check if we need to add a year header
@@ -228,11 +232,11 @@ export default function PersonLoansPage() {
                                     // Add transaction
                                     acc.push(
                                         <LoanTransactionItem
-                                            key={loan.id}
+                                            key={loanData.id}
                                             date={loanDate}
-                                            description={loan.description || ''}
+                                            description={loanData.description || ''}
                                             amount={amount}
-                                            currency={loan.currency as 'INR' | 'USD' | 'EUR'}
+                                            currency={loanData.currency as 'INR' | 'USD' | 'EUR'}
                                             isLent={isLender}
                                         />
                                     );
@@ -245,8 +249,10 @@ export default function PersonLoansPage() {
 
                                 {/* Loading indicator */}
                                 {isFetchingNextPage && (
-                                    <div className="py-4 text-center">
-                                        <LoadingSkeleton count={3} />
+                                    <div className="py-4 space-y-2">
+                                        {[...Array(2)].map((_, i) => (
+                                            <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
+                                        ))}
                                     </div>
                                 )}
                             </>

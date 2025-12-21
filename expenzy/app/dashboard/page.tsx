@@ -7,7 +7,6 @@ import { useSavingsGoals } from '@/lib/hooks/use-savings';
 import { EmptyState } from '@/components/shared/empty-state';
 import { formatCurrency, formatPercentage, formatDate } from '@/lib/utils/format';
 import {
-    Wallet,
     PiggyBank,
     ArrowUpRight,
     ArrowDownRight,
@@ -143,9 +142,6 @@ export default function DashboardPage() {
             amount: 0,
         },
     };
-
-    // Calculate total balance as net savings (income - expenses)
-    const totalBalance = summary.netSavings;
 
     return (
         <PageWrapper>

@@ -13,10 +13,8 @@ import { LoanQueryDto, LoanRole } from './dto/loan-query.dto';
 import { PaginatedResponseDto } from '../common/dto/paginated-response.dto';
 import { QueryBuilder } from '../common/utils/query-builder.util';
 import {
-  ConsolidatedLoanResponseDto,
   GroupLoanDto,
   LoanStatisticsDto,
-  LoanWithRelations,
 } from './dto/consolidated-loan-response.dto';
 import {
   BalanceCalculationService,
