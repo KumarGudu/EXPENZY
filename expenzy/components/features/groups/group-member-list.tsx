@@ -107,6 +107,7 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                             avatarSeed={member.user?.avatarSeed}
                             avatarStyle={member.user?.avatarStyle}
                             avatar={member.user?.avatar}
+                            showBalance={false}
                             onRemove={
                                 // Admin can remove others, or current user can leave
                                 (isAdmin && member.userId !== currentUserId) || member.userId === currentUserId

@@ -26,6 +26,7 @@ interface MemberListItemProps {
     onRemove?: () => void;
     onChangeRole?: (newRole: 'ADMIN' | 'MEMBER') => void;
     className?: string;
+    showBalance?: boolean;
 }
 
 export const MemberListItem: React.FC<MemberListItemProps> = ({
@@ -42,6 +43,7 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
     onRemove,
     onChangeRole,
     className,
+    showBalance = true,
 }) => {
     const balanceText = getBalanceText(balance);
     const balanceColor = getBalanceColor(balance);
@@ -80,15 +82,17 @@ export const MemberListItem: React.FC<MemberListItemProps> = ({
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
-                {balance !== 0 ? (
-                    <div className="text-right">
-                        <p className={cn('text-sm font-semibold', balanceColor)}>
-                            {formattedBalance}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{balanceText}</p>
-                    </div>
-                ) : (
-                    <p className="text-sm text-muted-foreground">settled up</p>
+                {showBalance && (
+                    balance !== 0 ? (
+                        <div className="text-right">
+                            <p className={cn('text-sm font-semibold', balanceColor)}>
+                                {formattedBalance}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{balanceText}</p>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">settled up</p>
+                    )
                 )}
 
                 {/* Show menu for: 1) Admin viewing other members, OR 2) Current user (to leave) */}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGroup, useDeleteGroup, useLeaveGroup } from '@/lib/hooks/use-groups';
+import { useSimplifiedDebts } from '@/lib/hooks/use-group-balances';
 import { useLayout } from '@/contexts/layout-context';
 import { ArrowLeft, Pencil, LogOut, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ export default function GroupSettingsPage() {
     const { setLayoutVisibility } = useLayout();
 
     const { data: group, isLoading } = useGroup(groupId);
+    const { data: simplifiedDebts = [] } = useSimplifiedDebts(groupId);
     const deleteGroup = useDeleteGroup();
     const leaveGroup = useLeaveGroup();
 
@@ -51,6 +53,18 @@ export default function GroupSettingsPage() {
     const currentUserId = getCurrentUserId();
     const isAdmin = group?.members?.some(m => m.userId === currentUserId && m.role?.toUpperCase() === 'ADMIN') || false;
 
+    // Calculate member balances from simplified debts
+    const memberBalances = new Map<string, number>();
+    simplifiedDebts.forEach(debt => {
+        // Positive balance means they owe you (you lent to them)
+        // Negative balance means you owe them (you borrowed from them)
+        const currentBalance = memberBalances.get(debt.fromUserId) || 0;
+        memberBalances.set(debt.fromUserId, currentBalance - debt.amount);
+
+        const otherBalance = memberBalances.get(debt.toUserId) || 0;
+        memberBalances.set(debt.toUserId, otherBalance + debt.amount);
+    });
+
     // Debug logging
     useEffect(() => {
         if (group) {
@@ -59,8 +73,9 @@ export default function GroupSettingsPage() {
             console.log('- isAdmin:', isAdmin);
             console.log('- group.members:', group.members);
             console.log('- group.createdByUserId:', group.createdByUserId);
+            console.log('- memberBalances:', memberBalances);
         }
-    }, [group, currentUserId, isAdmin]);
+    }, [group, currentUserId, isAdmin, memberBalances]);
 
     const handleDelete = async () => {
         try {
@@ -174,7 +189,7 @@ export default function GroupSettingsPage() {
                     members={group.members || []}
                     currentUserId={currentUserId}
                     isAdmin={isAdmin}
-                    memberBalances={new Map()}
+                    memberBalances={memberBalances}
                     currency={group.currency}
                 />
 
