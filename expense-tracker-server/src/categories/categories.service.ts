@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-// import { CategoryType } from '@prisma/client';
+import { CategoryType } from '@prisma/client';
 
 @Injectable()
 export class CategoriesService {
@@ -28,10 +28,10 @@ export class CategoriesService {
     });
   }
 
-  async findAll(userId: string, type?: string) {
+  async findAll(userId: string, type?: CategoryType) {
     const whereClause: {
       OR: Array<{ isSystem: boolean } | { userId: string }>;
-      type?: string;
+      type?: CategoryType;
     } = {
       OR: [{ isSystem: true }, { userId: userId }],
     };

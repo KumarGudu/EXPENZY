@@ -7,7 +7,7 @@ import {
   IsUUID,
   Matches,
 } from 'class-validator';
-// import { CategoryType } from '@prisma/client';
+import { CategoryType } from '@prisma/client';
 
 export class CreateCategoryDto {
   @IsString()
@@ -25,11 +25,11 @@ export class CreateCategoryDto {
   })
   color?: string;
 
-  @IsEnum(['EXPENSE', 'INCOME', 'GROUP'], {
+  @IsEnum(CategoryType, {
     message: 'Type must be EXPENSE, INCOME, or GROUP',
   })
   @IsNotEmpty()
-  type: string;
+  type: CategoryType;
 
   @IsUUID()
   @IsOptional()
