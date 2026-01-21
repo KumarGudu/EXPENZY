@@ -1,9 +1,11 @@
 import { PipeTransform, Injectable, BadRequestException } from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
+
+const VALID_TYPES = ['EXPENSE', 'INCOME', 'GROUP'] as const;
+type CategoryTypeString = typeof VALID_TYPES[number];
 
 @Injectable()
 export class CategoryTypePipe implements PipeTransform {
-  transform(value: unknown): CategoryType | undefined {
+  transform(value: unknown): string | undefined {
     if (!value) {
       return undefined;
     }
@@ -18,12 +20,12 @@ export class CategoryTypePipe implements PipeTransform {
     const upperValue = value.toUpperCase();
 
     // Validate against enum values
-    if (Object.values(CategoryType).includes(upperValue as CategoryType)) {
-      return upperValue as CategoryType;
+    if (VALID_TYPES.includes(upperValue as any)) {
+      return upperValue;
     }
 
     throw new BadRequestException(
-      `Invalid category type. Must be one of: ${Object.values(CategoryType).join(', ')}`,
+      `Invalid category type. Must be one of: ${VALID_TYPES.join(', ')}`,
     );
   }
 }

@@ -6,11 +6,11 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CategoryType } from '@prisma/client';
+// import { CategoryType } from '@prisma/client';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createCategoryDto: CreateCategoryDto, userId: string) {
     return this.prisma.category.create({
@@ -28,10 +28,10 @@ export class CategoriesService {
     });
   }
 
-  async findAll(userId: string, type?: CategoryType) {
+  async findAll(userId: string, type?: string) {
     const whereClause: {
       OR: Array<{ isSystem: boolean } | { userId: string }>;
-      type?: CategoryType;
+      type?: string;
     } = {
       OR: [{ isSystem: true }, { userId: userId }],
     };
