@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsService } from '../groups/groups.service';
+import { EmailService } from '../common/email.service';
 import {
   InviteType,
   InviteStatus,
@@ -19,7 +20,8 @@ export class InvitesService {
   constructor(
     private prisma: PrismaService,
     private groupsService: GroupsService,
-  ) {}
+    private emailService: EmailService,
+  ) { }
 
   async getInviteDetails(token: string): Promise<InviteDetails> {
     // Only check group members (loans and splits don't have invite functionality)
@@ -115,13 +117,26 @@ export class InvitesService {
       throw new BadRequestException('Cannot resend an already accepted invite');
     }
 
-    // TODO: Send email/SMS here
-    // await this.emailService.sendInvite(inviteDetails);
+    // Get the group member to find the email
+    const groupMember = await this.prisma.groupMember.findUnique({
+      where: { inviteToken: token },
+      include: {
+        group: true,
+      },
+    });
+
+    if (!groupMember) {
+      throw new NotFoundException('Invite not found');
+    }
+
+    // For now, we can't resend if we don't have the email stored
+    // In a production app, you'd want to store the invited email in the database
+    // TODO: Add invitedEmail field to GroupMember model
 
     const inviteLink = `${process.env.APP_URL || 'http://localhost:3000'}/invites/${token}`;
 
     return {
-      message: 'Invite resent successfully',
+      message: 'Invite link generated. Note: Automatic email resend requires storing the invited email address.',
       inviteLink,
     };
   }

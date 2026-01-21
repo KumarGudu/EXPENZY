@@ -20,6 +20,7 @@ import { DebtSettlementService } from './services/debt-settlement.service';
 import { GroupCacheService } from './services/group-cache.service';
 import { GroupExpenseService } from './services/group-expense.service';
 import { GroupStatisticsService } from './services/group-statistics.service';
+import { EmailService } from '../common/email.service';
 import * as crypto from 'crypto';
 import {
   generateRandomSeed,
@@ -35,14 +36,15 @@ export class GroupsService {
     private cacheService: GroupCacheService,
     private expenseService: GroupExpenseService,
     private statisticsService: GroupStatisticsService,
-  ) {}
+    private emailService: EmailService,
+  ) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
     const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
     const iconProvider =
       createGroupDto.iconProvider &&
-      validateGroupIconProvider(createGroupDto.iconProvider)
+        validateGroupIconProvider(createGroupDto.iconProvider)
         ? (createGroupDto.iconProvider as 'jdenticon')
         : 'jdenticon';
 
@@ -207,6 +209,7 @@ export class GroupsService {
       where: { id: groupId },
       include: {
         members: true,
+        createdBy: true,
       },
     });
 
@@ -229,18 +232,36 @@ export class GroupsService {
       }
     }
 
+    // Check if email is already invited
+    if (addMemberDto.memberEmail) {
+      // Check if user with this email already exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email: addMemberDto.memberEmail },
+      });
+
+      if (existingUser) {
+        // Check if they're already a member
+        const existingMember = group.members.find(
+          (m) => m.userId === existingUser.id,
+        );
+        if (existingMember) {
+          throw new BadRequestException(
+            'A user with this email is already a member of this group',
+          );
+        }
+      }
+    }
+
     // Generate invite token if email provided
     const inviteToken = addMemberDto.memberEmail
       ? crypto.randomBytes(32).toString('hex')
       : null;
 
-    return this.prisma.groupMember.create({
+    // Create the group member
+    const newMember = await this.prisma.groupMember.create({
       data: {
         groupId,
         userId: addMemberDto.userId,
-        // memberName removed - use contactId instead
-        // memberEmail removed - use contactId instead
-        // memberPhone removed - use contactId instead
         role: addMemberDto.role || 'member',
         inviteToken,
         inviteStatus: addMemberDto.userId ? 'accepted' : 'pending',
@@ -251,6 +272,30 @@ export class GroupsService {
         group: true,
       },
     });
+
+    // Send invite email if email was provided
+    if (addMemberDto.memberEmail && inviteToken) {
+      // Get inviter details
+      const inviter = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      const inviterName = inviter
+        ? inviter.firstName && inviter.lastName
+          ? `${inviter.firstName} ${inviter.lastName}`
+          : inviter.username
+        : 'Someone';
+
+      // Send the invite email
+      await this.emailService.sendGroupInviteEmail(
+        addMemberDto.memberEmail,
+        group.name,
+        inviterName,
+        inviteToken,
+      );
+    }
+
+    return newMember;
   }
 
   async removeMember(groupId: string, memberId: string, userId: string) {
@@ -470,20 +515,20 @@ export class GroupsService {
       data: expenses,
       pagination: cursor
         ? {
-            // Cursor-based response
-            limit,
-            nextCursor,
-            hasMore: nextCursor !== null,
-          }
+          // Cursor-based response
+          limit,
+          nextCursor,
+          hasMore: nextCursor !== null,
+        }
         : {
-            // Offset-based response (backward compatibility)
-            page,
-            limit,
-            total: total!,
-            totalPages: Math.ceil(total! / limit),
-            hasMore: page * limit < total!,
-            nextCursor, // Include cursor for migration
-          },
+          // Offset-based response (backward compatibility)
+          page,
+          limit,
+          total: total!,
+          totalPages: Math.ceil(total! / limit),
+          hasMore: page * limit < total!,
+          nextCursor, // Include cursor for migration
+        },
     };
   }
 
@@ -534,7 +579,7 @@ export class GroupsService {
     if (userBalance < -0.01) {
       throw new BadRequestException(
         `You cannot leave the group with outstanding debts. ` +
-          `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
+        `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
       );
     }
 

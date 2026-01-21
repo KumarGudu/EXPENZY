@@ -9,9 +9,7 @@ type AvatarStyle = 'fun-emoji' | 'adventurer' | 'adventurer-neutral' | 'thumbs';
 
 @Injectable()
 export class AvatarService {
-  /**
-   * Get DiceBear style collection by name
-   */
+
   private getStyleCollection(style: string): any {
     const styleMap: Record<string, any> = {
       'fun-emoji': funEmoji,
@@ -23,12 +21,6 @@ export class AvatarService {
     return styleMap[style as AvatarStyle] || funEmoji;
   }
 
-  /**
-   * Generate SVG avatar from seed
-   * @param seed - Unique identifier for deterministic avatar generation
-   * @param style - Avatar style (fun-emoji, adventurer, adventurer-neutral, thumbs)
-   * @returns SVG string
-   */
   generateSvg(seed: string, style: string = 'fun-emoji'): string {
     // Validate and sanitize seed
     const safeSeed = this.sanitizeSeed(seed);
@@ -46,11 +38,6 @@ export class AvatarService {
     return avatar.toString();
   }
 
-  /**
-   * Sanitize seed to prevent injection attacks
-   * @param seed - Raw seed input
-   * @returns Sanitized seed
-   */
   private sanitizeSeed(seed: string): string {
     if (!seed || typeof seed !== 'string') {
       return 'default';

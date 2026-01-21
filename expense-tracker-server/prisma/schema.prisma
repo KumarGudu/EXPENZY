@@ -461,6 +461,7 @@ model GroupMember {
   role         String       @default("member")
   inviteToken  String?      @unique @map("invite_token")
   inviteStatus String?      @default("pending") @map("invite_status")
+  invitedEmail String?      @map("invited_email") // Email of invited user (for pending invites)
   joinedAt     DateTime?    @map("joined_at")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")

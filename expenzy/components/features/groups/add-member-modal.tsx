@@ -32,7 +32,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
     onOpenChange,
 }) => {
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
+    const [role, setRole] = useState<'admin' | 'member'>('member');
     const addMember = useAddGroupMember();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -41,9 +41,13 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
         if (!email.trim()) return;
 
         try {
-            await addMember.mutateAsync({ groupId, email: email.trim() });
+            await addMember.mutateAsync({
+                groupId,
+                memberEmail: email.trim(),
+                role
+            });
             setEmail('');
-            setRole('MEMBER');
+            setRole('member');
             onOpenChange(false);
         } catch {
             // Error handled by the hook
@@ -58,9 +62,6 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                         <UserPlus className="h-5 w-5" />
                         Add Member
                     </DialogTitle>
-                    <DialogDescription>
-                        Invite someone to join this group by entering their email address.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
@@ -81,14 +82,14 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                             <Label htmlFor="role">Role</Label>
                             <Select
                                 value={role}
-                                onValueChange={(value) => setRole(value as 'ADMIN' | 'MEMBER')}
+                                onValueChange={(value) => setRole(value as 'admin' | 'member')}
                             >
                                 <SelectTrigger id="role">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="MEMBER">Member</SelectItem>
-                                    <SelectItem value="ADMIN">Admin</SelectItem>
+                                    <SelectItem value="member">Member</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
                                 </SelectContent>
                             </Select>
                             <p className="text-xs text-muted-foreground">
