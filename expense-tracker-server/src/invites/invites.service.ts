@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsService } from '../groups/groups.service';
+import { EmailService } from '../common/email.service';
 import {
   InviteType,
   InviteStatus,
@@ -19,6 +20,7 @@ export class InvitesService {
   constructor(
     private prisma: PrismaService,
     private groupsService: GroupsService,
+    private emailService: EmailService,
   ) {}
 
   async getInviteDetails(token: string): Promise<InviteDetails> {
@@ -115,13 +117,47 @@ export class InvitesService {
       throw new BadRequestException('Cannot resend an already accepted invite');
     }
 
-    // TODO: Send email/SMS here
-    // await this.emailService.sendInvite(inviteDetails);
+    // Get the group member to find the email
+    const groupMember = await this.prisma.groupMember.findUnique({
+      where: { inviteToken: token },
+      include: {
+        group: {
+          include: {
+            createdBy: true,
+          },
+        },
+      },
+    });
+
+    if (!groupMember) {
+      throw new NotFoundException('Invite not found');
+    }
 
     const inviteLink = `${process.env.APP_URL || 'http://localhost:3000'}/invites/${token}`;
 
+    // Send email if we have the invited email stored
+    if (groupMember.invitedEmail) {
+      const inviterName =
+        groupMember.group.createdBy.firstName &&
+        groupMember.group.createdBy.lastName
+          ? `${groupMember.group.createdBy.firstName} ${groupMember.group.createdBy.lastName}`
+          : groupMember.group.createdBy.username;
+
+      await this.emailService.sendGroupInviteEmail(
+        groupMember.invitedEmail,
+        groupMember.group.name,
+        inviterName,
+        token,
+      );
+
+      return {
+        message: 'Invite email resent successfully',
+        inviteLink,
+      };
+    }
+
     return {
-      message: 'Invite resent successfully',
+      message: 'Invite link generated (email not available for older invites)',
       inviteLink,
     };
   }

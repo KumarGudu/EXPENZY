@@ -9,10 +9,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { DeleteAccountDto } from './dto/delete-account.dto';
-import {
-  generateRandomSeed,
-  validateUserAvatarStyle,
-} from '../common/utils/avatar-utils';
 
 interface GoogleProfile {
   id: string;
@@ -24,18 +20,21 @@ interface GoogleProfile {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    // Check if user with this email already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
 
-    // Generate avatar data
-    const avatarSeed = createUserDto.avatarSeed || generateRandomSeed();
-    const avatarStyle =
-      createUserDto.avatarStyle &&
-        validateUserAvatarStyle(createUserDto.avatarStyle)
-        ? createUserDto.avatarStyle
-        : 'adventurer';
+    if (existingUser) {
+      throw new BadRequestException(
+        'An account with this email already exists. Please login or use a different email.',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     return this.prisma.user.create({
       data: {
@@ -80,7 +79,7 @@ export class UsersService {
         phone: updateUserDto.phone,
         avatar: updateUserDto.avatar,
         // avatarSeed: updateUserDto.avatarSeed,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
         // avatarStyle: updateUserDto.avatarStyle as any,
         timezone: updateUserDto.timezone,
         defaultCurrency: updateUserDto.defaultCurrency,
@@ -144,8 +143,6 @@ export class UsersService {
 
     // Create new user
     const username = email.split('@')[0] || 'user';
-    const avatarSeed = generateRandomSeed();
-    const avatarStyle = 'adventurer';
 
     return this.prisma.user.create({
       data: {

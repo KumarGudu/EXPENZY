@@ -69,7 +69,7 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                         className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/30 rounded-lg transition-colors"
                         onClick={() => setShowAddMember(true)}
                     >
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                             <UserPlus className="h-5 w-5" />
                         </div>
                         <span className="text-base">Add people to group</span>
@@ -79,7 +79,7 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                         type="button"
                         className="w-full flex items-center gap-3 py-3 text-left hover:bg-muted/30 rounded-lg transition-colors"
                     >
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
                             <LinkIcon className="h-5 w-5" />
                         </div>
                         <span className="text-base">Invite via link</span>
@@ -89,16 +89,17 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
 
             <div className="space-y-1">
                 {members.map((member) => {
+                    // For accepted members with user accounts, show name; for pending invites, show email
                     const fullName = member.user
-                        ? `${member.user.firstName} ${member.user.lastName}`.trim()
-                        : 'Unknown';
+                        ? `${member.user.firstName || ''} ${member.user.lastName || ''}`.trim() || member.user.username
+                        : member.invitedEmail || 'Unknown';
 
                     return (
                         <MemberListItem
                             key={member.id}
-                            userId={member.userId}
+                            userId={member.userId ?? ''}
                             name={fullName}
-                            email={member.user?.email || ''}
+                            email={member.user?.email || member.invitedEmail || ''}
                             role={member.role}
                             balance={memberBalances.get(member.userId) || 0}
                             currency={currency}

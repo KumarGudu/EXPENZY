@@ -115,19 +115,21 @@ export function useAddGroupMember() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ groupId, email }: { groupId: string; email: string }) => {
+        mutationFn: async ({ groupId, memberEmail, role }: { groupId: string; memberEmail: string; role?: 'admin' | 'member' }) => {
             return await apiClient.post(
                 `${API_ENDPOINTS.GROUPS.LIST}/${groupId}/members`,
-                { email }
+                { memberEmail, role }
             );
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId, 'members'] });
             queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId] });
-            toast.success('Member added successfully');
+            toast.success('Member invited successfully! They will receive an email.');
         },
-        onError: () => {
-            toast.error('Failed to add member');
+        onError: (error: unknown) => {
+            const message = (error as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;
+            const errorMsg = Array.isArray(message) ? message[0] : message || 'Failed to add member';
+            toast.error(errorMsg);
         },
     });
 }

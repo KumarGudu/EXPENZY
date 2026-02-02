@@ -39,7 +39,9 @@ export default function SignupPage() {
 
         try {
             await signup({ username, email, password });
-            toast.success('Account created successfully!');
+            toast.success('Account created! Please check your email for verification code.');
+            // Redirect to OTP verification page
+            router.push(`/verify-otp?email=${encodeURIComponent(email)}&purpose=registration`);
         } catch (error) {
             const err = error as { message: string };
             toast.error(err.message || 'Failed to create account');
@@ -62,7 +64,7 @@ export default function SignupPage() {
                         </div>
                         <h1 className="text-5xl font-bold tracking-tight">Manage your finances with confidence.</h1>
                         <p className="text-xl text-primary-foreground/80 font-light leading-relaxed">
-                            Join thousands of users who are taking control of their financial future with Expenzy's powerful tracking tools.
+                            Join thousands of users who are taking control of their financial future with Expenzy&apos;s powerful tracking tools.
                         </p>
                     </div>
 
