@@ -32,7 +32,10 @@ interface RequestWithGoogleUser {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(
+    private authService: AuthService,
+    private otpService: OtpService,
+  ) { }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
