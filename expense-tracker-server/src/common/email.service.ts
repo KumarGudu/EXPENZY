@@ -33,21 +33,31 @@ export class EmailService {
     this.emailEnabled = !!(emailHost && emailPort && emailUser && emailPass);
 
     if (this.emailEnabled) {
-      this.transporter = nodemailer.createTransport({
-        host: emailHost,
-        port: emailPort,
-        secure: emailPort === 465, // true for 465, false for other ports
-        auth: {
-          user: emailUser,
-          pass: emailPass,
-        },
-        tls: {
-          ciphers: 'SSLv3',
-          rejectUnauthorized: false,
-        },
-        // Force IPv4 to avoid timeout issues in some container environments
-        family: 4,
-      } as any);
+      if (emailHost && emailHost.includes('gmail')) {
+        this.transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+          // Keep IPv4 force as it helps in some containerized environments
+          family: 4,
+        } as any);
+      } else {
+        this.transporter = nodemailer.createTransport({
+          host: emailHost,
+          port: emailPort,
+          secure: emailPort === 465, // true for 465, false for other ports
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+          tls: {
+            rejectUnauthorized: false,
+          },
+          family: 4,
+        } as any);
+      }
 
       this.logger.log('Email service initialized successfully');
     } else {
