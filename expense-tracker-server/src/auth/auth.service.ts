@@ -36,8 +36,15 @@ export class AuthService {
     ) {
       // Check if user is verified
       if (!user.isVerified) {
+        try {
+          await this.resendOtp(user.email, 'registration');
+        } catch (error) {
+          // Ignore errors here (e.g. rate limit) so we still return the verify message
+          // or we could let it fail. Let's log it.
+          console.error('Failed to auto-resend OTP during login:', error.message);
+        }
         throw new UnauthorizedException(
-          'Please verify your email address before logging in',
+          'Please verify your email address before logging in. A new verification code has been sent to your email.',
         );
       }
 
