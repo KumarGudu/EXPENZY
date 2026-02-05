@@ -41,7 +41,13 @@ export class EmailService {
           user: emailUser,
           pass: emailPass,
         },
-      });
+        tls: {
+          ciphers: 'SSLv3',
+          rejectUnauthorized: false,
+        },
+        // Force IPv4 to avoid timeout issues in some container environments
+        family: 4,
+      } as any);
 
       this.logger.log('Email service initialized successfully');
     } else {
