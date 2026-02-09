@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { GroupsService } from '../groups/groups.service';
 import { EmailService } from '../common/email.service';
@@ -21,7 +22,8 @@ export class InvitesService {
     private prisma: PrismaService,
     private groupsService: GroupsService,
     private emailService: EmailService,
-  ) {}
+    private configService: ConfigService,
+  ) { }
 
   async getInviteDetails(token: string): Promise<InviteDetails> {
     // Only check group members (loans and splits don't have invite functionality)
@@ -133,13 +135,15 @@ export class InvitesService {
       throw new NotFoundException('Invite not found');
     }
 
-    const inviteLink = `${process.env.APP_URL || 'http://localhost:3000'}/invites/${token}`;
+    const appUrl =
+      this.configService.get<string>('APP_URL') || 'http://localhost:3000';
+    const inviteLink = `${appUrl}/invites/${token}`;
 
     // Send email if we have the invited email stored
     if (groupMember.invitedEmail) {
       const inviterName =
         groupMember.group.createdBy.firstName &&
-        groupMember.group.createdBy.lastName
+          groupMember.group.createdBy.lastName
           ? `${groupMember.group.createdBy.firstName} ${groupMember.group.createdBy.lastName}`
           : groupMember.group.createdBy.username;
 

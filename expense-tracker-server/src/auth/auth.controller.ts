@@ -9,6 +9,7 @@ import {
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { OtpService } from './otp.service';
@@ -35,6 +36,7 @@ export class AuthController {
   constructor(
     private authService: AuthService,
     private otpService: OtpService,
+    private configService: ConfigService,
   ) { }
 
   @Post('login')
@@ -113,8 +115,8 @@ export class AuthController {
     // Redirect to frontend with token and user data
     // Encode user data to handle special characters
     const userData = encodeURIComponent(JSON.stringify(user));
-    res.redirect(
-      `http://localhost:3000/auth/callback?token=${access_token}&user=${userData}`,
-    );
+    const appUrl =
+      this.configService.get<string>('APP_URL') || 'http://localhost:3000';
+    res.redirect(`${appUrl}/auth/callback?token=${access_token}&user=${userData}`);
   }
 }

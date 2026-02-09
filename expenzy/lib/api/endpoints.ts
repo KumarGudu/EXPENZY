@@ -168,4 +168,11 @@ export const API_ENDPOINTS = {
         BY_ID: (id: string) => `/reminders/${id}`,
         MARK_READ: (id: string) => `/reminders/${id}/read`,
     },
+
+    // Invites
+    INVITES: {
+        BASE: '/invites',
+        BY_TOKEN: (token: string) => `/invites/${token}`,
+        ACCEPT: (token: string) => `/invites/${token}/accept`,
+    },
 } as const;

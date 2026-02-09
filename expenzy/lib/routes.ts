@@ -26,6 +26,9 @@ export const ROUTES = {
 
     // Settings
     SETTINGS: '/dashboard/settings',
+
+    // Invites
+    INVITES: '/invites',
 } as const;
 
 export type Route = typeof ROUTES[keyof typeof ROUTES];

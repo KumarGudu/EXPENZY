@@ -23,6 +23,7 @@ export interface EnvironmentVariables {
   SENTRY_DSN?: string;
   THROTTLE_TTL?: number;
   THROTTLE_LIMIT?: number;
+  APP_URL?: string;
 }
 
 export const configuration = () => ({
@@ -65,4 +66,5 @@ export const configuration = () => ({
     ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
   },
+  appUrl: process.env.APP_URL || 'http://localhost:3000',
 });

@@ -34,6 +34,7 @@ import { GroupsModule } from './groups/groups.module';
         allowUnknown: true,
         abortEarly: false,
       },
+      expandVariables: true,
     }),
     // Rate Limiting - 100 requests per minute per IP
     ThrottlerModule.forRoot([
@@ -70,4 +71,4 @@ import { GroupsModule } from './groups/groups.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
