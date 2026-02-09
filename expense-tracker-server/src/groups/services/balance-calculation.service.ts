@@ -4,8 +4,10 @@ export interface GroupExpenseWithSplits {
   id: string;
   amount: number | string;
   paidByUserId: string | null;
+  paidByMemberId: string;
   splits: Array<{
     userId: string | null;
+    memberId: string;
     amountOwed: number | string;
   }>;
 }
@@ -20,7 +22,8 @@ export interface UserExpenseBalance {
 }
 
 export interface MemberBalance {
-  userId: string;
+  memberId: string;
+  userId?: string;
   totalPaid: number;
   totalOwed: number;
   balance: number; // positive = gets back, negative = owes
@@ -109,40 +112,42 @@ export class BalanceCalculationService {
           : Number(expense.amount); // Convert Decimal to number
 
       // Track payer
-      if (expense.paidByUserId) {
-        if (!balances.has(expense.paidByUserId)) {
-          balances.set(expense.paidByUserId, {
-            userId: expense.paidByUserId,
+      if (expense.paidByMemberId) {
+        if (!balances.has(expense.paidByMemberId)) {
+          balances.set(expense.paidByMemberId, {
+            memberId: expense.paidByMemberId,
+            userId: expense.paidByUserId || undefined,
             totalPaid: 0,
             totalOwed: 0,
             balance: 0,
           });
         }
-        const payerBalance = balances.get(expense.paidByUserId)!;
-        payerBalance.totalPaid += amount; // Now properly adds numbers
+        const payerBalance = balances.get(expense.paidByMemberId)!;
+        payerBalance.totalPaid += amount;
       }
 
       // Track each participant's share
       expense.splits?.forEach((split) => {
-        if (!split.userId) return;
+        if (!split.memberId) return;
 
-        if (!balances.has(split.userId)) {
-          balances.set(split.userId, {
-            userId: split.userId,
+        if (!balances.has(split.memberId)) {
+          balances.set(split.memberId, {
+            memberId: split.memberId,
+            userId: split.userId || undefined,
             totalPaid: 0,
             totalOwed: 0,
             balance: 0,
           });
         }
 
-        const memberBalance = balances.get(split.userId)!;
+        const memberBalance = balances.get(split.memberId)!;
         // Convert Decimal to number - Prisma returns Decimal objects
         const owedAmount =
           typeof split.amountOwed === 'string'
             ? parseFloat(split.amountOwed)
             : Number(split.amountOwed); // Convert Decimal to number
 
-        memberBalance.totalOwed += owedAmount; // Now properly adds numbers
+        memberBalance.totalOwed += owedAmount;
       });
     });
 
@@ -157,8 +162,8 @@ export class BalanceCalculationService {
   /**
    * Get a specific user's balance from the balances map
    */
-  getUserBalance(balances: Map<string, MemberBalance>, userId: string): number {
-    return balances.get(userId)?.balance || 0;
+  getUserBalance(balances: Map<string, MemberBalance>, memberId: string): number {
+    return balances.get(memberId)?.balance || 0;
   }
 
   /**
@@ -223,8 +228,8 @@ export class BalanceCalculationService {
       if (settleAmount > 0.01) {
         // Only create settlement if > 1 cent
         settlements.push({
-          from: debtor.userId,
-          to: creditor.userId,
+          from: debtor.memberId,
+          to: creditor.memberId,
           amount: Math.round(settleAmount * 100) / 100,
         });
       }

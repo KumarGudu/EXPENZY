@@ -3,7 +3,8 @@ export type SplitType = 'equal' | 'exact' | 'percentage' | 'shares';
 export interface Split {
     id: string;
     groupExpenseId: string;
-    userId: string;
+    memberId: string;
+    userId?: string;
     amountOwed: string;
     amountPaid: string;
     percentage?: string;
@@ -15,6 +16,21 @@ export interface Split {
     paidAt?: string;
     createdAt: string;
     updatedAt: string;
+    member?: {
+        id: string;
+        contactName?: string | null;
+        contactAvatar?: string | null;
+        userId?: string | null;
+        user?: {
+            id: string;
+            username: string;
+            firstName?: string;
+            lastName?: string;
+            avatarSeed?: string;
+            avatarStyle?: string;
+            avatarUrl?: string;
+        } | null;
+    };
     user?: {
         id: string;
         username: string;
@@ -27,7 +43,8 @@ export interface Split {
 export interface GroupExpense {
     id: string;
     groupId: string;
-    paidByUserId: string;
+    paidByMemberId: string;
+    paidByUserId?: string;
     amount: string;
     currency: string;
     description: string;
@@ -38,12 +55,30 @@ export interface GroupExpense {
     splitValidationStatus?: string;
     hasAdjustments?: boolean;
     splits: Split[];
+    paidByMember: {
+        id: string;
+        contactName?: string | null;
+        contactAvatar?: string | null;
+        userId?: string | null;
+        user?: {
+            id: string;
+            username: string;
+            firstName?: string;
+            lastName?: string;
+            avatarSeed?: string;
+            avatarStyle?: string;
+            avatarUrl?: string;
+        } | null;
+    };
     paidBy: {
         id: string;
         username: string;
         email: string;
         firstName?: string;
         lastName?: string;
+        avatarSeed?: string;
+        avatarStyle?: string;
+        avatarUrl?: string;
     };
     category?: {
         id: string;
@@ -58,7 +93,8 @@ export interface GroupExpense {
 export interface CreateExpenseData {
     description: string;
     amount: number;
-    paidByUserId: string;
+    paidByMemberId: string;
+    paidByUserId?: string;
     splitType: SplitType;
     expenseDate?: string;
     notes?: string;
@@ -78,7 +114,8 @@ export interface UpdateExpenseData {
 }
 
 export interface ParticipantInput {
-    userId: string;
+    memberId: string;
+    userId?: string;
     amount?: number;      // For 'exact' split
     percentage?: number;  // For 'percentage' split
     shares?: number;      // For 'shares' split
@@ -96,9 +133,23 @@ export interface Balance {
 }
 
 export interface SimplifiedDebt {
-    fromUserId: string;
-    toUserId: string;
+    fromMemberId: string;
+    toMemberId: string;
+    fromUserId?: string;
+    toUserId?: string;
     amount: number;
+    fromMember?: {
+        id: string;
+        name: string;
+        avatar?: string;
+        userId?: string | null;
+    };
+    toMember?: {
+        id: string;
+        name: string;
+        avatar?: string;
+        userId?: string | null;
+    };
     fromUser?: {
         id: string;
         username: string;
@@ -118,8 +169,10 @@ export interface SimplifiedDebt {
 export interface Settlement {
     id: string;
     groupId: string;
-    fromUserId: string;
-    toUserId: string;
+    fromMemberId: string;
+    toMemberId: string;
+    fromUserId?: string;
+    toUserId?: string;
     amount: string;
     currency: string;
     settledAt: string;

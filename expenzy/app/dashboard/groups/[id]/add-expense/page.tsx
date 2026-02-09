@@ -89,7 +89,7 @@ export default function AddExpensePage() {
     const [paidBy, setPaidBy] = useState('');
     const [splitType, setSplitType] = useState<SplitType>('equal');
     const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
-        acceptedMembers.map((m) => m.userId).filter((id): id is string => id !== null)
+        acceptedMembers.map((m) => m.id)
     );
     const [showSplitTypeModal, setShowSplitTypeModal] = useState(false);
     const [showPaidByModal, setShowPaidByModal] = useState(false);
@@ -106,11 +106,20 @@ export default function AddExpensePage() {
 
     // Set paidBy when currentUserId is available (only once)
     useEffect(() => {
-        if (currentUserId && !paidBy) {
-            setPaidBy(currentUserId);
+        if (currentUserId && !paidBy && acceptedMembers.length > 0) {
+            const currentMember = acceptedMembers.find(m => m.userId === currentUserId);
+            if (currentMember) {
+                setPaidBy(currentMember.id);
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentUserId]);
+    }, [currentUserId, acceptedMembers.length, paidBy]);
+
+    // Set selectedParticipants when members are loaded (only for new expenses)
+    useEffect(() => {
+        if (!isEditMode && acceptedMembers.length > 0 && selectedParticipants.length === 0) {
+            setSelectedParticipants(acceptedMembers.map(m => m.id));
+        }
+    }, [acceptedMembers, isEditMode, selectedParticipants.length]);
 
     // Pre-fill form when editing (only once when expense loads)
     useEffect(() => {
@@ -118,25 +127,25 @@ export default function AddExpensePage() {
             setDescription(existingExpense.description);
             calculatorInput.setValue(existingExpense.amount.toString());
             setCategoryId(existingExpense.category?.id || '');
-            setPaidBy(existingExpense.paidByUserId);
+            setPaidBy(existingExpense.paidByMemberId || '');
             setSplitType(existingExpense.splitType as SplitType);
 
             // Set participants from splits
-            const participants = existingExpense.splits?.map(s => s.userId) || [];
+            const participants = existingExpense.splits?.map(s => s.memberId) || [];
             setSelectedParticipants(participants);
 
             // Pre-fill split amounts based on type
             if (existingExpense.splitType === 'exact') {
                 const amounts: Record<string, string> = {};
                 existingExpense.splits?.forEach(split => {
-                    amounts[split.userId] = split.amountOwed.toString();
+                    amounts[split.memberId] = split.amountOwed.toString();
                 });
                 setExactAmounts(amounts);
             } else if (existingExpense.splitType === 'percentage') {
                 const pcts: Record<string, string> = {};
                 existingExpense.splits?.forEach(split => {
                     if (split.percentage) {
-                        pcts[split.userId] = split.percentage.toString();
+                        pcts[split.memberId] = split.percentage.toString();
                     }
                 });
                 setPercentages(pcts);
@@ -144,7 +153,7 @@ export default function AddExpensePage() {
                 const shrs: Record<string, string> = {};
                 existingExpense.splits?.forEach(split => {
                     if (split.shares) {
-                        shrs[split.userId] = split.shares.toString();
+                        shrs[split.memberId] = split.shares.toString();
                     }
                 });
                 setShares(shrs);
@@ -222,7 +231,7 @@ export default function AddExpensePage() {
         // Validate based on split type
         if (splitType === 'exact') {
             const total = selectedParticipants.reduce(
-                (sum, userId) => sum + (parseFloat(exactAmounts[userId] || '0')),
+                (sum, memberId) => sum + (parseFloat(exactAmounts[memberId] || '0')),
                 0
             );
             if (Math.abs(total - finalAmount) > 0.01) {
@@ -231,7 +240,7 @@ export default function AddExpensePage() {
             }
         } else if (splitType === 'percentage') {
             const total = selectedParticipants.reduce(
-                (sum, userId) => sum + (parseFloat(percentages[userId] || '0')),
+                (sum, memberId) => sum + (parseFloat(percentages[memberId] || '0')),
                 0
             );
             if (Math.abs(total - 100) > 0.01) {
@@ -245,30 +254,30 @@ export default function AddExpensePage() {
 
             if (splitType === 'equal') {
                 const perPerson = finalAmount / selectedParticipants.length;
-                participants = selectedParticipants.map((userId) => ({
-                    userId,
+                participants = selectedParticipants.map((memberId) => ({
+                    memberId,
                     amount: perPerson,
                 }));
             } else if (splitType === 'exact') {
-                participants = selectedParticipants.map((userId) => ({
-                    userId,
-                    amount: parseFloat(exactAmounts[userId] || '0'),
+                participants = selectedParticipants.map((memberId) => ({
+                    memberId,
+                    amount: parseFloat(exactAmounts[memberId] || '0'),
                 }));
             } else if (splitType === 'percentage') {
-                participants = selectedParticipants.map((userId) => ({
-                    userId,
-                    amount: (finalAmount * parseFloat(percentages[userId] || '0')) / 100,
-                    percentage: parseFloat(percentages[userId] || '0'),
+                participants = selectedParticipants.map((memberId) => ({
+                    memberId,
+                    amount: (finalAmount * parseFloat(percentages[memberId] || '0')) / 100,
+                    percentage: parseFloat(percentages[memberId] || '0'),
                 }));
             } else if (splitType === 'shares') {
                 const totalShares = selectedParticipants.reduce(
-                    (sum, userId) => sum + parseFloat(shares[userId] || '1'),
+                    (sum, memberId) => sum + parseFloat(shares[memberId] || '1'),
                     0
                 );
-                participants = selectedParticipants.map((userId) => ({
-                    userId,
-                    amount: (finalAmount * parseFloat(shares[userId] || '1')) / totalShares,
-                    shares: parseFloat(shares[userId] || '1'),
+                participants = selectedParticipants.map((memberId) => ({
+                    memberId,
+                    amount: (finalAmount * parseFloat(shares[memberId] || '1')) / totalShares,
+                    shares: parseFloat(shares[memberId] || '1'),
                 }));
             }
 
@@ -291,7 +300,7 @@ export default function AddExpensePage() {
                     data: {
                         description: description.trim(),
                         amount: finalAmount,
-                        paidByUserId: paidBy,
+                        paidByMemberId: paidBy,
                         splitType,
                         participants,
                         expenseDate: expenseDate.toISOString().split('T')[0],
@@ -307,36 +316,38 @@ export default function AddExpensePage() {
         }
     };
 
-    const toggleParticipant = (userId: string) => {
+    const toggleParticipant = (memberId: string) => {
         setSelectedParticipants((prev) =>
-            prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+            prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
         );
     };
 
-    const getMemberName = (userId: string) => {
-        if (userId === currentUserId) return 'You';
-        const member = acceptedMembers.find((m) => m.userId === userId);
-        if (!member?.user) return 'Unknown';
+    const getMemberName = (memberId: string) => {
+        const member = acceptedMembers.find((m) => m.id === memberId);
+        if (!member) return 'Unknown';
+        if (member.userId === currentUserId) return 'You';
+        if (member.contactName) return member.contactName;
+        if (!member.user) return 'Unknown';
         return `${member.user.firstName} ${member.user.lastName}`.trim() || member.user.email;
     };
 
-    const getCalculatedAmount = (userId: string) => {
+    const getCalculatedAmount = (memberId: string) => {
         const finalAmount = calculatorInput.result.calculatedValue || parseFloat(calculatorInput.value);
-        if (!calculatorInput.value || isNaN(finalAmount) || !selectedParticipants.includes(userId)) return '0.00';
+        if (!calculatorInput.value || isNaN(finalAmount) || !selectedParticipants.includes(memberId)) return '0.00';
 
         if (splitType === 'equal') {
             return (finalAmount / selectedParticipants.length).toFixed(2);
         } else if (splitType === 'exact') {
-            return parseFloat(exactAmounts[userId] || '0').toFixed(2);
+            return parseFloat(exactAmounts[memberId] || '0').toFixed(2);
         } else if (splitType === 'percentage') {
-            const pct = parseFloat(percentages[userId] || '0');
+            const pct = parseFloat(percentages[memberId] || '0');
             return ((finalAmount * pct) / 100).toFixed(2);
         } else if (splitType === 'shares') {
             const totalShares = selectedParticipants.reduce(
                 (sum, id) => sum + parseFloat(shares[id] || '1'),
                 0
             );
-            const userShares = parseFloat(shares[userId] || '1');
+            const userShares = parseFloat(shares[memberId] || '1');
             return ((finalAmount * userShares) / totalShares).toFixed(2);
         }
         return '0.00';
@@ -513,14 +524,14 @@ export default function AddExpensePage() {
                     </p>
 
                     <div className="space-y-2">
-                        {acceptedMembers.filter(m => m.userId !== null).map((member) => {
-                            const userId = member.userId!; // Non-null assertion is safe after filter
-                            const isSelected = selectedParticipants.includes(userId);
-                            const memberName = getMemberName(userId);
+                        {acceptedMembers.map((member) => {
+                            const memberId = member.id;
+                            const isSelected = selectedParticipants.includes(memberId);
+                            const memberName = getMemberName(memberId);
 
                             return (
                                 <div
-                                    key={userId}
+                                    key={memberId}
                                     className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-muted transition-colors"
                                 >
                                     <div className="flex items-center gap-3 flex-1">
@@ -528,15 +539,16 @@ export default function AddExpensePage() {
                                             name={memberName}
                                             avatarSeed={member.user?.avatarSeed}
                                             avatarStyle={member.user?.avatarStyle}
+                                            imageUrl={member.contactAvatar || member.user?.avatarUrl}
                                             isSelected={isSelected}
-                                            onClick={() => toggleParticipant(userId)}
+                                            onClick={() => toggleParticipant(memberId)}
                                             size="md"
                                         />
                                         <div className="flex flex-col">
                                             <span className="font-medium">{memberName}</span>
                                             {isSelected && splitType !== 'exact' && (
                                                 <span className="text-sm text-muted-foreground">
-                                                    ₹{getCalculatedAmount(userId)}
+                                                    ₹{getCalculatedAmount(memberId)}
                                                 </span>
                                             )}
                                         </div>
@@ -549,11 +561,11 @@ export default function AddExpensePage() {
                                                     <Input
                                                         type="number"
                                                         placeholder="0"
-                                                        value={percentages[userId] || ''}
+                                                        value={percentages[memberId] || ''}
                                                         onChange={(e) =>
                                                             setPercentages((prev) => ({
                                                                 ...prev,
-                                                                [userId]: e.target.value,
+                                                                [memberId]: e.target.value,
                                                             }))
                                                         }
                                                         className="w-20 text-right"
@@ -567,11 +579,11 @@ export default function AddExpensePage() {
                                                 <Input
                                                     type="number"
                                                     placeholder="0.00"
-                                                    value={exactAmounts[userId] || ''}
+                                                    value={exactAmounts[memberId] || ''}
                                                     onChange={(e) =>
                                                         setExactAmounts((prev) => ({
                                                             ...prev,
-                                                            [userId]: e.target.value,
+                                                            [memberId]: e.target.value,
                                                         }))
                                                     }
                                                     className="w-24 text-right"
@@ -583,11 +595,11 @@ export default function AddExpensePage() {
                                                 <Input
                                                     type="number"
                                                     placeholder="1"
-                                                    value={shares[userId] || '1'}
+                                                    value={shares[memberId] || '1'}
                                                     onChange={(e) =>
                                                         setShares((prev) => ({
                                                             ...prev,
-                                                            [userId]: e.target.value,
+                                                            [memberId]: e.target.value,
                                                         }))
                                                     }
                                                     className="w-20 text-right"
@@ -623,7 +635,7 @@ export default function AddExpensePage() {
                                 {/* Exact amounts summary */}
                                 {splitType === 'exact' && (() => {
                                     const totalEntered = selectedParticipants.reduce(
-                                        (sum, userId) => sum + parseFloat(exactAmounts[userId] || '0'),
+                                        (sum, memberId) => sum + parseFloat(exactAmounts[memberId] || '0'),
                                         0
                                     );
                                     const remaining = finalAmount - totalEntered;
@@ -654,7 +666,7 @@ export default function AddExpensePage() {
                                 {/* Percentage summary */}
                                 {splitType === 'percentage' && (() => {
                                     const totalPercentage = selectedParticipants.reduce(
-                                        (sum, userId) => sum + parseFloat(percentages[userId] || '0'),
+                                        (sum, memberId) => sum + parseFloat(percentages[memberId] || '0'),
                                         0
                                     );
                                     const remaining = 100 - totalPercentage;
@@ -690,7 +702,7 @@ export default function AddExpensePage() {
                                         </span>
                                         <span className="text-sm font-medium">
                                             Total: {selectedParticipants.reduce(
-                                                (sum, userId) => sum + parseFloat(shares[userId] || '1'),
+                                                (sum, memberId) => sum + parseFloat(shares[memberId] || '1'),
                                                 0
                                             ).toFixed(1)} shares
                                         </span>
@@ -733,26 +745,27 @@ export default function AddExpensePage() {
                         <DialogTitle>Who paid?</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-2">
-                        {acceptedMembers.filter(m => m.userId !== null).map((member) => {
-                            const userId = member.userId!; // Non-null assertion is safe after filter
+                        {acceptedMembers.map((member) => {
+                            const memberId = member.id;
                             return (
                                 <div
-                                    key={userId}
+                                    key={memberId}
                                     onClick={() => {
-                                        setPaidBy(userId);
+                                        setPaidBy(memberId);
                                         setShowPaidByModal(false);
                                     }}
                                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
                                 >
                                     <MemberAvatar
-                                        name={getMemberName(userId)}
+                                        name={getMemberName(memberId)}
                                         avatarSeed={member.user?.avatarSeed}
                                         avatarStyle={member.user?.avatarStyle}
+                                        imageUrl={member.contactAvatar || member.user?.avatarUrl}
                                         size="md"
                                         showCheckmark={false}
                                     />
-                                    <span className="font-medium">{getMemberName(userId)}</span>
-                                    {paidBy === userId && <Check className="h-5 w-5 ml-auto text-primary" />}
+                                    <span className="font-medium">{getMemberName(memberId)}</span>
+                                    {paidBy === memberId && <Check className="h-5 w-5 ml-auto text-primary" />}
                                 </div>
                             );
                         })}

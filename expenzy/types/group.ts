@@ -11,6 +11,7 @@ export interface Group {
     iconUrl?: string;
     imageUrl?: string;
     createdByUserId: string;
+    isLocal: boolean;
     createdAt: string;
     updatedAt: string;
     members?: GroupMember[];
@@ -30,6 +31,8 @@ export interface GroupMember {
     inviteStatus?: string;
     inviteToken?: string | null;
     invitedEmail?: string | null;
+    contactName?: string | null;
+    contactAvatar?: string | null;
     user?: {
         id: string;
         firstName: string;
@@ -50,6 +53,7 @@ export interface CreateGroupDto {
     description?: string;
     currency?: string;
     memberEmails?: string[];
+    isLocal?: boolean;
 }
 
 
@@ -57,6 +61,7 @@ export type UpdateGroupDto = Partial<CreateGroupDto>;
 
 
 export interface AddMemberDto {
-    email: string;
+    email?: string;
+    memberName?: string;
     role?: 'ADMIN' | 'MEMBER';
 }

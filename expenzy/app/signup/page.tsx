@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 import { Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 
 export default function SignupPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { signup, isAuthenticated } = useAuth();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -17,11 +18,13 @@ export default function SignupPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    const redirect = searchParams.get('redirect');
+
     useEffect(() => {
         if (isAuthenticated) {
-            router.push(ROUTES.DASHBOARD);
+            router.push(redirect || ROUTES.DASHBOARD);
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, router, redirect]);
 
     if (isAuthenticated) {
         return null;
@@ -41,7 +44,8 @@ export default function SignupPage() {
             await signup({ username, email, password });
             toast.success('Account created! Please check your email for verification code.');
             // Redirect to OTP verification page
-            router.push(`/verify-otp?email=${encodeURIComponent(email)}&purpose=registration`);
+            const redirectParam = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
+            router.push(`/verify-otp?email=${encodeURIComponent(email)}&purpose=registration${redirectParam}`);
         } catch (error) {
             const err = error as { message: string };
             toast.error(err.message || 'Failed to create account');

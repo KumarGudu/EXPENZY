@@ -37,14 +37,14 @@ export class GroupsService {
     private expenseService: GroupExpenseService,
     private statisticsService: GroupStatisticsService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   async create(createGroupDto: CreateGroupDto, userId: string) {
     // Generate icon data
     const iconSeed = createGroupDto.iconSeed || generateRandomSeed();
     const iconProvider =
       createGroupDto.iconProvider &&
-      validateGroupIconProvider(createGroupDto.iconProvider)
+        validateGroupIconProvider(createGroupDto.iconProvider)
         ? (createGroupDto.iconProvider as 'jdenticon')
         : 'jdenticon';
 
@@ -56,6 +56,8 @@ export class GroupsService {
         iconSeed,
         iconProvider,
         createdByUserId: userId,
+        isLocal: createGroupDto.isLocal || false,
+        groupType: createGroupDto.isLocal ? 'local' : (createGroupDto.groupType || 'other'),
         members: {
           create: {
             userId: userId,
@@ -286,6 +288,50 @@ export class GroupsService {
           );
         }
       }
+    }
+
+    // Handle Local Member
+    if (addMemberDto.memberName) {
+      // Find or create a contact for this owner with the same name
+      let contact = await this.prisma.userContact.findFirst({
+        where: {
+          userId: userId,
+          contactName: addMemberDto.memberName,
+        },
+      });
+
+      if (!contact) {
+        contact = await this.prisma.userContact.create({
+          data: {
+            userId: userId,
+            contactName: addMemberDto.memberName,
+            contactEmail: addMemberDto.memberEmail,
+          },
+        });
+      }
+
+      // Check if this contact is already a member
+      const existingMember = group.members.find(
+        (m) => m.contactId === contact!.id,
+      );
+      if (existingMember) {
+        throw new BadRequestException('This person is already a member of this group');
+      }
+
+      return this.prisma.groupMember.create({
+        data: {
+          groupId,
+          contactId: contact.id,
+          role: addMemberDto.role || 'member',
+          inviteStatus: 'accepted',
+          joinedAt: new Date(),
+        },
+        include: {
+          user: true,
+          contact: true,
+          group: true,
+        },
+      });
     }
 
     // Generate invite token if email provided
@@ -564,20 +610,20 @@ export class GroupsService {
       data: expenses,
       pagination: cursor
         ? {
-            // Cursor-based response
-            limit,
-            nextCursor,
-            hasMore: nextCursor !== null,
-          }
+          // Cursor-based response
+          limit,
+          nextCursor,
+          hasMore: nextCursor !== null,
+        }
         : {
-            // Offset-based response (backward compatibility)
-            page,
-            limit,
-            total: total!,
-            totalPages: Math.ceil(total! / limit),
-            hasMore: page * limit < total!,
-            nextCursor, // Include cursor for migration
-          },
+          // Offset-based response (backward compatibility)
+          page,
+          limit,
+          total: total!,
+          totalPages: Math.ceil(total! / limit),
+          hasMore: page * limit < total!,
+          nextCursor, // Include cursor for migration
+        },
     };
   }
 
@@ -628,7 +674,7 @@ export class GroupsService {
     if (userBalance < -0.01) {
       throw new BadRequestException(
         `You cannot leave the group with outstanding debts. ` +
-          `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
+        `You owe ₹${Math.abs(userBalance).toFixed(2)}. Please settle your debts first.`,
       );
     }
 
@@ -799,9 +845,11 @@ export class GroupsService {
         splits: {
           include: {
             user: true,
+            member: true,
           },
         },
         paidBy: true,
+        paidByMember: true,
       },
     });
 
@@ -813,6 +861,7 @@ export class GroupsService {
     this.cacheService.setCachedBalance(groupId, balances, expenseCount);
 
     return Array.from(balances.values()).map((balance) => ({
+      memberId: balance.memberId,
       userId: balance.userId,
       totalPaid: balance.totalPaid,
       totalOwed: balance.totalOwed,
@@ -822,9 +871,9 @@ export class GroupsService {
   }
 
   /**
-   * Get balance for a specific user
+   * Get balance for a specific user or member
    */
-  async getUserBalance(groupId: string, targetUserId: string, userId: string) {
+  async getUserBalance(groupId: string, targetMemberId: string, userId: string) {
     await this.verifyGroupMembership(groupId, userId);
 
     const expenses = await this.prisma.groupExpense.findMany({
@@ -843,11 +892,11 @@ export class GroupsService {
     );
     const userBalance = this.balanceCalculationService.getUserBalance(
       balances,
-      targetUserId,
+      targetMemberId,
     );
 
     return {
-      userId: targetUserId,
+      memberId: targetMemberId,
       balance: userBalance,
       formatted: this.balanceCalculationService.formatBalance(userBalance),
     };
@@ -881,38 +930,70 @@ export class GroupsService {
     // Simplify debts using greedy algorithm
     const simplifiedDebts = this.debtSettlementService.simplifyDebts(balances);
 
-    // Collect all unique user IDs to fetch in a single query (fixes N+1 problem)
-    const userIds = new Set<string>();
+    // Collect all unique member IDs to fetch in a single query
+    const memberIds = new Set<string>();
     simplifiedDebts.forEach((debt) => {
-      userIds.add(debt.from);
-      userIds.add(debt.to);
+      memberIds.add(debt.from);
+      memberIds.add(debt.to);
     });
 
-    // Fetch all users in a single query
-    const users = await this.prisma.user.findMany({
-      where: { id: { in: Array.from(userIds) } },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        firstName: true,
-        lastName: true,
+    // Fetch all members in a single query with their user or contact details
+    const members = await this.prisma.groupMember.findMany({
+      where: { id: { in: Array.from(memberIds) } },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+            avatarUrl: true,
+          },
+        },
+        contact: true,
       },
     });
 
     // Create a map for O(1) lookups
-    const userMap = new Map(users.map((u) => [u.id, u]));
+    const memberMap = new Map(members.map((m) => [m.id, m]));
 
-    // Map debts with users
-    const debtsWithUsers = simplifiedDebts.map((debt) => ({
-      fromUserId: debt.from,
-      toUserId: debt.to,
-      amount: debt.amount,
-      fromUser: userMap.get(debt.from),
-      toUser: userMap.get(debt.to),
-    }));
+    // Format the results
+    return simplifiedDebts.map((debt) => {
+      const fromMember = memberMap.get(debt.from);
+      const toMember = memberMap.get(debt.to);
 
-    return debtsWithUsers;
+      const getMemberName = (m: any) => {
+        if (!m) return 'Unknown';
+        if (m.user) {
+          return m.user.firstName && m.user.lastName
+            ? `${m.user.firstName} ${m.user.lastName}`
+            : m.user.username;
+        }
+        return m.contact?.contactName || 'Unknown';
+      };
+
+      return {
+        ...debt,
+        fromMember: {
+          id: debt.from,
+          userId: fromMember?.userId,
+          name: getMemberName(fromMember),
+          avatarSource: fromMember?.user ? 'user' : 'contact',
+          avatar: fromMember?.user?.avatar || (fromMember?.contact as any)?.contactAvatar,
+          avatarUrl: fromMember?.user?.avatarUrl,
+        },
+        toMember: {
+          id: debt.to,
+          userId: toMember?.userId,
+          name: getMemberName(toMember),
+          avatarSource: toMember?.user ? 'user' : 'contact',
+          avatar: toMember?.user?.avatar || (toMember?.contact as any)?.contactAvatar,
+          avatarUrl: toMember?.user?.avatarUrl,
+        },
+      };
+    });
   }
 
   /**
@@ -938,14 +1019,29 @@ export class GroupsService {
   ) {
     await this.verifyGroupMembership(groupId, userId);
 
+    const fromMember = await this.prisma.groupMember.findUnique({
+      where: { id: settlementDto.fromMemberId },
+    });
+    const toMember = await this.prisma.groupMember.findUnique({
+      where: { id: settlementDto.toMemberId },
+    });
+
+    if (!fromMember || !toMember) {
+      throw new NotFoundException('One or both members not found');
+    }
+
     return this.prisma.settlement.create({
       data: {
         groupId,
-        fromUserId: settlementDto.fromUserId,
-        toUserId: settlementDto.toUserId,
+        fromMemberId: settlementDto.fromMemberId,
+        toMemberId: settlementDto.toMemberId,
+        fromUserId: fromMember.userId || undefined,
+        toUserId: toMember.userId || undefined,
         amount: settlementDto.amount,
         currency: settlementDto.currency || 'INR',
-        settledAt: new Date(),
+        settledAt: settlementDto.settledAt
+          ? new Date(settlementDto.settledAt)
+          : new Date(),
         notes: settlementDto.notes,
       },
     });

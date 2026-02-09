@@ -7,13 +7,16 @@ import { Mail, ArrowLeft, RefreshCw } from 'lucide-react';
 import { ROUTES } from '@/lib/routes';
 import Link from 'next/link';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { useAuth } from '@/contexts/auth-context';
+import { apiClient } from '@/lib/api/client';
 
 function VerifyOtpForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { verifyOtp } = useAuth();
     const email = searchParams.get('email') || '';
     const purpose = (searchParams.get('purpose') as 'registration' | 'password_reset') || 'registration';
+    const redirect = searchParams.get('redirect');
 
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +52,7 @@ function VerifyOtpForm() {
         setOtp(newOtp);
 
         // Auto-focus next input
-        if (value && index < 5) {
+        if (index < 5 && value) {
             inputRefs.current[index + 1]?.focus();
         }
 
@@ -95,34 +98,17 @@ function VerifyOtpForm() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/auth/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, code: otpCode, purpose }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Invalid OTP code');
-            }
+            const data = await verifyOtp(email, otpCode, purpose);
 
             toast.success('Email verified successfully!');
 
             if (purpose === 'registration') {
-                // Store token and redirect to dashboard
-                if (data.access_token) {
-                    localStorage.setItem('token', data.access_token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                }
-                router.push(ROUTES.DASHBOARD);
+                router.push(redirect || ROUTES.DASHBOARD);
             } else if (purpose === 'password_reset') {
-                // Redirect to reset password page
                 router.push(`/reset-password?email=${encodeURIComponent(email)}&code=${otpCode}`);
             }
-        } catch (error) {
-            const err = error as { message: string };
-            toast.error(err.message || 'Verification failed');
+        } catch (error: any) {
+            toast.error(error.message || 'Verification failed');
             setOtp(['', '', '', '', '', '']);
             inputRefs.current[0]?.focus();
         } finally {
@@ -134,26 +120,14 @@ function VerifyOtpForm() {
         setIsResending(true);
 
         try {
-            const response = await fetch(`${API_URL}/auth/resend-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, purpose }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to resend OTP');
-            }
-
+            await apiClient.post('/auth/resend-otp', { email, purpose });
             toast.success('New code sent to your email');
             setOtp(['', '', '', '', '', '']);
             setCountdown(60);
             setCanResend(false);
             inputRefs.current[0]?.focus();
-        } catch (error) {
-            const err = error as { message: string };
-            toast.error(err.message || 'Failed to resend code');
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to resend code');
         } finally {
             setIsResending(false);
         }

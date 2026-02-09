@@ -49,8 +49,8 @@ export function useSettleDebt() {
     return useMutation({
         mutationFn: async (params: {
             groupId: string;
-            fromUserId: string;
-            toUserId: string;
+            fromMemberId: string;
+            toMemberId: string;
             amount: number;
             settledAt?: string;
             notes?: string;
@@ -58,8 +58,8 @@ export function useSettleDebt() {
             return await apiClient.post(
                 API_ENDPOINTS.GROUPS.SETTLEMENTS(params.groupId),
                 {
-                    fromUserId: params.fromUserId,
-                    toUserId: params.toUserId,
+                    fromMemberId: params.fromMemberId,
+                    toMemberId: params.toMemberId,
                     amount: params.amount,
                     settledAt: params.settledAt,
                     notes: params.notes,

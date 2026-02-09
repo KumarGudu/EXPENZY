@@ -19,7 +19,7 @@ import {
 interface SplitConfiguratorProps {
     splitType: SplitType;
     onSplitTypeChange: (type: SplitType) => void;
-    members: Array<{ id: string; username: string; email: string }>;
+    members: Array<{ id: string; name: string }>;
     amount: number;
     participants: ParticipantInput[];
     onParticipantsChange: (participants: ParticipantInput[]) => void;
@@ -36,7 +36,7 @@ export function SplitConfigurator({
     // Initialize with all members for equal split
     useEffect(() => {
         if (splitType === 'equal' && participants.length === 0) {
-            onParticipantsChange(members.map((m) => ({ userId: m.id })));
+            onParticipantsChange(members.map((m) => ({ memberId: m.id })));
         }
     }, [splitType, members, participants.length, onParticipantsChange]);
 
@@ -134,17 +134,17 @@ function EqualSplitConfig({
     onParticipantsChange,
     amount,
 }: {
-    members: Array<{ id: string; username: string }>;
+    members: Array<{ id: string; name: string }>;
     participants: ParticipantInput[];
     onParticipantsChange: (participants: ParticipantInput[]) => void;
     amount: number;
 }) {
-    const toggleMember = (userId: string) => {
-        const exists = participants.find((p) => p.userId === userId);
+    const toggleMember = (memberId: string) => {
+        const exists = participants.find((p) => p.memberId === memberId);
         if (exists) {
-            onParticipantsChange(participants.filter((p) => p.userId !== userId));
+            onParticipantsChange(participants.filter((p) => p.memberId !== memberId));
         } else {
-            onParticipantsChange([...participants, { userId }]);
+            onParticipantsChange([...participants, { memberId }]);
         }
     };
 
@@ -155,7 +155,7 @@ function EqualSplitConfig({
             <Label>Select people to split with:</Label>
             <div className="space-y-2">
                 {members.map((member) => {
-                    const isSelected = participants.some((p) => p.userId === member.id);
+                    const isSelected = participants.some((p) => p.memberId === member.id);
                     return (
                         <Card
                             key={member.id}
@@ -166,7 +166,7 @@ function EqualSplitConfig({
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <Checkbox checked={isSelected} />
-                                    <span className="font-medium">{member.username}</span>
+                                    <span className="font-medium">{member.name}</span>
                                 </div>
                                 {isSelected && amount > 0 && (
                                     <span className="text-sm font-semibold text-primary">
@@ -195,21 +195,21 @@ function ExactSplitConfig({
     onParticipantsChange,
     amount,
 }: {
-    members: Array<{ id: string; username: string }>;
+    members: Array<{ id: string; name: string }>;
     participants: ParticipantInput[];
     onParticipantsChange: (participants: ParticipantInput[]) => void;
     amount: number;
 }) {
-    const updateAmount = (userId: string, value: string) => {
+    const updateAmount = (memberId: string, value: string) => {
         const numValue = parseFloat(value) || 0;
-        const existing = participants.find((p) => p.userId === userId);
+        const existing = participants.find((p) => p.memberId === memberId);
 
         if (existing) {
             onParticipantsChange(
-                participants.map((p) => (p.userId === userId ? { ...p, amount: numValue } : p))
+                participants.map((p) => (p.memberId === memberId ? { ...p, amount: numValue } : p))
             );
         } else {
-            onParticipantsChange([...participants, { userId, amount: numValue }]);
+            onParticipantsChange([...participants, { memberId, amount: numValue }]);
         }
     };
 
@@ -224,10 +224,10 @@ function ExactSplitConfig({
             <Label>Enter exact amount for each person:</Label>
             <div className="space-y-2">
                 {members.map((member) => {
-                    const participant = participants.find((p) => p.userId === member.id);
+                    const participant = participants.find((p) => p.memberId === member.id);
                     return (
                         <div key={member.id} className="flex items-center gap-3">
-                            <span className="flex-1 font-medium">{member.username}</span>
+                            <span className="flex-1 font-medium">{member.name}</span>
                             <div className="flex items-center gap-2">
                                 <span className="text-sm text-muted-foreground">₹</span>
                                 <Input
@@ -264,21 +264,21 @@ function PercentageSplitConfig({
     onParticipantsChange,
     amount,
 }: {
-    members: Array<{ id: string; username: string }>;
+    members: Array<{ id: string; name: string }>;
     participants: ParticipantInput[];
     onParticipantsChange: (participants: ParticipantInput[]) => void;
     amount: number;
 }) {
-    const updatePercentage = (userId: string, value: string) => {
+    const updatePercentage = (memberId: string, value: string) => {
         const numValue = parseFloat(value) || 0;
-        const existing = participants.find((p) => p.userId === userId);
+        const existing = participants.find((p) => p.memberId === memberId);
 
         if (existing) {
             onParticipantsChange(
-                participants.map((p) => (p.userId === userId ? { ...p, percentage: numValue } : p))
+                participants.map((p) => (p.memberId === memberId ? { ...p, percentage: numValue } : p))
             );
         } else {
-            onParticipantsChange([...participants, { userId, percentage: numValue }]);
+            onParticipantsChange([...participants, { memberId, percentage: numValue }]);
         }
     };
 
@@ -292,7 +292,7 @@ function PercentageSplitConfig({
             <Label>Enter percentage for each person:</Label>
             <div className="space-y-2">
                 {members.map((member) => {
-                    const participant = participants.find((p) => p.userId === member.id);
+                    const participant = participants.find((p) => p.memberId === member.id);
                     const calculatedAmount =
                         participant?.percentage && amount > 0
                             ? calculatePercentageSplit(amount, participant.percentage)
@@ -300,7 +300,7 @@ function PercentageSplitConfig({
 
                     return (
                         <div key={member.id} className="flex items-center gap-3">
-                            <span className="flex-1 font-medium">{member.username}</span>
+                            <span className="flex-1 font-medium">{member.name}</span>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"
@@ -343,21 +343,21 @@ function SharesSplitConfig({
     onParticipantsChange,
     amount,
 }: {
-    members: Array<{ id: string; username: string }>;
+    members: Array<{ id: string; name: string }>;
     participants: ParticipantInput[];
     onParticipantsChange: (participants: ParticipantInput[]) => void;
     amount: number;
 }) {
-    const updateShares = (userId: string, value: string) => {
+    const updateShares = (memberId: string, value: string) => {
         const numValue = parseFloat(value) || 0;
-        const existing = participants.find((p) => p.userId === userId);
+        const existing = participants.find((p) => p.memberId === memberId);
 
         if (existing) {
             onParticipantsChange(
-                participants.map((p) => (p.userId === userId ? { ...p, shares: numValue } : p))
+                participants.map((p) => (p.memberId === memberId ? { ...p, shares: numValue } : p))
             );
         } else {
-            onParticipantsChange([...participants, { userId, shares: numValue }]);
+            onParticipantsChange([...participants, { memberId, shares: numValue }]);
         }
     };
 
@@ -368,7 +368,7 @@ function SharesSplitConfig({
             <Label>Enter shares for each person (e.g., 2:1:1):</Label>
             <div className="space-y-2">
                 {members.map((member) => {
-                    const participant = participants.find((p) => p.userId === member.id);
+                    const participant = participants.find((p) => p.memberId === member.id);
                     const calculatedAmount =
                         participant?.shares && totalShares > 0
                             ? calculateSharesSplit(amount, participant.shares, totalShares)
@@ -376,7 +376,7 @@ function SharesSplitConfig({
 
                     return (
                         <div key={member.id} className="flex items-center gap-3">
-                            <span className="flex-1 font-medium">{member.username}</span>
+                            <span className="flex-1 font-medium">{member.name}</span>
                             <div className="flex items-center gap-2">
                                 <Input
                                     type="number"

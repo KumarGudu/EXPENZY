@@ -11,6 +11,7 @@ export interface CreateGroupData {
     groupType?: string;
     iconSeed?: string;
     iconProvider?: string;
+    isLocal?: boolean;
 }
 
 export interface UpdateGroupData {
@@ -115,16 +116,20 @@ export function useAddGroupMember() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ groupId, memberEmail, role }: { groupId: string; memberEmail: string; role?: 'admin' | 'member' }) => {
+        mutationFn: async ({ groupId, memberEmail, memberName, role }: { groupId: string; memberEmail?: string; memberName?: string; role?: 'admin' | 'member' }) => {
             return await apiClient.post(
                 `${API_ENDPOINTS.GROUPS.LIST}/${groupId}/members`,
-                { memberEmail, role }
+                { memberEmail, memberName, role }
             );
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId, 'members'] });
             queryClient.invalidateQueries({ queryKey: ['groups', variables.groupId] });
-            toast.success('Member invited successfully! They will receive an email.');
+            if (variables.memberName) {
+                toast.success('Member added successfully!');
+            } else {
+                toast.success('Member invited successfully! They will receive an email.');
+            }
         },
         onError: (error: unknown) => {
             const message = (error as { response?: { data?: { message?: string | string[] } } })?.response?.data?.message;

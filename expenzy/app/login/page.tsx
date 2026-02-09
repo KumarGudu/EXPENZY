@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { ROUTES } from '@/lib/routes';
 
 export default function LoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { login, isAuthenticated } = useAuth();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -21,11 +22,13 @@ export default function LoginPage() {
         password: '',
     });
 
+    const redirect = searchParams.get('redirect');
+
     useEffect(() => {
         if (isAuthenticated) {
-            router.push(ROUTES.DASHBOARD);
+            router.push(redirect || ROUTES.DASHBOARD);
         }
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, router, redirect]);
 
     if (isAuthenticated) {
         return null;
@@ -42,7 +45,8 @@ export default function LoginPage() {
             // Check if user is unverified
             if (err.message?.includes('verify your email')) {
                 toast.error('Please verify your email address first');
-                router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&purpose=registration`);
+                const redirectParam = redirect ? `&redirect=${encodeURIComponent(redirect)}` : '';
+                router.push(`/verify-otp?email=${encodeURIComponent(formData.email)}&purpose=registration${redirectParam}`);
             } else {
                 toast.error('Invalid email or password');
             }

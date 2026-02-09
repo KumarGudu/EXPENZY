@@ -18,10 +18,13 @@ import { cn } from '@/lib/utils/cn';
 import { toast } from 'sonner';
 import type { SimplifiedDebt } from '@/types/split';
 
+import { MemberAvatar } from './member-avatar';
+
 interface SettleUpModalProps {
     isOpen: boolean;
     onClose: () => void;
     groupId: string;
+    currentMemberId: string;
     debts: SimplifiedDebt[];
     currency: 'INR' | 'USD' | 'EUR';
     isMobile?: boolean;
@@ -31,13 +34,12 @@ export function SettleUpModal({
     isOpen,
     onClose,
     groupId,
+    currentMemberId,
     debts,
     currency,
     isMobile = false,
 }: SettleUpModalProps) {
-    const { data: profile } = useProfile();
     const settleDebt = useSettleDebt();
-    const currentUserId = profile?.id || '';
 
     const [selectedDebt, setSelectedDebt] = useState<SimplifiedDebt | null>(null);
     const [amount, setAmount] = useState('');
@@ -46,7 +48,7 @@ export function SettleUpModal({
 
     // Filter debts relevant to current user
     const userDebts = debts.filter(
-        (debt) => debt.fromUserId === currentUserId || debt.toUserId === currentUserId
+        (debt) => debt.fromMemberId === currentMemberId || debt.toMemberId === currentMemberId
     );
 
     const handleSettle = async () => {
@@ -69,8 +71,8 @@ export function SettleUpModal({
         try {
             await settleDebt.mutateAsync({
                 groupId,
-                fromUserId: selectedDebt.fromUserId,
-                toUserId: selectedDebt.toUserId,
+                fromMemberId: selectedDebt.fromMemberId,
+                toMemberId: selectedDebt.toMemberId,
                 amount: settlementAmount,
                 settledAt: date.toISOString(),
                 notes: notes.trim() || undefined,
@@ -101,17 +103,15 @@ export function SettleUpModal({
                         </div>
                     ) : (
                         userDebts.map((debt) => {
-                            const isSelected = selectedDebt?.fromUserId === debt.fromUserId &&
-                                selectedDebt?.toUserId === debt.toUserId;
-                            const isYouOwe = debt.fromUserId === currentUserId;
-                            const otherUser = isYouOwe ? debt.toUser : debt.fromUser;
-                            const otherUserName = otherUser
-                                ? `${otherUser.firstName} ${otherUser.lastName}`.trim()
-                                : 'Unknown';
+                            const isSelected = selectedDebt?.fromMemberId === debt.fromMemberId &&
+                                selectedDebt?.toMemberId === debt.toMemberId;
+                            const isYouOwe = debt.fromMemberId === currentMemberId;
+                            const otherMember = isYouOwe ? debt.toMember : debt.fromMember;
+                            const otherMemberName = otherMember?.name || 'Unknown';
 
                             return (
                                 <div
-                                    key={`${debt.fromUserId}-${debt.toUserId}`}
+                                    key={`${debt.fromMemberId}-${debt.toMemberId}`}
                                     onClick={() => {
                                         setSelectedDebt(debt);
                                         setAmount(debt.amount.toString());
@@ -122,12 +122,13 @@ export function SettleUpModal({
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <UserAvatar
-                                            fallbackName={otherUserName}
-                                            size={40}
+                                        <MemberAvatar
+                                            name={otherMemberName}
+                                            imageUrl={otherMember?.avatar}
+                                            size="sm"
                                         />
                                         <div>
-                                            <p className="font-medium">{otherUserName}</p>
+                                            <p className="font-medium">{otherMemberName}</p>
                                             <p className="text-sm text-muted-foreground">
                                                 {isYouOwe ? 'You owe' : 'Owes you'}
                                             </p>

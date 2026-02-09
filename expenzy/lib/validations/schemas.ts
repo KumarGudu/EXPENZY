@@ -31,6 +31,7 @@ export const createGroupSchema = z.object({
     groupType: z.enum(['home', 'office', 'trip', 'friends', 'other']).default('other'),
     iconSeed: z.string().optional(),
     iconProvider: z.enum(['jdenticon']).optional(),
+    isLocal: z.boolean().optional().default(false),
 });
 
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;

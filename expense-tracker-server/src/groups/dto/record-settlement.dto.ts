@@ -2,10 +2,10 @@ import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class RecordSettlementDto {
   @IsString()
-  fromUserId: string;
+  fromMemberId: string;
 
   @IsString()
-  toUserId: string;
+  toMemberId: string;
 
   @IsNumber()
   @Min(0.01)
@@ -18,4 +18,8 @@ export class RecordSettlementDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  settledAt?: string;
 }

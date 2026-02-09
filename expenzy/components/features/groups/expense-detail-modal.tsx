@@ -25,11 +25,13 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
+import { MemberAvatar } from './member-avatar';
+
 interface ExpenseDetailModalProps {
     expense: GroupExpense | null;
     isOpen: boolean;
     onClose: () => void;
-    currentUserId: string;
+    currentMemberId: string;
     groupId: string;
     isMobile?: boolean;
 }
@@ -38,7 +40,7 @@ export function ExpenseDetailModal({
     expense,
     isOpen,
     onClose,
-    currentUserId,
+    currentMemberId,
     groupId,
     isMobile = false,
 }: ExpenseDetailModalProps) {
@@ -49,12 +51,13 @@ export function ExpenseDetailModal({
 
     if (!expense) return null;
 
-    const balance = calculateUserExpenseBalance(expense, currentUserId);
+    const balance = calculateUserExpenseBalance(expense, currentMemberId);
     const categoryIconName = expense.category?.icon || 'MoreHorizontal';
-    const isPaidByYou = expense.paidByUserId === currentUserId;
-    const paidByName = expense.paidBy
-        ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}`.trim()
-        : 'Unknown';
+    const isPaidByYou = expense.paidByMemberId === currentMemberId;
+    const paidByName = expense.paidByMember?.contactName ||
+        (expense.paidBy
+            ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}`.trim()
+            : 'Unknown');
 
     const handleEdit = () => {
         onClose();
@@ -130,21 +133,22 @@ export function ExpenseDetailModal({
                 <p className="text-xs font-bold text-muted-foreground mb-2 uppercase">Split with</p>
                 <div className="space-y-1.5">
                     {expense.splits?.map((split) => {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        const userData = split.user as any;
+                        const memberName = split.member?.contactName ||
+                            (split.user ? `${split.user.firstName} ${split.user.lastName}`.trim() : 'Unknown');
+
                         return (
                             <div key={split.id} className="flex items-center justify-between py-2 px-3 bg-muted/20 rounded-lg">
                                 <div className="flex items-center gap-2">
-                                    <UserAvatar
-                                        seed={userData?.avatarSeed}
-                                        style={userData?.avatarStyle}
-                                        fallbackName={split.user?.firstName || 'Unknown'}
-                                        size={32}
+                                    <MemberAvatar
+                                        name={memberName}
+                                        avatarSeed={split.member?.user?.avatarSeed}
+                                        imageUrl={split.member?.contactAvatar || split.member?.user?.avatarUrl}
+                                        size="sm"
                                     />
                                     <span className="text-sm font-medium">
-                                        {split.userId === currentUserId
+                                        {split.memberId === currentMemberId
                                             ? 'You'
-                                            : `${split.user?.firstName || 'Unknown'} ${split.user?.lastName || ''}`.trim()}
+                                            : memberName}
                                     </span>
                                 </div>
                                 <span className="text-sm font-bold">

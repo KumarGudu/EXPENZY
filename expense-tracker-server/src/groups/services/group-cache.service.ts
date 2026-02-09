@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 interface MemberBalance {
-  userId: string;
+  memberId: string;
+  userId?: string;
   totalPaid: number;
   totalOwed: number;
   balance: number;

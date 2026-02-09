@@ -17,7 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { useAddGroupMember } from '@/lib/hooks/use-groups';
+import { useAddGroupMember, useGroup } from '@/lib/hooks/use-groups';
 
 interface AddMemberModalProps {
     groupId: string;
@@ -30,22 +30,26 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
     open,
     onOpenChange,
 }) => {
-    const [email, setEmail] = useState('');
+    const { data: group } = useGroup(groupId);
+    const [inputValue, setInputValue] = useState('');
     const [role, setRole] = useState<'admin' | 'member'>('member');
     const addMember = useAddGroupMember();
+
+    const isLocal = group?.isLocal;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!email.trim()) return;
+        if (!inputValue.trim()) return;
 
         try {
             await addMember.mutateAsync({
                 groupId,
-                memberEmail: email.trim(),
+                memberEmail: isLocal ? undefined : inputValue.trim(),
+                memberName: isLocal ? inputValue.trim() : undefined,
                 role
             });
-            setEmail('');
+            setInputValue('');
             setRole('member');
             onOpenChange(false);
         } catch {
@@ -66,35 +70,44 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                 <form onSubmit={handleSubmit}>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
+                            <Label htmlFor="inputValue">
+                                {isLocal ? 'Full Name' : 'Email Address'}
+                            </Label>
                             <Input
-                                id="email"
-                                type="email"
-                                placeholder=""
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                id="inputValue"
+                                type={isLocal ? 'text' : 'email'}
+                                placeholder={isLocal ? 'e.g., John Doe' : 'e.g., john@example.com'}
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
                                 required
                             />
+                            {isLocal && (
+                                <p className="text-xs text-muted-foreground">
+                                    This person doesn&apos;t need an account. You manage their expenses.
+                                </p>
+                            )}
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="role">Role</Label>
-                            <Select
-                                value={role}
-                                onValueChange={(value) => setRole(value as 'admin' | 'member')}
-                            >
-                                <SelectTrigger id="role">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="member">Member</SelectItem>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <p className="text-xs text-muted-foreground">
-                                Admins can manage members and group settings
-                            </p>
-                        </div>
+                        {!isLocal && (
+                            <div className="space-y-2">
+                                <Label htmlFor="role">Role</Label>
+                                <Select
+                                    value={role}
+                                    onValueChange={(value) => setRole(value as 'admin' | 'member')}
+                                >
+                                    <SelectTrigger id="role">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="member">Member</SelectItem>
+                                        <SelectItem value="admin">Admin</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <p className="text-xs text-muted-foreground">
+                                    Admins can manage members and group settings
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter>
@@ -105,8 +118,8 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={addMember.isPending || !email.trim()}>
-                            {addMember.isPending ? 'Adding...' : 'Add Member'}
+                        <Button type="submit" disabled={addMember.isPending || !inputValue.trim()}>
+                            {addMember.isPending ? 'Adding...' : isLocal ? 'Add Person' : 'Add Member'}
                         </Button>
                     </DialogFooter>
                 </form>

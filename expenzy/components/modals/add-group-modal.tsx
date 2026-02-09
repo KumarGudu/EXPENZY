@@ -12,7 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Home, Briefcase, Plane, Users, Folder, Shuffle } from 'lucide-react';
 import { GroupIcon } from '@/components/ui/group-icon';
 import { generateRandomSeed } from '@/lib/utils/avatar-utils';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
+import { Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface AddGroupModalProps {
     open: boolean;
@@ -144,8 +147,8 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                                                     )
                                                 }
                                                 className={`flex flex-col items-center justify-center gap-1 sm:gap-1.5 p-2 sm:p-2.5 rounded-lg border-2 transition-all ${isSelected
-                                                        ? 'border-primary bg-primary/10'
-                                                        : 'border-border hover:border-primary/50 hover:bg-accent'
+                                                    ? 'border-primary bg-primary/10'
+                                                    : 'border-border hover:border-primary/50 hover:bg-accent'
                                                     }`}
                                             >
                                                 <Icon className={`w-5 h-5 ${category.color}`} />
@@ -156,6 +159,32 @@ export function AddGroupModal({ open, onClose }: AddGroupModalProps) {
                                         );
                                     })}
                                 </div>
+                            </div>
+
+                            {/* Solo-managed Group Toggle */}
+                            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                                <div className="space-y-0.5">
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-sm font-medium">Solo-managed group</Label>
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                                </TooltipTrigger>
+                                                <TooltipContent className="max-w-[250px]">
+                                                    <p>In a solo-managed group, only you can add expenses and manage members. Other members don&apos;t need to join or have accounts.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Perfect for tracking personal shared expenses.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={watch('isLocal')}
+                                    onCheckedChange={(checked) => setValue('isLocal', checked)}
+                                />
                             </div>
 
                             {/* Description */}

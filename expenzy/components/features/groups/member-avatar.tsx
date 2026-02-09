@@ -1,12 +1,12 @@
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserAvatar } from '@/components/ui/user-avatar';
-import { LetterAvatar } from '@/components/ui/letter-avatar';
 
 interface MemberAvatarProps {
     name: string;
     avatarSeed?: string;
     avatarStyle?: string;
+    imageUrl?: string;
     isSelected?: boolean;
     onClick?: () => void;
     size?: 'sm' | 'md' | 'lg';
@@ -23,6 +23,7 @@ export function MemberAvatar({
     name,
     avatarSeed,
     avatarStyle,
+    imageUrl,
     isSelected = false,
     onClick,
     size = 'md',
@@ -49,16 +50,12 @@ export function MemberAvatar({
                         size === 'lg' && 'h-6 w-6'
                     )} />
                 </div>
-            ) : avatarSeed ? (
+            ) : (
                 <UserAvatar
                     seed={avatarSeed}
                     style={avatarStyle}
+                    fallbackUrl={imageUrl}
                     fallbackName={name}
-                    size={pixelSize}
-                />
-            ) : (
-                <LetterAvatar
-                    name={name}
                     size={pixelSize}
                 />
             )}

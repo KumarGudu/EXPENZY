@@ -12,8 +12,13 @@ import {
 import { Type } from 'class-transformer';
 
 export class ParticipantSplitDto {
+  @IsOptional()
   @IsString()
-  userId: string;
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
+  memberId?: string;
 
   @IsOptional()
   @IsNumber()
@@ -40,8 +45,13 @@ export class CreateGroupExpenseDto {
   @Min(0.01)
   amount: number;
 
+  @IsOptional()
   @IsString()
-  paidByUserId: string;
+  paidByUserId?: string;
+
+  @IsOptional()
+  @IsString()
+  paidByMemberId?: string;
 
   @IsString()
   @IsOptional()

@@ -12,7 +12,7 @@ interface GroupStatisticsModalProps {
     onClose: () => void;
     statistics: GroupStatistics | undefined;
     simplifiedDebts?: SimplifiedDebt[];
-    currentUserId?: string;
+    currentMemberId?: string;
     isMobile?: boolean;
     currency?: 'INR' | 'USD' | 'EUR';
 }
@@ -22,7 +22,7 @@ export function GroupStatisticsModal({
     onClose,
     statistics,
     simplifiedDebts = [],
-    currentUserId,
+    currentMemberId,
     isMobile = false,
     currency = 'INR',
 }: GroupStatisticsModalProps) {
@@ -90,24 +90,20 @@ export function GroupStatisticsModal({
                 ) : (
                     <div className="space-y-2">
                         {simplifiedDebts.map((debt, index) => {
-                            const isYouOwing = debt.fromUserId === currentUserId;
-                            const isYouReceiving = debt.toUserId === currentUserId;
+                            const isYouOwing = debt.fromMemberId === currentMemberId;
+                            const isYouReceiving = debt.toMemberId === currentMemberId;
 
                             // Get the other person's name
-                            const otherPersonName = isYouOwing
-                                ? (debt.toUser
-                                    ? `${debt.toUser.firstName || ''} ${debt.toUser.lastName || ''}`.trim() || debt.toUser.username
-                                    : 'Unknown')
-                                : (debt.fromUser
-                                    ? `${debt.fromUser.firstName || ''} ${debt.fromUser.lastName || ''}`.trim() || debt.fromUser.username
-                                    : 'Unknown');
+                            const otherMemberName = isYouOwing
+                                ? (debt.toMember?.name || 'Unknown')
+                                : (debt.fromMember?.name || 'Unknown');
 
                             // Create simple text
                             const displayText = isYouOwing
-                                ? `You owe ${otherPersonName}`
+                                ? `You owe ${otherMemberName}`
                                 : isYouReceiving
-                                    ? `You lent ${otherPersonName}`
-                                    : `${debt.fromUser?.firstName || 'Unknown'} owes ${debt.toUser?.firstName || 'Unknown'}`;
+                                    ? `You lent ${otherMemberName}`
+                                    : `${debt.fromMember?.name || 'Unknown'} owes ${debt.toMember?.name || 'Unknown'}`;
 
                             return (
                                 <div

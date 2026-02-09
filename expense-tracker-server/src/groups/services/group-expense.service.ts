@@ -17,7 +17,7 @@ export class GroupExpenseService {
     private prisma: PrismaService,
     private splitCalculationService: SplitCalculationService,
     private cacheService: GroupCacheService,
-  ) {}
+  ) { }
 
   /**
    * Create a group expense
@@ -45,14 +45,48 @@ export class GroupExpenseService {
       throw new ForbiddenException('You are not a member of this group');
     }
 
+    // Resolve payer memberId
+    let payerMemberId = createExpenseDto.paidByMemberId;
+    const paidByUserId = createExpenseDto.paidByUserId || userId;
+
+    if (!payerMemberId) {
+      const payerMember = group.members.find((m) => m.userId === paidByUserId);
+      if (!payerMember) {
+        throw new BadRequestException('Payer is not a member of this group');
+      }
+      payerMemberId = payerMember.id;
+    }
+
+    // Resolve participant memberIds if not provided
+    const resolvedParticipants = createExpenseDto.participants.map((p) => {
+      let member;
+      if (p.memberId) {
+        member = group.members.find((m) => m.id === p.memberId);
+      } else if (p.userId) {
+        member = group.members.find((m) => m.userId === p.userId);
+      }
+
+      if (!member) {
+        throw new BadRequestException(
+          `Participant is not a member of this group`,
+        );
+      }
+      return { ...p, memberId: member.id, userId: member.userId };
+    });
+
     // Use split calculation service
     const splitService = this.splitCalculationService;
 
+    // SplitCalculationService currently works with userId as identifier in interfaces
+    // We'll pass memberId as userId to the service and map it back
     const splits = splitService.calculateSplits(
       createExpenseDto.amount,
       createExpenseDto.splitType,
-      createExpenseDto.participants,
-      userId, // payer
+      resolvedParticipants.map((p) => ({
+        ...p,
+        userId: p.memberId!, // Map memberId to userId for the service
+      })),
+      payerMemberId, // Map payerMemberId to payerId for the service
     );
 
     // Validate splits
@@ -64,28 +98,15 @@ export class GroupExpenseService {
       throw new BadRequestException(validation.message);
     }
 
-    // Validate participants are group members
-    const memberIds = group.members
-      .map((m) => m.userId)
-      .filter((id): id is string => id !== null);
-    const participantValidation =
-      this.splitCalculationService.validateParticipants(
-        createExpenseDto.participants,
-        memberIds,
-      );
-
-    if (!participantValidation.isValid) {
-      throw new BadRequestException(
-        `Invalid participants: ${participantValidation.invalidUserIds.join(', ')}`,
-      );
-    }
+    // Participants are already validated by resolution above
 
     // Create expense with splits in transaction
     const result = await this.prisma.$transaction(async (tx) => {
       const expense = await tx.groupExpense.create({
         data: {
           groupId,
-          paidByUserId: createExpenseDto.paidByUserId || userId,
+          paidByUserId: paidByUserId,
+          paidByMemberId: payerMemberId,
           amount: createExpenseDto.amount,
           currency: createExpenseDto.currency || 'INR',
           description: createExpenseDto.description,
@@ -105,15 +126,22 @@ export class GroupExpenseService {
 
       // Create splits
       await tx.groupExpenseSplit.createMany({
-        data: splits.map((split) => ({
-          groupExpenseId: expense.id,
-          userId: split.userId,
-          amountOwed: split.amountOwed,
-          percentage: split.percentage,
-          calculatedAmount: split.calculatedAmount,
-          adjustmentAmount: split.adjustmentAmount,
-          isRoundingAdjustment: split.isRoundingAdjustment,
-        })),
+        data: splits.map((split) => {
+          // Find the resolved participant to get the actual userId if any
+          const resolvedP = resolvedParticipants.find(
+            (rp) => rp.memberId === split.userId,
+          );
+          return {
+            groupExpenseId: expense.id,
+            memberId: split.userId, // This was mapped from memberId
+            userId: resolvedP?.userId || null,
+            amountOwed: split.amountOwed,
+            percentage: split.percentage,
+            calculatedAmount: split.calculatedAmount,
+            adjustmentAmount: split.adjustmentAmount,
+            isRoundingAdjustment: split.isRoundingAdjustment,
+          };
+        }),
       });
 
       // Fetch the expense again with splits to return in response
@@ -131,11 +159,16 @@ export class GroupExpenseService {
                   lastName: true,
                 },
               },
+              member: {
+                include: {
+                  contact: true,
+                  user: true,
+                },
+              },
             },
           },
           paidBy: true,
           category: true,
-          // splitCalculations removed - model deleted
         },
       });
 

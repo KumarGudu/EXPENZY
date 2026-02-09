@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 export interface MemberBalance {
-  userId: string;
+  memberId: string;
+  userId?: string;
   totalPaid: number;
   totalOwed: number;
   balance: number; // positive = gets back, negative = owes
@@ -66,8 +67,8 @@ export class DebtSettlementService {
       // Only create settlement if amount is significant (> 1 cent)
       if (settleAmount > 0.01) {
         settlements.push({
-          from: debtor.userId,
-          to: creditor.userId,
+          from: debtor.memberId,
+          to: creditor.memberId,
           amount: Math.round(settleAmount * 100) / 100, // Round to 2 decimal places
         });
       }

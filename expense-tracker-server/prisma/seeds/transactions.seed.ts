@@ -606,6 +606,16 @@ export async function seedTransactions(
     const endDate = new Date('2025-12-28');
     let groupExpenseCount = 0;
 
+
+    // Fetch group members to map userId -> memberId
+    const groupMembers = await prisma.groupMember.findMany({
+        where: { groupId: group.id },
+    });
+    const memberMap = new Map<string, string>();
+    groupMembers.forEach((m) => {
+        if (m.userId) memberMap.set(m.userId, m.id);
+    });
+
     for (let i = 0; i < 70; i++) {
         const template = ROOMMATE_EXPENSE_TEMPLATES[i % ROOMMATE_EXPENSE_TEMPLATES.length];
         const category = categoryLookup[template.categoryKey];
@@ -639,6 +649,17 @@ export async function seedTransactions(
             },
         });
 
+        const payerMemberId = memberMap.get(payer.id);
+        if (!payerMemberId) {
+            console.warn(`Could not find memberId for payer ${payer.id}`);
+            continue;
+        }
+
+        const splitsWithMemberId = splits.map(s => ({
+            ...s,
+            memberId: memberMap.get(s.userId)!, // Assume all seeded users are members
+        }));
+
         if (existing) {
             // Update existing expense
             await prisma.groupExpense.update({
@@ -656,7 +677,7 @@ export async function seedTransactions(
             });
 
             await prisma.groupExpenseSplit.createMany({
-                data: splits.map((split) => ({
+                data: splitsWithMemberId.map((split) => ({
                     groupExpenseId: existing.id,
                     ...split,
                 })),
@@ -667,6 +688,7 @@ export async function seedTransactions(
                 data: {
                     groupId: group.id,
                     paidByUserId: payer.id,
+                    paidByMemberId: payerMemberId,
                     categoryId: category.id,
                     amount,
                     currency: 'INR',
@@ -676,7 +698,7 @@ export async function seedTransactions(
                     isSettled,
                     splitValidationStatus: 'valid',
                     splits: {
-                        create: splits,
+                        create: splitsWithMemberId,
                     },
                 },
             });

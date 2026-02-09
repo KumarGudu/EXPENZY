@@ -322,6 +322,7 @@ model UserContact {
   contactName  String? @map("contact_name")
   contactEmail String? @map("contact_email")
   contactPhone String? @map("contact_phone")
+  contactAvatar String? @map("contact_avatar")
 
   // For registered users
   contactUserId String? @map("contact_user_id") // Reference to User
@@ -427,6 +428,7 @@ model Group {
   createdByUserId String  @map("created_by_user_id")
   createdBy       User    @relation("GroupCreator", fields: [createdByUserId], references: [id])
   isActive        Boolean @default(true) @map("is_active")
+  isLocal         Boolean @default(false) @map("is_local")
 
   // Archive instead of delete
   isArchived Boolean   @default(false) @map("is_archived")
@@ -466,6 +468,11 @@ model GroupMember {
   joinedAt     DateTime?    @map("joined_at")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  expenseSplits GroupExpenseSplit[] @relation("MemberExpenseSplits")
+  paidExpenses  GroupExpense[]      @relation("MemberPaidExpenses")
+  settlementsFrom Settlement[]      @relation("SettlementFromMember")
+  settlementsTo   Settlement[]      @relation("SettlementToMember")
 
   @@unique([groupId, userId])
   @@index([groupId])
@@ -642,7 +649,9 @@ model GroupExpense {
   group        Group               @relation(fields: [groupId], references: [id], onDelete: Cascade)
   paidBy       User?               @relation("GroupExpensePaidBy", fields: [paidByUserId], references: [id])
   category     Category?           @relation(fields: [categoryId], references: [id])
-  lastModifier User?               @relation("ExpenseLastModifier", fields: [lastModifiedBy], references: [id])
+  paidByMemberId String              @map("paid_by_member_id")
+  paidByMember   GroupMember         @relation("MemberPaidExpenses", fields: [paidByMemberId], references: [id])
+  lastModifier   User?               @relation("ExpenseLastModifier", fields: [lastModifiedBy], references: [id])
   splits       GroupExpenseSplit[]
 
   @@index([groupId])
@@ -660,6 +669,7 @@ model GroupExpenseSplit {
   id             String    @id @default(uuid())
   groupExpenseId String    @map("group_expense_id")
   userId         String?   @map("user_id") // Can be null for non-members
+  memberId       String?   @map("member_id") // Link to GroupMember
   memberName     String?   @map("member_name") // For non-member participants
   amountOwed     Decimal   @map("amount_owed") @db.Decimal(15, 2)
   amountPaid     Decimal   @default(0) @map("amount_paid") @db.Decimal(15, 2)
@@ -671,39 +681,47 @@ model GroupExpenseSplit {
 
   groupExpense GroupExpense @relation(fields: [groupExpenseId], references: [id], onDelete: Cascade)
   user         User?        @relation("GroupExpenseSplitUser", fields: [userId], references: [id])
+  member       GroupMember? @relation("MemberExpenseSplits", fields: [memberId], references: [id], onDelete: SetNull)
 
-  @@unique([groupExpenseId, userId])
+  @@unique([groupExpenseId, memberId])
   @@index([groupExpenseId])
   @@index([userId])
+  @@index([memberId])
   @@index([isPaid])
-  @@index([groupExpenseId, userId]) // Composite index for split lookups
+  @@index([groupExpenseId, userId]) // Composite index for split lookups (kept for compatibility)
   @@index([userId, isPaid]) // For user's unpaid splits
   @@map("group_expense_splits")
 }
 
 model Settlement {
-  id         String   @id @default(uuid())
-  groupId    String   @map("group_id")
-  fromUserId String   @map("from_user_id")
-  toUserId   String   @map("to_user_id")
-  amount     Decimal  @db.Decimal(15, 2)
-  currency   String   @default("INR")
-  settledAt  DateTime @map("settled_at")
-  notes      String?
+  id           String   @id @default(uuid())
+  groupId      String   @map("group_id")
+  fromUserId   String?  @map("from_user_id")
+  toUserId     String?  @map("to_user_id")
+  fromMemberId String   @map("from_member_id")
+  toMemberId   String   @map("to_member_id")
+  amount       Decimal  @db.Decimal(15, 2)
+  currency     String   @default("INR")
+  settledAt    DateTime @map("settled_at")
+  notes        String?
 
   // Loan tracking
   loanId String? @map("loan_id")
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  fromUser User  @relation("SettlementFrom", fields: [fromUserId], references: [id])
-  toUser   User  @relation("SettlementTo", fields: [toUserId], references: [id])
-  loan     Loan? @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  group      Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  fromUser   User?       @relation("SettlementFrom", fields: [fromUserId], references: [id])
+  toUser     User?       @relation("SettlementTo", fields: [toUserId], references: [id])
+  fromMember GroupMember @relation("SettlementFromMember", fields: [fromMemberId], references: [id])
+  toMember   GroupMember @relation("SettlementToMember", fields: [toMemberId], references: [id])
+  loan       Loan?       @relation(fields: [loanId], references: [id], onDelete: SetNull)
 
   @@index([groupId])
   @@index([fromUserId])
   @@index([toUserId])
+  @@index([fromMemberId])
+  @@index([toMemberId])
   @@index([settledAt])
   @@index([loanId])
   @@map("settlements")

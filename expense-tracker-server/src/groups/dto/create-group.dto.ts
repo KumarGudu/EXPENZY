@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsIn } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsIn, IsBoolean } from 'class-validator';
 
 export class CreateGroupDto {
   @IsNotEmpty()
@@ -26,4 +26,8 @@ export class CreateGroupDto {
   @IsString()
   @IsIn(['jdenticon'])
   iconProvider?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isLocal?: boolean;
 }

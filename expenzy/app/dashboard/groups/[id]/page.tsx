@@ -102,6 +102,11 @@ export default function GroupDetailPage() {
     // Get current user ID from profile
     const currentUserId = profile?.id || '';
 
+    // Resolve current member ID
+    const currentMemberId = useMemo(() => {
+        return members.find(m => m.userId === currentUserId)?.id || '';
+    }, [members, currentUserId]);
+
     // Handle expense click
     const handleExpenseClick = (expense: GroupExpense) => {
         setSelectedExpense(expense);
@@ -128,8 +133,10 @@ export default function GroupDetailPage() {
             allExpenses = allExpenses.filter((expense) => {
                 const description = expense.description?.toLowerCase() || '';
                 const category = expense.category?.name?.toLowerCase() || '';
-                const paidBy = `${expense.paidBy?.firstName} ${expense.paidBy?.lastName}`.toLowerCase();
-                return description.includes(query) || category.includes(query) || paidBy.includes(query);
+                const paidByMemberName = (expense.paidByMember?.contactName ||
+                    (expense.paidBy ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}` : ''))
+                    .toLowerCase();
+                return description.includes(query) || category.includes(query) || paidByMemberName.includes(query);
             });
         }
 
@@ -203,13 +210,14 @@ export default function GroupDetailPage() {
                         day: '2-digit'
                     });
 
-                    const paidByName = expense.paidBy
-                        ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}`.trim()
-                        : 'Unknown';
-                    const isPaidByYou = expense.paidByUserId === currentUserId;
+                    const paidByName = expense.paidByMember?.contactName ||
+                        (expense.paidBy
+                            ? `${expense.paidBy.firstName} ${expense.paidBy.lastName}`.trim()
+                            : 'Unknown');
+                    const isPaidByYou = expense.paidByMemberId === currentMemberId;
 
                     // Calculate lent/borrowed
-                    const balance = calculateUserExpenseBalance(expense, currentUserId);
+                    const balance = calculateUserExpenseBalance(expense, currentMemberId);
 
                     return (
                         <div
@@ -348,7 +356,7 @@ export default function GroupDetailPage() {
                 {/* Simplified Debts Card */}
                 <SimplifiedDebtsCard
                     debts={simplifiedDebts}
-                    currentUserId={currentUserId}
+                    currentMemberId={currentMemberId}
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
                 />
 
@@ -415,7 +423,7 @@ export default function GroupDetailPage() {
                     expense={selectedExpense}
                     isOpen={isModalOpen}
                     onClose={handleCloseModal}
-                    currentUserId={currentUserId}
+                    currentMemberId={currentMemberId}
                     groupId={groupId}
                     isMobile={isMobile}
                 />
@@ -426,7 +434,7 @@ export default function GroupDetailPage() {
                     onClose={() => setIsStatisticsModalOpen(false)}
                     statistics={statistics}
                     simplifiedDebts={simplifiedDebts}
-                    currentUserId={currentUserId}
+                    currentMemberId={currentMemberId}
                     isMobile={isMobile}
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
                 />
@@ -436,6 +444,7 @@ export default function GroupDetailPage() {
                     isOpen={isSettleUpModalOpen}
                     onClose={() => setIsSettleUpModalOpen(false)}
                     groupId={groupId}
+                    currentMemberId={currentMemberId}
                     debts={simplifiedDebts}
                     currency={group.currency as 'INR' | 'USD' | 'EUR'}
                     isMobile={isMobile}

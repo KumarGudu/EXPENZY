@@ -5,13 +5,13 @@ import type { SimplifiedDebt } from '@/types/split';
 
 interface SimplifiedDebtsCardProps {
     debts: SimplifiedDebt[];
-    currentUserId: string;
+    currentMemberId: string;
     currency?: 'INR' | 'USD' | 'EUR';
 }
 
 export function SimplifiedDebtsCard({
     debts,
-    currentUserId,
+    currentMemberId,
     currency = 'INR',
 }: SimplifiedDebtsCardProps) {
     if (!debts || debts.length === 0) {
@@ -29,9 +29,9 @@ export function SimplifiedDebtsCard({
     let totalLent = 0;
 
     debts.forEach((debt) => {
-        if (debt.fromUserId === currentUserId) {
+        if (debt.fromMemberId === currentMemberId) {
             totalOwed += debt.amount;
-        } else if (debt.toUserId === currentUserId) {
+        } else if (debt.toMemberId === currentMemberId) {
             totalLent += debt.amount;
         }
     });
@@ -58,24 +58,20 @@ export function SimplifiedDebtsCard({
             {/* Individual settlements */}
             <div className="space-y-1">
                 {debts.map((debt, index) => {
-                    const isYouPaying = debt.fromUserId === currentUserId;
-                    const isYouReceiving = debt.toUserId === currentUserId;
+                    const isYouPaying = debt.fromMemberId === currentMemberId;
+                    const isYouReceiving = debt.toMemberId === currentMemberId;
 
                     // Get the other person's name
                     const otherPersonName = isYouPaying
-                        ? (debt.toUser
-                            ? `${debt.toUser.firstName} ${debt.toUser.lastName}`.trim()
-                            : 'Unknown')
-                        : (debt.fromUser
-                            ? `${debt.fromUser.firstName} ${debt.fromUser.lastName}`.trim()
-                            : 'Unknown');
+                        ? (debt.toMember?.name || 'Unknown')
+                        : (debt.fromMember?.name || 'Unknown');
 
                     // Create simple text
                     const displayText = isYouPaying
                         ? `You owe ${otherPersonName}`
                         : isYouReceiving
                             ? `${otherPersonName} owes you`
-                            : `${debt.fromUser?.firstName || 'Unknown'} owes ${debt.toUser?.firstName || 'Unknown'}`;
+                            : `${debt.fromMember?.name || 'Unknown'} owes ${debt.toMember?.name || 'Unknown'}`;
 
                     return (
                         <div

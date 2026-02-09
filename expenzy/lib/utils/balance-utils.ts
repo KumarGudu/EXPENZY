@@ -5,7 +5,8 @@
 import type { GroupExpense } from '@/types/split';
 
 export interface MemberBalance {
-    userId: string;
+    memberId: string;
+    userId?: string;
     userName: string;
     userEmail: string;
     balance: number;
@@ -30,14 +31,15 @@ export function calculateMemberBalances(
     const balances = new Map<string, MemberBalance>();
 
     expenses.forEach((expense) => {
-        const { paidByUserId, currency, splits = [] } = expense;
+        const { paidByMemberId, currency, splits = [] } = expense;
         const amount = typeof expense.amount === 'string' ? parseFloat(expense.amount) : expense.amount;
 
         // Initialize payer if not exists
-        if (!balances.has(paidByUserId)) {
-            balances.set(paidByUserId, {
-                userId: paidByUserId,
-                userName: 'Unknown',
+        if (!balances.has(paidByMemberId)) {
+            balances.set(paidByMemberId, {
+                memberId: paidByMemberId,
+                userId: expense.paidByUserId || undefined,
+                userName: expense.paidByMember?.contactName || 'Unknown',
                 userEmail: '',
                 balance: 0,
                 currency,
@@ -45,24 +47,25 @@ export function calculateMemberBalances(
         }
 
         // Payer gets credited the full amount
-        const payerBalance = balances.get(paidByUserId)!;
+        const payerBalance = balances.get(paidByMemberId)!;
         payerBalance.balance += amount;
 
         // Each split participant owes their share
         splits.forEach((split) => {
-            if (!balances.has(split.userId)) {
-                balances.set(split.userId, {
-                    userId: split.userId,
-                    userName: split.user?.username || 'Unknown',
+            if (!balances.has(split.memberId)) {
+                balances.set(split.memberId, {
+                    memberId: split.memberId,
+                    userId: split.userId || undefined,
+                    userName: split.member?.contactName || split.user?.username || 'Unknown',
                     userEmail: split.user?.email || '',
                     balance: 0,
                     currency,
                 });
             }
 
-            const memberBalance = balances.get(split.userId)!;
+            const memberBalance = balances.get(split.memberId)!;
             memberBalance.balance -= (typeof split.amountOwed === 'string' ? parseFloat(split.amountOwed) : split.amountOwed);
-            memberBalance.userName = split.user?.username || memberBalance.userName;
+            memberBalance.userName = split.member?.contactName || split.user?.username || memberBalance.userName;
             memberBalance.userEmail = split.user?.email || memberBalance.userEmail;
         });
     });
@@ -78,9 +81,9 @@ export function calculateMemberBalances(
  */
 export function getUserBalance(
     balances: Map<string, MemberBalance>,
-    userId: string
+    memberId: string
 ): number {
-    return balances.get(userId)?.balance || 0;
+    return balances.get(memberId)?.balance || 0;
 }
 
 /**
@@ -94,7 +97,7 @@ export function getUserBalance(
  */
 export function calculateUserExpenseBalance(
     expense: GroupExpense,
-    currentUserId: string
+    currentMemberId: string
 ): {
     youPaid: number;
     yourShare: number;
@@ -107,11 +110,11 @@ export function calculateUserExpenseBalance(
         ? parseFloat(expense.amount)
         : Number(expense.amount);
 
-    const isPayer = expense.paidByUserId === currentUserId;
+    const isPayer = expense.paidByMemberId === currentMemberId;
     const youPaid = isPayer ? amount : 0;
 
     // Find user's split
-    const yourSplit = expense.splits?.find(s => s.userId === currentUserId);
+    const yourSplit = expense.splits?.find(s => s.memberId === currentMemberId);
     const yourShare = yourSplit
         ? (typeof yourSplit.amountOwed === 'string'
             ? parseFloat(yourSplit.amountOwed)
@@ -268,8 +271,8 @@ export function calculateSettlements(
         const settleAmount = Math.min(debt, credit);
 
         settlements.push({
-            from: debtor.userId,
-            to: creditor.userId,
+            from: debtor.memberId,
+            to: creditor.memberId,
             amount: settleAmount,
             currency: debtor.currency,
         });
@@ -292,24 +295,27 @@ export function calculateSettlements(
  * @returns Array of member balances from current user's perspective
  */
 export function calculateMemberWiseBalances(
-    balances: Array<{ userId: string; balance: number }>,
-    currentUserId: string,
+    balances: Array<{ memberId: string; userId?: string; balance: number }>,
+    currentMemberId: string,
     members: Array<{
+        id: string;
         userId: string | null;
+        contactName?: string | null;
         user?: {
             firstName?: string | null;
             lastName?: string | null;
             avatarUrl?: string | null;
         } | null
     }>
-): Array<{ userId: string; name: string; avatarUrl?: string; balance: number }> {
+): Array<{ memberId: string; userId?: string; name: string; avatarUrl?: string; balance: number }> {
     return balances
-        .filter(b => b.userId !== currentUserId)
+        .filter(b => b.memberId !== currentMemberId)
         .map(b => {
-            const member = members.find(m => m.userId === b.userId);
+            const member = members.find(m => m.id === b.memberId);
             const firstName = member?.user?.firstName || '';
             const lastName = member?.user?.lastName || '';
-            const name = `${firstName} ${lastName}`.trim() || 'Unknown';
+            let name = `${firstName} ${lastName}`.trim();
+            if (!name) name = member?.contactName || 'Unknown';
             const avatarUrl = member?.user?.avatarUrl || undefined;
 
             // From current user's perspective:
@@ -317,6 +323,7 @@ export function calculateMemberWiseBalances(
             // If balance < 0, that member owes money (so you lent to them, they owe you)
             // We need to flip the sign for display from current user's perspective
             return {
+                memberId: b.memberId,
                 userId: b.userId,
                 name,
                 avatarUrl,

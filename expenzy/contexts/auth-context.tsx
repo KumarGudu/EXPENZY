@@ -10,6 +10,7 @@ import type { User, AuthState, LoginCredentials, SignupCredentials, AuthResponse
 interface AuthContextType extends AuthState {
     login: (credentials: LoginCredentials) => Promise<void>;
     signup: (credentials: SignupCredentials) => Promise<void>;
+    verifyOtp: (email: string, code: string, purpose: 'registration' | 'password_reset') => Promise<any>;
     logout: () => void;
     refreshUser: () => Promise<void>;
 }
@@ -107,6 +108,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const verifyOtp = async (email: string, code: string, purpose: 'registration' | 'password_reset') => {
+        try {
+            const response = await apiClient.post<AuthResponse>(
+                '/auth/verify-otp',
+                { email, code, purpose }
+            );
+
+            if (purpose === 'registration') {
+                const { user, access_token } = response;
+
+                localStorage.setItem('token', access_token);
+                localStorage.setItem('user', JSON.stringify(user));
+                apiClient.setToken(access_token);
+
+                setState({
+                    user,
+                    token: access_token,
+                    isAuthenticated: true,
+                    isLoading: false,
+                });
+            }
+
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -137,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 ...state,
                 login,
                 signup,
+                verifyOtp,
                 logout,
                 refreshUser,
             }}
