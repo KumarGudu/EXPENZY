@@ -59,11 +59,11 @@ export default function GroupSettingsPage() {
         simplifiedDebts.forEach(debt => {
             // Positive balance means they owe you (you lent to them)
             // Negative balance means you owe them (you borrowed from them)
-            const currentBalance = balances.get(debt.fromUserId) || 0;
-            balances.set(debt.fromUserId, currentBalance - debt.amount);
+            const currentBalance = balances.get(debt.fromMemberId) || 0;
+            balances.set(debt.fromMemberId, currentBalance - debt.amount);
 
-            const otherBalance = balances.get(debt.toUserId) || 0;
-            balances.set(debt.toUserId, otherBalance + debt.amount);
+            const otherBalance = balances.get(debt.toMemberId) || 0;
+            balances.set(debt.toMemberId, otherBalance + debt.amount);
         });
         return balances;
     }, [simplifiedDebts]);

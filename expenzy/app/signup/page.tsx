@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import { Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, CheckCircle2 } f
 import { ROUTES } from '@/lib/routes';
 import Link from 'next/link';
 
-export default function SignupPage() {
+function SignupContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { signup, isAuthenticated } = useAuth();
@@ -203,5 +203,13 @@ export default function SignupPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SignupContent />
+        </Suspense>
     );
 }

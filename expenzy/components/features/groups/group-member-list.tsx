@@ -101,7 +101,7 @@ export const GroupMemberList: React.FC<GroupMemberListProps> = ({
                             name={fullName}
                             email={member.user?.email || member.invitedEmail || ''}
                             role={member.role}
-                            balance={memberBalances.get(member.userId) || 0}
+                            balance={memberBalances.get(member.id) || 0}
                             currency={currency}
                             isCurrentUser={member.userId === currentUserId}
                             isAdmin={isAdmin}
