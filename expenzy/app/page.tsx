@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import { ArrowRight, BarChart3, PiggyBank, Users, Wallet, TrendingUp, Shield, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ROUTES } from '@/lib/routes';
@@ -8,8 +9,15 @@ import { useState, useEffect } from 'react';
 
 export default function LandingPage() {
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push(ROUTES.DASHBOARD);
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
